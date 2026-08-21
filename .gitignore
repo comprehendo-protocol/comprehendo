@@ -6,3 +6,7 @@ py/*.egg-info/
 py/.venv/
 __pycache__/
 *.pyc
+dotnet/Comprehendo/bin/
+dotnet/Comprehendo/obj/
+ruby/pkg/
+ruby/*.gem
