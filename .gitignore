@@ -10,3 +10,5 @@ dotnet/Comprehendo/bin/
 dotnet/Comprehendo/obj/
 ruby/pkg/
 ruby/*.gem
+ruby/Gemfile.lock
+ruby/.bundle/

@@ -1,0 +1,35 @@
+name: Push gem
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  push:
+    runs-on: ubuntu-latest
+
+    permissions:
+      contents: write
+      id-token: write
+
+    environment: release
+
+    defaults:
+      run:
+        working-directory: ruby
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+      - name: Set up Ruby
+        uses: ruby/setup-ruby@v1
+        with:
+          bundler-cache: true
+          ruby-version: ruby
+          working-directory: ruby
+
+      - uses: rubygems/release-gem@v1
+        with:
+          working-directory: ruby
