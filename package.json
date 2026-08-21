@@ -1,0 +1,25 @@
+{
+  "name": "comprehendo",
+  "version": "0.0.1",
+  "description": "Placeholder package for comprehendo",
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "index.js",
+    "index.d.ts"
+  ],
+  "scripts": {
+    "test": "node --test"
+  },
+  "keywords": [],
+  "author": "TheDecipherist",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheDecipherist/comprehendo.git"
+  },
+  "homepage": "https://github.com/TheDecipherist/comprehendo#readme",
+  "bugs": {
+    "url": "https://github.com/TheDecipherist/comprehendo/issues"
+  }
+}
