@@ -1,0 +1,25 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "comprehendo"
+version = "0.0.1"
+description = "Placeholder package for comprehendo"
+readme = "README.md"
+requires-python = ">=3.8"
+license = "MIT"
+authors = [
+    { name = "TheDecipherist" }
+]
+classifiers = [
+    "Development Status :: 1 - Planning",
+    "Programming Language :: Python :: 3",
+]
+
+[project.urls]
+Homepage = "https://github.com/TheDecipherist/comprehendo"
+Repository = "https://github.com/TheDecipherist/comprehendo"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/comprehendo"]
