@@ -1,4 +1,4 @@
-name: Push gem
+name: Release
 
 on:
   push:
@@ -6,7 +6,7 @@ on:
       - "v*"
 
 jobs:
-  push:
+  push-gem:
     runs-on: ubuntu-latest
 
     permissions:
@@ -33,3 +33,36 @@ jobs:
       - uses: rubygems/release-gem@v1
         with:
           working-directory: ruby
+
+  push-nuget:
+    runs-on: ubuntu-latest
+
+    permissions:
+      id-token: write
+
+    environment: release
+
+    defaults:
+      run:
+        working-directory: dotnet/Comprehendo
+
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Set up .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Pack
+        run: dotnet pack -c Release -o out
+
+      # Get a short-lived NuGet API key via Trusted Publishing (OIDC)
+      - name: NuGet login (OIDC -> temp API key)
+        uses: NuGet/login@v1
+        id: login
+        with:
+          user: TheDecipherist
+
+      - name: Push
+        run: dotnet nuget push "out/*.nupkg" --api-key ${{ steps.login.outputs.NUGET_API_KEY }} --source https://api.nuget.org/v3/index.json
