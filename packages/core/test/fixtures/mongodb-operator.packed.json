@@ -1,0 +1,187 @@
+{
+  "comprehendo": "0.1",
+  "packed": 1,
+  "provider": "mongodb-operator",
+  "index": [
+    "aggregation stages",
+    "$group",
+    "$graphLookup",
+    "$match",
+    "$merge",
+    "capped collections",
+    "sharding",
+    "index selection",
+    "how to undo a write"
+  ],
+  "topics": {
+    "aggregation stages": {
+      "topic": "aggregation stages",
+      "summary": "A pipeline is an ordered array of stage documents, and each stage document names exactly one stage operator. Stages run in order, each one consuming what the previous stage emitted. An unknown operator name fails the whole pipeline before any document is read.",
+      "signatures": ["collection.aggregate(pipeline)"],
+      "examples": [
+        {
+          "title": "Count events per key",
+          "code": "[{ \"$match\": { \"ok\": true } }, { \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+        }
+      ],
+      "see_also": ["$match", "$group", "index selection"],
+      "vocabularies_served": {
+        "own_terms": ["aggregation stages", "pipeline stages", "stage operator"],
+        "translations": [
+          { "known_tool": "pandas", "terms": ["method chaining"] },
+          { "known_tool": "SQL", "terms": ["nested subqueries"] }
+        ],
+        "task": ["build a pipeline", "run several steps in order"]
+      }
+    },
+    "$group": {
+      "topic": "$group",
+      "summary": "$group collapses the documents reaching it into one output document per distinct _id value. _id is required and names the grouping key; every other field of the output is an accumulator over the documents in that group. _id: null groups everything into a single document.",
+      "signatures": [
+        "{ \"$group\": { \"_id\": <expression>, <field>: { <accumulator>: <expression> } } }"
+      ],
+      "examples": [
+        {
+          "title": "Count events per key",
+          "code": "[{ \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+        },
+        {
+          "title": "The twin a group without an accumulator produces",
+          "code": "{ \"code\": \"GROUP_ACCUMULATOR_MISSING\", \"path\": \"pipeline[0].$group.n\", \"accepts\": [\"$sum\", \"$avg\", \"$first\"] }"
+        }
+      ],
+      "see_also": ["aggregation stages", "$match", "index selection"],
+      "vocabularies_served": {
+        "own_terms": ["$group", "group stage"],
+        "translations": [
+          { "known_tool": "SQL", "terms": ["group by"] },
+          { "known_tool": "pandas", "terms": ["groupby"] }
+        ],
+        "task": ["count events per key", "aggregate rows into buckets"]
+      }
+    },
+    "$graphLookup": {
+      "topic": "$graphLookup",
+      "summary": "$graphLookup walks a self-referencing edge repeatedly, starting from an expression and following connectFrom to connectTo until nothing new is reached. It emits the whole traversal as one array field per input document, so an unbounded hierarchy needs maxDepth or the stage will collect the entire component.",
+      "signatures": [
+        "{ \"$graphLookup\": { \"from\": <collection>, \"startWith\": <expression>, \"connectFromField\": <field>, \"connectToField\": <field>, \"as\": <field> } }"
+      ],
+      "examples": [
+        {
+          "title": "Follow a parent chain two levels up",
+          "code": "[{ \"$graphLookup\": { \"from\": \"nodes\", \"startWith\": \"$parent\", \"connectFromField\": \"parent\", \"connectToField\": \"_id\", \"as\": \"ancestors\", \"maxDepth\": 1 } }]"
+        }
+      ],
+      "see_also": ["aggregation stages", "index selection"],
+      "vocabularies_served": {
+        "own_terms": ["$graphLookup", "recursive lookup stage"],
+        "translations": [{ "known_tool": "SQL", "terms": ["recursive cte"] }],
+        "task": ["follow a parent chain", "walk a hierarchy"]
+      }
+    },
+    "$match": {
+      "topic": "$match",
+      "summary": "$match keeps only the documents its query matches and drops the rest. Placed first it can use an index, placed after a stage that reshapes documents it cannot, so a pipeline that filters late reads everything it was about to throw away.",
+      "signatures": ["{ \"$match\": { <field>: <query expression> } }"],
+      "examples": [
+        {
+          "title": "Filter before grouping so the index is usable",
+          "code": "[{ \"$match\": { \"ok\": true } }, { \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+        }
+      ],
+      "see_also": ["aggregation stages", "index selection"],
+      "vocabularies_served": {
+        "own_terms": ["$match", "match stage"],
+        "translations": [{ "known_tool": "SQL", "terms": ["where clause"] }],
+        "task": ["filter documents before grouping", "keep only matching documents"]
+      }
+    },
+    "$merge": {
+      "topic": "$merge",
+      "summary": "$merge writes the pipeline's output into a collection, and it is the only stage with a side effect. The target is resolved per document, so a computed target cannot be judged without executing the pipeline; declare on and whenMatched explicitly rather than relying on the defaults.",
+      "signatures": [
+        "{ \"$merge\": { \"into\": <collection>, \"on\": <field>, \"whenMatched\": <mode>, \"whenNotMatched\": <mode> } }"
+      ],
+      "examples": [
+        {
+          "title": "Upsert a rollup into a reporting collection",
+          "code": "[{ \"$merge\": { \"into\": \"rollups\", \"on\": \"_id\", \"whenMatched\": \"replace\", \"whenNotMatched\": \"insert\" } }]"
+        }
+      ],
+      "see_also": ["aggregation stages", "how to undo a write"],
+      "vocabularies_served": {
+        "own_terms": ["$merge", "merge stage"],
+        "translations": [{ "known_tool": "SQL", "terms": ["insert into select"] }],
+        "task": ["write pipeline output to a collection"]
+      }
+    },
+    "capped collections": {
+      "topic": "capped collections",
+      "summary": "A capped collection is a fixed-size ring: inserts are allowed, the oldest documents are evicted to make room, and an update that would grow a document fails. Size is fixed at creation, which is why there is no in-place resize.",
+      "signatures": ["db.createCollection(name, { capped: true, size: <bytes>, max: <count> })"],
+      "examples": [
+        {
+          "title": "A one-megabyte newest-wins buffer",
+          "code": "{ \"capped\": true, \"size\": 1048576, \"max\": 1000 }"
+        }
+      ],
+      "see_also": ["how to undo a write"],
+      "vocabularies_served": {
+        "own_terms": ["capped collections"],
+        "translations": [{ "known_tool": "SQL", "terms": ["ring buffer table"] }],
+        "task": ["keep only the newest documents"]
+      }
+    },
+    "sharding": {
+      "topic": "sharding",
+      "summary": "Sharding spreads one collection across machines by a shard key chosen at shard time. The key decides every routed read: a query that does not carry it is broadcast to every shard, so a low-cardinality or monotonically increasing key concentrates writes on one shard and undoes the point of sharding.",
+      "signatures": ["sh.shardCollection(namespace, { <field>: 1 })"],
+      "examples": [
+        {
+          "title": "Shard on a high-cardinality key",
+          "code": "{ \"namespace\": \"analytics.events\", \"key\": { \"tenant\": 1, \"_id\": 1 } }"
+        }
+      ],
+      "see_also": ["index selection"],
+      "vocabularies_served": {
+        "own_terms": ["sharding", "shard key"],
+        "translations": [{ "known_tool": "SQL", "terms": ["horizontal partitioning"] }],
+        "task": ["spread a collection across machines"]
+      }
+    },
+    "index selection": {
+      "topic": "index selection",
+      "summary": "A compound index serves only a left-to-right prefix of its fields, so order them equality first, then sort, then range. A query whose leading field is missing from the index cannot use it at all, and an unanchored regex forces a full scan whatever the index says.",
+      "signatures": ["collection.createIndex({ <field>: 1, <field>: -1 })"],
+      "examples": [
+        {
+          "title": "Equality, sort, range, in that order",
+          "code": "{ \"tenant\": 1, \"createdAt\": -1, \"score\": 1 }"
+        }
+      ],
+      "see_also": ["aggregation stages", "$match"],
+      "vocabularies_served": {
+        "own_terms": ["index selection", "index usage"],
+        "translations": [{ "known_tool": "SQL", "terms": ["explain plan"] }],
+        "task": ["make a slow query fast", "choose the right index"]
+      }
+    },
+    "how to undo a write": {
+      "topic": "how to undo a write",
+      "summary": "There is no undo. A write that has been acknowledged is durable, so the recovery path is a compensating write you author, against the same identity, in the same collection. Capture what you are about to overwrite in the same call if you may need it back.",
+      "signatures": ["collection.updateOne(filter, update, { returnDocumentBefore: true })"],
+      "examples": [
+        {
+          "title": "Keep the previous value so a compensating write is possible",
+          "code": "{ \"filter\": { \"_id\": id }, \"update\": { \"$set\": { \"status\": \"active\" } }, \"returnDocumentBefore\": true }"
+        }
+      ],
+      "see_also": ["aggregation stages", "capped collections"],
+      "vocabularies_served": {
+        "own_terms": ["how to undo a write"],
+        "translations": [{ "known_tool": "SQL", "terms": ["rollback a transaction"] }],
+        "task": ["revert an update"]
+      }
+    }
+  }
+}
