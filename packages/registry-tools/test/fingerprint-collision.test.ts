@@ -10,6 +10,7 @@ import { describe, expect, test } from 'vitest';
 import {
   buildFingerprintIndex,
   FingerprintCollisionError,
+  FingerprintIndexError,
   type FingerprintEntry,
 } from '../src/fingerprint.js';
 import { CORPUS, UNKNOWN_ENCODER } from './helpers/corpus.js';
@@ -113,5 +114,37 @@ describe('what is not a collision stays buildable', () => {
     const index = buildFingerprintIndex([...CORPUS, { ...UNKNOWN_ENCODER }]);
 
     expect(index.entries).toHaveLength(6);
+  });
+});
+
+describe('two entries sharing an id but disagreeing on facets refuse to build', () => {
+  // Found by review: this used to fall through both the id-based dedup
+  // (Map keyed by package#corpusEntryId, last write wins) and the
+  // signature-based collision check (they're in different signature
+  // buckets, since the facets differ), so one entry vanished silently and
+  // order-dependently instead of failing the build. Same defect class as
+  // any other "two entries, one identity" case this feature refuses.
+  test('the SAME corpusEntryId with a DIFFERENT errorClass refuses to build, naming the id', () => {
+    const conflicting = [...CORPUS, { ...UNKNOWN_ENCODER, errorClass: 'SomethingElseError' }];
+
+    expect(() => buildFingerprintIndex(conflicting)).toThrow(FingerprintIndexError);
+    try {
+      buildFingerprintIndex(conflicting);
+      expect.unreachable('must refuse');
+    } catch (error) {
+      expect(error).toBeInstanceOf(FingerprintIndexError);
+      const detail = (error as FingerprintIndexError).defects.map((d) => d.detail).join('\n');
+      expect(detail).toContain(UNKNOWN_ENCODER.corpusEntryId);
+      expect(detail).toMatch(/different fingerprint/i);
+    }
+  });
+
+  test('never silently keeps whichever declaration happened to come last', () => {
+    // The exact live repro from review: with the conflicting declaration
+    // FIRST, the old code kept the later (correct) one and looked fine;
+    // proving the refusal is order-independent is the point.
+    const conflicting = [{ ...UNKNOWN_ENCODER, errorClass: 'SomethingElseError' }, ...CORPUS];
+
+    expect(() => buildFingerprintIndex(conflicting)).toThrow(FingerprintIndexError);
   });
 });
