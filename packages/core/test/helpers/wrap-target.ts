@@ -73,10 +73,15 @@ export class ToyClient {
   }
 
   failWithString(): never {
+    // A package that throws a bare string is exactly the case wrap has to
+    // survive, so this is deliberate, not an oversight.
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw this.raw;
   }
 
   failFrozen(): never {
+    // Frozen at the throw site: nothing can be attached to it afterwards.
+    // eslint-disable-next-line @typescript-eslint/only-throw-error
     throw Object.freeze(new Error(this.raw));
   }
 
@@ -86,6 +91,7 @@ export class ToyClient {
 
   async failAsync(): Promise<never> {
     this.#calls += 1;
+    await Promise.resolve();
     throw new Error(this.raw);
   }
 

@@ -5,6 +5,12 @@
 // on the unwrapped target, and nothing global is ever mutated (importing the
 // module changes nothing, wrapping one target changes nothing about any other
 // instance, the class, or any built-in).
+//
+// This file compares METHOD REFERENCES on purpose (`proxy.bump` against
+// itself, `ToyClient.prototype.fail` and `Promise.prototype.then` before and
+// after), which is precisely what `unbound-method` exists to flag. Nothing
+// here calls an unbound method; the identity IS the assertion.
+/* eslint-disable @typescript-eslint/unbound-method */
 
 import { types } from 'node:util';
 import { beforeAll, describe, expect, it, vi } from 'vitest';
@@ -138,7 +144,7 @@ describe('nothing global is mutated', () => {
     const apply = Reflect.apply;
 
     vi.resetModules();
-    const fresh = (await import('../src/wrap.js')) as typeof import('../src/wrap.js');
+    const fresh = await import('../src/wrap.js');
     const wrapped = fresh.wrap(client(), router);
     wrapped.bump();
     expect(() => wrapped.fail()).toThrow();

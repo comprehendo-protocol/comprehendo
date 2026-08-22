@@ -182,6 +182,21 @@ describe('precedence and idempotence at the wrap boundary (CC8)', () => {
     expect(twin?.received).toBe(TOY_RAW);
   });
 
+  it('does not even ask the router about an error that is already twinned', () => {
+    let asked = 0;
+    const counting = (raw: unknown): Twin => {
+      asked += 1;
+      return router.comprehend(raw);
+    };
+    const client = wrap(new ToyClient('toy', TOY_RAW), counting);
+
+    caught(() => client.failCarrying(markedError(TOY_RAW, nativeTwin('native answer'))));
+    expect(asked).toBe(0);
+
+    caught(() => client.fail());
+    expect(asked).toBe(1);
+  });
+
   it('is idempotent: wrapping a wrapped target twins once, not twice', () => {
     const twice = wrap(wrap(new ToyClient('toy', TOY_RAW), router), router);
     const once = wrap(new ToyClient('toy', TOY_RAW), router);

@@ -112,7 +112,37 @@ non-writable own function property is returned unwrapped (the `get` trap
 invariant forbids anything else), and method wrappers are cached per
 function so `proxy.method === proxy.method` holds.
 
-## 8. Tests own two files, not one
+## 8. `constructor` is returned unwrapped
+
+Caught by the suite, not by design: `wrapped.constructor === ToyClient` went
+red because a method wrapper was handed back for it. `constructor` is an
+identity slot that real code (and the language itself, resolving a promise's
+species) compares by reference, so a wrapper there is a visible difference on
+the non-error path. It outranks routing errors from a call almost nobody makes
+through an instance's `constructor` property. Every other function-valued
+property is wrapped.
+
+## 9. Per-call state object, no module-level state
+
+The traps need to recognise their own proxy (to substitute `this` back to the
+target) and to share one wrapper cache, which reads naturally as closures
+inside `wrap()`, and made `wrap()` about ninety lines, over the size gate's
+per-function limit. The pieces are module-level functions taking one
+per-call `Wrapping` record instead. Nothing moved to module scope: the record
+is allocated per `wrap()` call, so two wrapped targets still share nothing and
+importing the module still allocates nothing.
+
+## 10. Teeth, checked by mutation, not assumed
+
+Four mutations of the finished implementation, each reverted:
+no twinning at all (13 red), async rejections not routed (4 red), `this` left
+as the proxy (11 red), and the already-twinned short-circuit removed (0 red).
+The last one exposed a real hole: the pass-through was only ever observed
+through behavior the router happens to produce anyway. A test was added that
+counts `comprehend` calls and asserts a natively twinned error never reaches
+the router; the mutation now turns it red.
+
+## 11. Tests own two files, not one
 
 `wrap.test.ts` (error routing, the fence) and `wrap-transparency.test.ts`
 (the non-error path is identical, nothing global moves). They split on the
