@@ -23,7 +23,7 @@
 import { appendFileSync, mkdirSync, readFileSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 
-import { buildAliases, matchTopics, suggest, type Alias } from './docs-vocabulary.js';
+import { NEAREST_LIMIT, buildAliases, matchTopics, suggest, type Alias } from './docs-vocabulary.js';
 
 export const COMPREHENDO_VERSION = '0.1';
 export const PACKED_CORPUS_FORMAT = 1;
@@ -130,6 +130,37 @@ const undocumented = (query: string, nearest: readonly string[]): Undocumented =
   source_permitted: true,
 });
 
+const isStringIndex = (value: unknown): boolean =>
+  Array.isArray(value) && value.every((item) => typeof item === 'string');
+
+/**
+ * `vocabularies_served.translations[]`'s own shape, validated at parse time
+ * rather than left to whatever downstream code first happens to read
+ * `.terms`. A malformed entry here would otherwise pass parsePackedCorpus
+ * cleanly and only surface as an unrelated-looking crash inside the
+ * matcher, which contradicts "refuses a malformed artifact, never guesses":
+ * a caller that treats a successful parse as "the artifact is valid" has
+ * to be right about that.
+ */
+function assertTranslations(name: string, value: unknown): void {
+  if (!Array.isArray(value)) {
+    throw new TypeError(`packed corpus topic "${name}" carries a non-array translations list`);
+  }
+  value.forEach((entry: unknown, index: number) => {
+    const translation = entry as { known_tool?: unknown; terms?: unknown } | null;
+    if (typeof translation?.known_tool !== 'string') {
+      throw new TypeError(
+        `packed corpus topic "${name}" translations[${String(index)}] carries no known_tool`,
+      );
+    }
+    if (!isStringIndex(translation.terms)) {
+      throw new TypeError(
+        `packed corpus topic "${name}" translations[${String(index)}] carries a non-string-array terms`,
+      );
+    }
+  });
+}
+
 function assertTopic(name: string, value: unknown): void {
   const topic = value as PackedTopic;
   if (typeof topic?.topic !== 'string' || topic.topic !== name) {
@@ -139,6 +170,15 @@ function assertTopic(name: string, value: unknown): void {
     throw new TypeError(`packed corpus topic "${name}" carries no summary`);
   }
   const served = topic.vocabularies_served;
+  if (served?.own_terms !== undefined && !isStringIndex(served.own_terms)) {
+    throw new TypeError(`packed corpus topic "${name}" carries a non-string-array own_terms`);
+  }
+  if (served?.translations !== undefined) {
+    assertTranslations(name, served.translations);
+  }
+  if (served?.task !== undefined && !isStringIndex(served.task)) {
+    throw new TypeError(`packed corpus topic "${name}" carries a non-string-array task`);
+  }
   const terms =
     (served?.own_terms?.length ?? 0) +
     (served?.translations?.length ?? 0) +
@@ -149,9 +189,6 @@ function assertTopic(name: string, value: unknown): void {
     );
   }
 }
-
-const isStringIndex = (value: unknown): boolean =>
-  Array.isArray(value) && value.every((item) => typeof item === 'string');
 
 /** Reads an in-memory artifact, refusing anything this runtime cannot answer from. */
 export function parsePackedCorpus(raw: unknown): PackedCorpus {
@@ -242,8 +279,11 @@ export function createDocs(corpus: PackedCorpus, options: DocsOptions = {}): Doc
       record({ query, timestamp, result: 'hit', topic: only.topic });
       return topicResponse(only);
     }
-    // Ambiguity names its candidates rather than picking one of them.
-    const nearest = candidates.length > 1 ? candidates : suggest(aliases, query);
+    // Ambiguity names its candidates rather than picking one of them. Capped
+    // the same as the fuzzy-suggest path (NEAREST_LIMIT): a corpus with more
+    // than a handful of exact ties would otherwise return an unbounded list,
+    // contradicting "did-you-mean is bounded, never the size of the corpus".
+    const nearest = candidates.length > 1 ? candidates.slice(0, NEAREST_LIMIT) : suggest(aliases, query);
     record({ query, timestamp, result: 'miss' });
     return undocumented(query, nearest);
   };
