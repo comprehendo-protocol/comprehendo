@@ -1,0 +1,59 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "comprehendo"
+version = "0.1.0"
+description = "The Comprehendo protocol in Python: marker, twins, docs, provider SDK, manifest wiring"
+readme = "README.md"
+requires-python = ">=3.11"
+license = "MIT"
+authors = [
+    { name = "TheDecipherist" }
+]
+keywords = ["comprehendo", "agents", "protocol", "conformance"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
+# Zero runtime dependencies, scanned in CI (tests/test_zero_runtime_deps.py),
+# the same discipline the TypeScript core holds itself to.
+dependencies = []
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "mypy>=1.10",
+]
+
+[project.urls]
+Homepage = "https://github.com/TheDecipherist/comprehendo"
+Repository = "https://github.com/TheDecipherist/comprehendo"
+
+[tool.hatch.build.targets.wheel]
+packages = ["comprehendo"]
+
+# The provider-side manifest declaration (Manifest Wiring [15], RFC 4.3),
+# in the table this port reads and writes. This package speaks Comprehendo
+# about itself: `readManifestFile(pyproject.toml)` answers from right here.
+[tool.comprehendo]
+version = "0.1"
+level = 2
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+addopts = "-q"
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+files = ["comprehendo", "tests"]
+warn_unused_configs = true
