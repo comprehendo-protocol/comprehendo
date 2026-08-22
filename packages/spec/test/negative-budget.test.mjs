@@ -126,17 +126,43 @@ describe('exactly one violation per fixture, held by the budget gate', () => {
   for (const file of EXPECTED_NEGATIVE_FIXTURES.filter((name) => name !== 'oversized-topic.json')) {
     test(`${file} stays within every budget it touches`, () => {
       const steps = allNegativeSteps().filter((entry) => entry.file === file);
+      assert.ok(steps.length > 0, `${file} has no steps to check, the fixture is empty`);
+      // A CC5 scope applies to a step, or it provably does not: this loop must
+      // never silently do nothing for a step. twin.schema.json and
+      // manifest.schema.json carry no CC5 budget category in the spec (only
+      // topic/index/entry responses are token-budgeted), so for those shapes
+      // the assertion IS that no scope applies, not a skipped check.
+      let scopedStepCount = 0;
       for (const { index, step } of steps) {
         const scope = SCOPE_OF_SHAPE[step.shape];
         if (scope) {
+          scopedStepCount += 1;
           const record = measureScope(scope, step.response);
           assert.ok(record.pass, `${file} step ${index} is ALSO over the ${scope} budget`);
-        }
-        if (step.shape === 'entry.schema.json') {
+        } else if (step.shape === 'entry.schema.json') {
+          scopedStepCount += 1;
           const record = measureScope('priming', step.response.priming);
           assert.ok(record.pass, `${file} step ${index} is ALSO over the priming budget`);
+        } else {
+          assert.ok(
+            !(step.shape in SCOPE_OF_SHAPE),
+            `${file} step ${index}'s shape ${step.shape} is unexpectedly budget-scoped, ` +
+              'SCOPE_OF_SHAPE and this branch have drifted apart',
+          );
         }
       }
+      // twin/manifest-shaped fixtures (raw-error-leak, schema-escaping-fix,
+      // provider-side-corpus-veto) legitimately have zero scoped steps; that
+      // is a checked fact about this file's shapes, not an empty loop body.
+      const shapesInFile = new Set(steps.map(({ step }) => step.shape));
+      const anyBudgetedShape = [...shapesInFile].some(
+        (shape) => shape in SCOPE_OF_SHAPE || shape === 'entry.schema.json',
+      );
+      assert.equal(
+        scopedStepCount > 0,
+        anyBudgetedShape,
+        `${file}: scoped-step count and budgeted-shape presence disagree, the cross-check logic is wrong`,
+      );
     });
   }
 });
