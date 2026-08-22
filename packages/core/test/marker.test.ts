@@ -119,6 +119,33 @@ describe('attachMarker', () => {
     expect(() => attachMarker(target, makeSampleEntry())).toThrow(TypeError);
   });
 
+  it('refuses a malformed entry, rather than attaching something probe() can never see', () => {
+    // A structurally-typed ComprehendoEntry does not stop a caller from
+    // passing parsed JSON or a cast that lies about its shape at runtime.
+    // Without a write-time check, this would "succeed" and then be
+    // invisible to probe()/hasMarker() forever, an attach that appears to
+    // work but silently does nothing observable.
+    const malformed = {
+      comprehendo: '0.1',
+      name: 'mongodb-operator',
+      level: 2,
+      surfaces: ['docs'],
+      identity: 'x',
+      // priming missing entirely
+    } as unknown as ComprehendoEntry;
+
+    expect(() => attachMarker({}, malformed)).toThrow(TypeError);
+  });
+
+  it('a rejected attach never installs a property at all', () => {
+    const malformed = { comprehendo: '0.1' } as unknown as ComprehendoEntry;
+    const target = {};
+
+    expect(() => attachMarker(target, malformed)).toThrow(TypeError);
+    expect(hasMarker(target)).toBe(false);
+    expect(Object.getOwnPropertyDescriptor(target, COMPREHENDO_MARKER)).toBeUndefined();
+  });
+
   it('leaves the value serializing exactly as it did before', () => {
     const before = JSON.stringify({ region: 'eu', size: 3 });
     const marked = attachMarker({ region: 'eu', size: 3 }, makeSampleEntry());
