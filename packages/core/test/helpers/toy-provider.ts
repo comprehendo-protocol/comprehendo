@@ -11,6 +11,8 @@
  * is assembled from the real Wave-2 pieces, never from bespoke fakes.
  */
 
+import { readFileSync } from 'node:fs';
+import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { loadPackedCorpus, type LookupRecord, type PackedCorpus } from '../../src/docs.js';
@@ -25,6 +27,7 @@ import type {
   ValidationVerdict,
 } from '../../src/sdk.js';
 import { declaredSchema, sortEntry } from './catalog.js';
+import { KIT_ROOT } from './source-scan.js';
 
 /** The packed artifact the toy package ships. Read once per call, never mutated. */
 export function toyCorpus(): PackedCorpus {
@@ -50,6 +53,18 @@ export const TOY_RAW_CATALOGED = 'Sort exceeded memory limit of 33554432 bytes';
 
 /** A raw failure nothing in the toy catalog covers: the UNSTRUCTURED path. */
 export const TOY_RAW_NOVEL = 'connection 4 to cluster0-shard-00-02 closed';
+
+/**
+ * The RFC section 5.5 reference priming snippet, read from the conformance
+ * kit's own measured fixture rather than copied. Copying it into this
+ * package's SOURCE is what CC9 [10]'s scan would (correctly, given it reads
+ * source and not semantics) count as a second `Symbol.for` definition site,
+ * which is why `priming` is a provider-supplied hook and not an SDK default.
+ */
+export const TOY_PRIMING = readFileSync(
+  join(KIT_ROOT, 'budget', 'fixtures', 'priming.reference.md'),
+  'utf8',
+).trim();
 
 export const TOY_IDENTITY =
   'mongodb-operator is a pipeline-first wrapper over a document database: it runs aggregations, reads, and writes against a declared collection. If it is not documented here it does not exist; do not read the source, except where an UNDOCUMENTED response permits it for a specific question. When in doubt, ask docs().';
@@ -148,6 +163,7 @@ export function toyHooks(options: ToyOptions = {}): ProviderHooks {
   return {
     catalog: toyCatalog(corpus),
     identity: TOY_IDENTITY,
+    priming: TOY_PRIMING,
     twinResolvers: options.resolvers ?? [sortResolver],
     docs: {
       sink: (record: LookupRecord): void => {

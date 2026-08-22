@@ -15,10 +15,11 @@ import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
 import { hasMarker, probe } from '../src/marker.js';
-import { DEFAULT_PRIMING, makeProvider, type Provider } from '../src/sdk.js';
+import { makeProvider, type Provider } from '../src/sdk.js';
 import * as barrel from '../src/index.js';
 import { KIT_ROOT, at, readKitJson } from './helpers/source-scan.js';
 import {
+  TOY_PRIMING,
   TOY_RAW_CATALOGED,
   TOY_RAW_NOVEL,
   toyCorpus,
@@ -89,30 +90,31 @@ describe('the toy package, discovery', () => {
     expect([probe(error), probe(handle)]).toEqual([provider.entry, provider.entry]);
   });
 
-  it('ships the RFC reference priming snippet by default, verbatim', () => {
+  it("carries the provider's own priming snippet onto the entry, verbatim", () => {
     const reference = readFileSync(
       join(KIT_ROOT, 'budget', 'fixtures', 'priming.reference.md'),
       'utf8',
     ).trim();
 
-    expect(DEFAULT_PRIMING).toBe(reference);
+    expect(TOY_PRIMING).toBe(reference);
     expect(toy().entry.priming).toBe(reference);
+    expect(makeProvider(toyCorpus(), { ...toyHooks(), priming: 'probe, then ask docs' }).entry.priming).toBe(
+      'probe, then ask docs',
+    );
   });
 
-  it('measures the default priming snippet under the CC5 priming budget', () => {
-    const record = measureScope('priming', DEFAULT_PRIMING);
+  it('carries a priming snippet that measures under the CC5 priming budget', () => {
+    const record = measureScope('priming', toy().entry.priming);
 
-    // The floor is not decoration: an empty default would sail under any
+    // The floor is not decoration: an empty snippet would sail under any
     // budget, so "passes the budget" only means something next to "is a real
     // snippet" (the kit's reference measures 127 tokens against a 150 cap).
     expect(record.measured).toBeGreaterThan(100);
     expect(record.pass, `priming is ${record.measured} tokens, budget ${record.limit}`).toBe(true);
   });
 
-  it('lets a provider ship its own priming snippet instead of the default', () => {
-    const provider = makeProvider(toyCorpus(), { ...toyHooks(), priming: 'probe it, then ask docs' });
-
-    expect(provider.entry.priming).toBe('probe it, then ask docs');
+  it('refuses to build a provider with no priming snippet, rather than shipping a blank claim', () => {
+    expect(() => makeProvider(toyCorpus(), { ...toyHooks(), priming: '' })).toThrow(/priming/i);
   });
 });
 

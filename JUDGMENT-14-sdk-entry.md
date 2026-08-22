@@ -47,20 +47,41 @@ doc's names and meanings exactly.
 cataloged `{code, context?}` out, `undefined` for "not mine". First claimant
 wins, none means the failure passes through as UNSTRUCTURED.
 
-## 4. `priming` defaults to the RFC reference snippet, `identity` does not
+## 4. `identity` and `priming` are both required hooks, and there is NO default priming snippet
 
-`identity` is genuinely provider-specific (what this tool is, its
-completeness contract, its pointer), so it is required and an empty one is
-refused at build time rather than shipping an entry no agent can orient
-from. The priming snippet in the RFC is provider-agnostic, and the kit
-already carries it as a measured fixture, so `DEFAULT_PRIMING` ships it
-verbatim with a drift test against
-`packages/spec/kit/budget/fixtures/priming.reference.md` and a CC5 budget
-measurement (with a token floor, so an empty default cannot pass vacuously).
-A provider may still pass its own. This keeps native adoption at "a
-dependency plus a corpus" without hand-authoring normative text here; feature
-36 (priming snippet) can later own the constant without changing this call
-site.
+Both are the provider's own claim about itself, both are required by the
+entry shape 11 validates, and an empty one is refused at construction rather
+than shipping an entry no agent can orient from.
+
+The first attempt DID ship a default: `DEFAULT_PRIMING`, the RFC section 5.5
+reference snippet copied verbatim from the kit's measured fixture, with a
+drift test and a CC5 budget test. The full-suite run caught it, and the catch
+is worth recording. The snippet's own prose names the marker,
+"probe the handle or caught error for the marker (Symbol dot for
+('comprehendo') in JS...)", and CC9 [10]'s one-definition-site scan
+(`findMarkerCalls` in `test/helpers/source-scan.ts`) blanks COMMENTS but not
+STRING LITERALS, so a copy of that sentence in `src/sdk.ts` is a second
+definition site as far as the gate can see, and `marker-freeze.test.ts` went
+red on exactly that.
+
+Three ways out were considered:
+- Split the literal so the scan cannot see `Symbol.for(` contiguously.
+  Rejected: dodging a conformance scan by string surgery is the negative
+  kit's own computed-marker anti-pattern, and it would leave the gate green
+  while blind.
+- Teach the scan about string literals. That is the correct long-term fix,
+  but `source-scan.ts` and `marker-freeze.test.ts` belong to 11-marker-probe,
+  not to this lane, so touching them here is out of bounds.
+- Make `priming` a required hook and carry no reference text in this
+  package's source at all. Taken. It costs one line of adoption ergonomics,
+  it keeps CC9's scan honest, and it puts the canonical snippet where the doc
+  set already puts it: Priming Snippet [36]. The toy package in the tests
+  reads the snippet from the kit fixture, so the CC5 budget assertion (with a
+  token floor, so an empty snippet cannot pass vacuously) still runs and
+  nothing is duplicated anywhere.
+
+Recorded in the feature doc's known issues as `[deferred]`, with what closing
+it needs.
 
 ## 5. `validate` hooks name a cataloged code; they never hand back a twin
 
