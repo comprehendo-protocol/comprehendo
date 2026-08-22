@@ -101,6 +101,30 @@ describe('a synchronous throw arrives twinned', () => {
   });
 });
 
+describe('a method returning `this` stays routed for the rest of the chain', () => {
+  // Found by review: `invoke` substitutes `this` back to the real target so
+  // private fields resolve (see wrap.ts), but a method that RETURNS `this`
+  // (the fluent/chainable shape) handed that same real target straight back
+  // out. The next call in the chain then ran on the raw target, unwrapped,
+  // and an error it threw escaped with no `.twin` at all, not even
+  // UNSTRUCTURED, silently breaking the doc's core promise.
+  it('keeps a synchronous chained call routed', () => {
+    const client = wrap(new ToyClient('toy', TOY_RAW), router);
+
+    const { twin } = caught(() => client.chain().fail());
+
+    expect(twin?.code).toBe(TOY_CODE);
+  });
+
+  it('keeps an asynchronously chained call routed', async () => {
+    const client = wrap(new ToyClient('toy', TOY_RAW), router);
+
+    const { twin } = await caughtAsync(async () => (await client.chainAsync()).fail());
+
+    expect(twin?.code).toBe(TOY_CODE);
+  });
+});
+
 describe('an asynchronous rejection arrives twinned the same way', () => {
   it('twins a rejected promise identically to the sync throw', async () => {
     const client = wrap(new ToyClient('toy', TOY_RAW), router);

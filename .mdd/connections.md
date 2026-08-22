@@ -2,7 +2,7 @@
 generated: 2026-08-22
 doc_count: 40
 connection_count: 63
-overlap_count: 3
+overlap_count: 6
 ---
 
 # MDD Connections
@@ -10,7 +10,7 @@ overlap_count: 3
 ## Path Tree
 
 **Core / Config Loader**
-  └── `23-config-loader` - Config Loader (planned)
+  └── `23-config-loader` - Config Loader (complete)
 **Core / Corpus Generator**
   └── `17-corpus-generator` - Corpus Generator (complete)
 **Core / Cross-Cutting Contracts / Honest Miss**
@@ -120,7 +120,7 @@ graph TD
   20_cc10_honest_miss["20-cc10-honest-miss"]:::done
   21_fingerprint_index_matcher["21-fingerprint-index-matcher"]:::done
   22_router_precedence["22-router-precedence"]:::done
-  23_config_loader["23-config-loader"]:::planned
+  23_config_loader["23-config-loader"]:::done
   24_wrap_proxy["24-wrap-proxy"]:::done
   25_cc11_registry_truth["25-cc11-registry-truth"]:::planned
   26_cc4_folklore_gate["26-cc4-folklore-gate"]:::planned
@@ -209,6 +209,9 @@ Files referenced by 2+ docs:
 
 - `corpora/ffmpeg/` - 32-ffmpeg-corpus, 33-ffmpeg-fingerprints
 - `packages/core/src/config.ts` - 15-manifest-wiring, 23-config-loader
+- `packages/core/src/router-discovery.ts` - 22-router-precedence, 23-config-loader
+- `packages/core/src/router-precedence.ts` - 22-router-precedence, 23-config-loader
+- `packages/core/src/router.ts` - 22-router-precedence, 23-config-loader
 - `packages/registry-tools/src/gate.ts` - 29-submission-gate, 30-owner-endorsement
 
 ## Warnings

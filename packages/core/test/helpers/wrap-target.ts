@@ -56,6 +56,21 @@ export class ToyClient {
     return `${this.label}/${this.#calls}`;
   }
 
+  /**
+   * The fluent/chainable-API shape: a query builder's `.where()`, an HTTP
+   * client's `.header()`. Returning `this` (not a copy) is the point.
+   */
+  chain(): this {
+    this.#calls += 1;
+    return this;
+  }
+
+  /** Same shape, resolved asynchronously: `await client.chainAsync()`. */
+  async chainAsync(): Promise<this> {
+    this.#calls += 1;
+    return Promise.resolve(this);
+  }
+
   async load(key: string): Promise<string> {
     this.#calls += 1;
     return Promise.resolve(`${this.label}:${key}`);

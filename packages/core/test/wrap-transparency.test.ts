@@ -112,6 +112,21 @@ describe('the proxy forwards calls unchanged', () => {
     expect(query).toBeInstanceOf(LazyQuery);
     expect(query.executed).toBe(0);
   });
+
+  it('a method returning `this` hands back the SAME proxy, not the raw target', () => {
+    // The fluent/chainable shape (`.where().sort()`): the return value is
+    // the real target under the hood, and it must come back re-wrapped or
+    // the next call in the chain silently escapes routing.
+    const wrapped = wrap(client(), router);
+
+    expect(wrapped.chain()).toBe(wrapped);
+  });
+
+  it('the same, resolved through a real promise', async () => {
+    const wrapped = wrap(client(), router);
+
+    expect(await wrapped.chainAsync()).toBe(wrapped);
+  });
 });
 
 describe('nothing global is mutated', () => {

@@ -17,8 +17,8 @@ started: 2026-08-22
 - [x] 20-cc10-honest-miss (SPEC)
 - [x] 21-fingerprint-index-matcher (COMPONENT), 39/39 green, merged; scaffolded packages/registry-tools; review found a same-id-different-facets silent drop, fixed and mutation-verified, 41/41
 - [x] 22-router-precedence (COMPONENT), 57/57 green, merged (443/443 core combined); precedence flip proven live against real files, no reconfiguration; review found a silent-defect-swallow in nativeEvidence(), fixed and mutation-verified (444/444); review also found the "no node: import" claim doesn't hold transitively (config.ts/docs.ts pull in node:fs), left open as a gap since config.ts was under active concurrent development
-- [ ] 23-config-loader (COMPONENT)
-- [x] 24-wrap-proxy (COMPONENT), wrap.test.ts + wrap-transparency.test.ts green, merged
+- [x] 23-config-loader (COMPONENT), config-consumer.test.ts + router-knobs.test.ts + router-local-corpus.test.ts green, merged; merge with 24 regressed 22's nativeEvidence defect-reporting arity (branch cut before that fix landed), fixed at merge, covered by 22's own regression test
+- [x] 24-wrap-proxy (COMPONENT), wrap.test.ts + wrap-transparency.test.ts green, merged; review found a method returning `this` (fluent/chainable shape) escaped routing on the next chained call, fixed and mutation-verified, 538/538 core
 
 ## Judgment log
 
@@ -179,3 +179,62 @@ started: 2026-08-22
     `wrap.test.ts` (the error-routing fence) and
     `wrap-transparency.test.ts` (the non-error path is identical,
     nothing global moves).
+
+### 23-config-loader (10 calls, unattended, no blockers)
+
+1. Consumer half is a NEW file, `config-consumer.ts` (202 lines, pure,
+   no `node:` import), not an addition to `config.ts`: 15's provider
+   half was already 415 lines (past the 400 ceiling) before this
+   build starts. `config.ts` gains only a re-export plus
+   `readConsumerConfigFile`; no line of 15's code touched. Flagged for
+   the orchestrator (splitting 15's half is 15's call): `config.ts`
+   is now 442 lines.
+2. Doc 23 spelled `prefer` as `string[]`; the kit's `config.schema.json`
+   (RFC 10.5) spells it as an object, and 22 already shipped it that
+   way. RFC wins per CLAUDE.md; doc's Data Model corrected, a test
+   pins the parsed knob set to the schema's property set.
+3. `require`'s trust ladder (community < endorsed < native) is real
+   and wired; the trust DATA is Wave 5's (Owner Endorsement [30]).
+   Absent means `community`, so `require: endorsed` refuses every
+   registry corpus today, fail-closed, honest state not a stub; a
+   test asserts a corpus that DOES declare `trust: 'endorsed'`
+   already satisfies it, so [30] adds data, not logic.
+4. `pin` compares the pinned version against the ONE installed
+   corpus's own version, refusing on mismatch/absent/uninstalled;
+   multi-version corpora don't exist yet (Corpus Format [28], Wave
+   5). Keyed by corpus package name first, then target name, since
+   the doc and schema each name a different key.
+5. `disable` outranks every knob including native: `comprehend`
+   returns honest UNSTRUCTURED (never sidecar, never a carried twin),
+   `docs` returns UNDOCUMENTED. Nothing raw, nothing thrown.
+6. `local` mounts a private corpus directory (17's own artifact
+   convention) into the SAME fingerprint index `discoverInstalledCorpora`
+   builds for installed corpora, so a private/public fingerprint
+   collision stays a visible ambiguity (CC10 [20]) instead of being
+   resolved by load order. No trust rung invented for it (would
+   fabricate exactly the data call 3 refuses to fake).
+6b. This required editing `router-discovery.ts` (22's file, not in
+    this lane's named list); judged small since 22 is complete and no
+    concurrent lane touches it, flagged for the orchestrator. (This is
+    exactly the file the wave-4 merge conflicted on, see 23's doc
+    Fixed Issues.)
+6c. One Red-Gate test (`router-local-corpus.test.ts`) was rewritten
+    once: it first asserted an identical-fingerprint collision
+    surfaces as an ambiguity, but 21's index refuses to BUILD on an
+    identical fingerprint instead (22 doesn't catch that refusal).
+    Both behaviors satisfy the doc's "collisions stay visible" rule,
+    so the suite now asserts both; implementation was not bent to fit
+    the test.
+7. `RouteSource` gains `'none'` (three knobs can answer "no tier
+   routes"), `RouterDecision` gains `knob` (names which knob decided).
+   Widening is additive; `RouterConfig` is now exactly `ConsumerConfig`.
+8. Consumer knobs read from `package.json` only; a `pyproject.toml`
+   consumer needs nested tables 15's line-oriented reader doesn't
+   support, so `readConsumerConfigFile` refuses loudly by name rather
+   than reporting an absent config.
+9. Knobs read in a stated order (disable, prefer, require, pin,
+   local) so two set at once is not a coin toss.
+10. 12 of 58 new tests were green at the Red Gate by design (controls
+    on behavior 22/15 already shipped, and negatives proving one
+    package's knob doesn't touch another); recorded as controls, not
+    coverage. The other 46 were red.

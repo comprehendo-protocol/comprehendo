@@ -4,8 +4,8 @@ title: Config Loader
 type: COMPONENT
 path: Core / Config Loader
 source_files: [packages/core/src/config-consumer.ts, packages/core/src/config.ts, packages/core/src/router-precedence.ts, packages/core/src/router.ts, packages/core/src/router-discovery.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-4
@@ -144,3 +144,24 @@ config})` reads `local` when it builds the environment.
 Recorded in the frontmatter; every entry is a decision with its why, not a
 loose end. The scope boundary worth reading first is `require`: the ladder is
 real and wired, the trust DATA arrives with Owner Endorsement [30] in Wave 5.
+
+## Fixed Issues
+
+### Merge with 24-wrap-proxy regressed 22's `nativeEvidence` defect reporting (fixed 2026-08-22)
+
+Not a defect in this build's own code; found while merging `feat/23-config
+-loader` into `wave/comprehendo-wave-4`. This branch was cut from the wave
+branch before 22's own review fix landed there (an unreadable-but-existing
+target manifest must push an `EnvironmentDefect`, never silently return
+`undefined`, see 22's Fixed Issues), so this build's edit to
+`discoverInstalledCorpora`'s loop called `nativeEvidence(root, package)`
+with two arguments, dropping the fix's third (`defects`).
+
+- Fixed at the merge: the loop keeps 23's local-corpus mounting
+  (`installed` and `mounted` both feeding one `loaded` list, same one
+  -index property CC10 rests on) while restoring the three-argument call.
+  No new test needed: 22's own regression test
+  (`router-installed.test.ts`, "reports an unreadable target manifest as
+  a defect") already covers this call site and passed once the argument
+  was restored, confirming it would have caught the regression had the
+  merge landed silently.

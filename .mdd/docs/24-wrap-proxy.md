@@ -92,6 +92,27 @@ the same surface as its target, transparently forwarding calls.
   fingerprint matching is undecided (see Fingerprint Index & Matcher
   [21]'s Known Issues).
 
+## Fixed Issues
+
+### A method returning `this` broke routing for the rest of the chain (fixed 2026-08-22)
+
+Found by review. `invoke` substitutes `this` back to the real target
+when a call comes off the proxy, so a `#private`-field read resolves
+correctly. That substitution is one-directional in the return path
+too: a method of the fluent/chainable shape (`.where().sort()`, a
+query builder or HTTP client returning `this`) handed the caller back
+the raw, unwrapped target. The next call in the chain then ran
+unwrapped, and an error it threw escaped completely unrouted, not
+even UNSTRUCTURED, the exact silent failure the whole module exists
+to prevent.
+
+- Fixed by reversing the same substitution on the way out: a return
+  value (sync or resolved-async) equal to `state.target` comes back
+  as `state.proxy` instead. Mutation-verified: 4 new tests (sync and
+  async, in both `wrap.test.ts`'s routing half and
+  `wrap-transparency.test.ts`'s identity half), all 4 red without the
+  fix, green with it.
+
 ## Interface Overview
 
 `wrap()` is for a consumer who wants automatic twinning on every call into

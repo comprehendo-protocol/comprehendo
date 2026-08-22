@@ -150,16 +150,30 @@ interface Wrapping<T extends object> {
 const routed = <T extends object>(state: Wrapping<T>, raw: unknown): unknown =>
   carriedTwin(raw) === undefined ? attachSidecarTwin(raw, state.comprehend(raw)) : raw;
 
+/**
+ * A method that returns `this` (the fluent/chainable-API shape: a query
+ * builder's `.where()`, an HTTP client's `.header()`) hands back the real
+ * target, since `invoke` substituted the receiver to the target before the
+ * call ran (see the `this` substitution above). Left alone, that raw target
+ * would leak out of the wrapper: the NEXT call in the chain would run
+ * unwrapped, and an error it throws would escape completely unrouted rather
+ * than come back UNSTRUCTURED. Found by review. Reversing the exact
+ * substitution `invoke` already makes for `this` keeps `wrapped.a().b()`
+ * routed all the way down the chain.
+ */
+const reflect = <T extends object>(state: Wrapping<T>, value: unknown): unknown =>
+  value === state.target ? state.proxy : value;
+
 /** A rejection is a throw that happened later; it routes identically. */
 const settle = <T extends object>(state: Wrapping<T>, result: unknown): unknown =>
   isNativePromise(result)
     ? result.then(
-        (value) => value,
+        (value) => reflect(state, value),
         (raw: unknown) => {
           throw routed(state, raw);
         },
       )
-    : result;
+    : reflect(state, result);
 
 /** Every call through a wrapped surface funnels here, sync and async alike. */
 function invoke<T extends object>(
