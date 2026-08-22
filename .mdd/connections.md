@@ -64,11 +64,11 @@ overlap_count: 6
 **Registry / Corpus Format**
   └── `28-corpus-format` - Corpus Format (planned)
 **Registry / Cross-Cutting Contracts / Folklore Gate**
-  └── `26-cc4-folklore-gate` - CC4 Folklore Gate (planned)
+  └── `26-cc4-folklore-gate` - CC4 Folklore Gate (complete)
 **Registry / Cross-Cutting Contracts / No Telemetry**
-  └── `27-cc6-no-telemetry` - CC6 No Telemetry (planned)
+  └── `27-cc6-no-telemetry` - CC6 No Telemetry (complete)
 **Registry / Cross-Cutting Contracts / Registry Truth**
-  └── `25-cc11-registry-truth` - CC11 Registry Truth (planned)
+  └── `25-cc11-registry-truth` - CC11 Registry Truth (complete)
 **Registry / Fingerprint Index**
   └── `21-fingerprint-index-matcher` - Fingerprint Index & Matcher (complete)
 **Registry / Owner Endorsement**
@@ -122,9 +122,9 @@ graph TD
   22_router_precedence["22-router-precedence"]:::done
   23_config_loader["23-config-loader"]:::done
   24_wrap_proxy["24-wrap-proxy"]:::done
-  25_cc11_registry_truth["25-cc11-registry-truth"]:::planned
-  26_cc4_folklore_gate["26-cc4-folklore-gate"]:::planned
-  27_cc6_no_telemetry["27-cc6-no-telemetry"]:::planned
+  25_cc11_registry_truth["25-cc11-registry-truth"]:::done
+  26_cc4_folklore_gate["26-cc4-folklore-gate"]:::done
+  27_cc6_no_telemetry["27-cc6-no-telemetry"]:::done
   28_corpus_format["28-corpus-format"]:::planned
   29_submission_gate["29-submission-gate"]:::planned
   30_owner_endorsement["30-owner-endorsement"]:::planned

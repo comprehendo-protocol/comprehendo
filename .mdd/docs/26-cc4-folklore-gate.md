@@ -4,8 +4,8 @@ title: CC4 Folklore Gate
 type: SPEC
 path: Registry / Cross-Cutting Contracts / Folklore Gate
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-5

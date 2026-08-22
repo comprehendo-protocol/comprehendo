@@ -4,8 +4,8 @@ title: CC6 No Telemetry
 type: SPEC
 path: Registry / Cross-Cutting Contracts / No Telemetry
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-5

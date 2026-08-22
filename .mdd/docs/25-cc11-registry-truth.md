@@ -4,8 +4,8 @@ title: CC11 Registry Truth
 type: SPEC
 path: Registry / Cross-Cutting Contracts / Registry Truth
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-5
