@@ -69,8 +69,19 @@ class TestDeclarationFor:
 
 
 class TestParseDeclaration:
-    def test_reports_absent_when_nothing_is_there(self) -> None:
-        assert parse_declaration(None) == {"status": "absent"}
+    def test_reports_unreadable_not_absent_for_an_explicit_null(self) -> None:
+        # parse_declaration is never called with "the key is missing" (both
+        # callers, read_package_json and read_pyproject, handle that case
+        # themselves before calling this function); a bare `None` arriving
+        # here means the manifest key genuinely holds JSON `null`, a broken
+        # claim, not "this package makes no claim". Matches
+        # packages/core/src/config.ts's parseDeclaration, which only treats
+        # JS's `undefined` (real absence) as absent and lets `null` fall
+        # through to declarationProblem.
+        reading = parse_declaration(None)
+
+        assert reading["status"] == "unreadable"
+        assert "object" in reading["reason"]
 
     def test_reports_declared_and_projects_to_the_two_fields(self) -> None:
         reading = parse_declaration({"version": "0.1", "level": 2, "corpus": "@comprehendo/x"})
@@ -112,6 +123,17 @@ class TestPackageJson:
 
         assert reading["status"] == "unreadable"
         assert "not valid JSON" in reading["reason"]
+
+    def test_reports_unreadable_not_absent_when_the_key_is_explicit_null(self) -> None:
+        # {"comprehendo": null} is a package making a BROKEN claim, not one
+        # making no claim at all; the two must not be conflated (see
+        # parse_declaration's docstring). Matches Node's readPackageJson on
+        # the identical text, verified live during review.
+        text = json.dumps({"name": "x", MANIFEST_KEY: None})
+
+        reading = read_package_json(text)
+
+        assert reading["status"] == "unreadable"
 
     def test_stamps_the_two_fields_in_place(self) -> None:
         text = '{\n  "name": "x"\n}\n'

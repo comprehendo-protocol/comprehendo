@@ -148,6 +148,21 @@ class TestCreateTwinBuilder:
         assert twin["received"] == RAW
         assert twin["path"] == sort_entry["path"]
 
+    def test_an_explicit_none_in_context_falls_through_like_javascripts_nullish_coalescing(
+        self,
+    ) -> None:
+        # packages/core/src/twin.ts merges context and entry with `??`
+        # (context?.field ?? entry.field ...), which falls through on BOTH
+        # `undefined` and an explicit `null`. context={"received": None} on
+        # an entry with no `received` of its own must therefore OMIT the
+        # field entirely, matching TS byte for byte, not write `null`.
+        # Found by review: this used to write "received": null.
+        builder = create_twin_builder(catalog(sort_entry))
+
+        twin = builder.build("SORT_UNINDEXED_SPILL", {"received": None})
+
+        assert "received" not in twin
+
     def test_refuses_a_code_it_never_cataloged(self) -> None:
         builder = create_twin_builder(catalog(sort_entry))
 
