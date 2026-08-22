@@ -12,3 +12,5 @@ ruby/pkg/
 ruby/*.gem
 ruby/Gemfile.lock
 ruby/.bundle/
+.ai_temp/
+.worktrees/
