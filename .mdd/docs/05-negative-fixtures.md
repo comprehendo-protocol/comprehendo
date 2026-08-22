@@ -4,8 +4,8 @@ title: Negative Fixtures
 type: COMPONENT
 path: Spec / Negative Fixtures
 source_files: [packages/spec/kit/negative/]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-1
@@ -78,11 +78,15 @@ N/A (fixtures are test data, not runtime exports).
 
 ## Acceptance Criteria
 
-- [ ] All six required negative fixtures exist (raw-error leak, oversized
+- [x] All six required negative fixtures exist (raw-error leak, oversized
       topic, schema-escaping fix, telemetry attempt, provider-side corpus
       veto, computed marker).
-- [ ] CI runs them and asserts each fails for its named reason.
-- [ ] CI is red if any negative fixture unexpectedly passes.
+- [ ] CI runs them and asserts each fails for its named reason. Partial:
+      true for `oversized-topic` (the one gate that exists, CC5 [02]); the
+      other five are proven genuine and isolated but have no gate to run
+      against yet (see known_issues).
+- [ ] CI is red if any negative fixture unexpectedly passes. Same partial
+      status as above: true today only for `oversized-topic`.
 
 ## Dependencies
 

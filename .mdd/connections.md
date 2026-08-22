@@ -86,7 +86,7 @@ overlap_count: 3
 **Spec / Cross-Cutting Contracts / Shape Identity**
   └── `01-cc2-shape-identity` - CC2 Shape Identity (complete)
 **Spec / Negative Fixtures**
-  └── `05-negative-fixtures` - Negative Fixtures (planned)
+  └── `05-negative-fixtures` - Negative Fixtures (complete)
 **Spec / Shape Schemas**
   └── `03-shape-schemas` - Shape Schemas (complete)
 
@@ -102,7 +102,7 @@ graph TD
   02_cc5_context_budget["02-cc5-context-budget"]:::done
   03_shape_schemas["03-shape-schemas"]:::done
   04_conformance_fixtures["04-conformance-fixtures"]:::done
-  05_negative_fixtures["05-negative-fixtures"]:::planned
+  05_negative_fixtures["05-negative-fixtures"]:::done
   06_budget_harness["06-budget-harness"]:::done
   07_cc1_probe_purity["07-cc1-probe-purity"]:::planned
   08_cc3_no_raw_errors["08-cc3-no-raw-errors"]:::planned

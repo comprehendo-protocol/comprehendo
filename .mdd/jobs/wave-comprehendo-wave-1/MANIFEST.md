@@ -18,7 +18,7 @@ started: 2026-08-22
 - [x] 03-shape-schemas (COMPONENT), 167/167 green, merged
 - [x] 06-budget-harness (COMPONENT), 40/40 green, merged (207/207 combined with 03); review found a tokenizer crash on literal special-token strings, fixed, 209/209
 - [x] 04-conformance-fixtures (COMPONENT), 85 new tests green, merged (322/322 combined)
-- [ ] 05-negative-fixtures (COMPONENT)
+- [x] 05-negative-fixtures (COMPONENT), 95 new tests green, merged (418/418 combined); only 1 of 6 fixtures runs against a real gate today (see doc known_issues)
 
 ## Judgment log
 
@@ -154,3 +154,37 @@ packages/spec suite re-verified green after resolution: 207/207.
    rather than the kit's shared `mongodb-operator`, since sharing the name
    would make the cross-fixture consistency invariant contradict the
    scenario's own point (a manifest that overclaims).
+
+### 05-negative-fixtures (8 calls, unattended, no blockers)
+
+1. **Wave-1 scope of "asserted to fail its gate":** 5 of 6 owning gates
+   (CC3/08, CC7/09, CC6/27, CC8/19, CC9/10) don't exist yet, they land in
+   Waves 2, 4, 5. Built all six fixtures; ran `oversized-topic` through the
+   one real gate (06); proved the other five are valid shape instances AND
+   genuinely non-conforming in exactly their claimed dimension, by content
+   assertions, not by inventing each future gate. Each deferral names its
+   owning SPEC doc and wave in known_issues.
+2. `violation` is a required envelope key (`rule, contract, wave, gate,
+   reason, locator, message, enforced`), not an extra, so a CI failure
+   reads as "raw-error-leak fixture unexpectedly passed" mechanically.
+3. `raw-error-leak.json` reuses 04's `twin-round-trip.json` raw-error
+   string verbatim (read-only), so the same string is provably correctly
+   placed there and mis-placed here, a stronger proof than prose.
+4. Language neutrality holds for 5 of 6; `computed-marker` is a stated,
+   itself-asserted exemption (must name BOTH the JS and Python idioms),
+   since CC9's violation IS the idiom.
+5. No CI workflow file added, same deferral 06 already recorded; the kit
+   runs via plain `npm test` discovery, no config needed.
+6. Test files are new-only under packages/spec/test/, no existing 03/04/06
+   test file touched; the negative helper imports 04's step constants.
+7. Oversized-topic fixture is over budget by exactly one dimension (a
+   real, plausible topic dumping a whole reference into one answer); a
+   suite assertion holds the other five UNDER their applicable budget.
+8. **`depends_on: 06-budget-harness` is real but unsayable:** the
+   frontmatter validator rejects a depends_on pointing at a higher id
+   (06 > 05), even though 06 was genuinely built and merged first in this
+   wave's actual lane order. Recorded as a `[gap]` in known_issues rather
+   than renumbering a doc or weakening the validator. **Orchestrator note
+   for the final report: this is a real gap in the id-ordering rule when
+   the lane plan legitimately builds a higher-numbered doc before a
+   lower-numbered one that ends up depending on it.**
