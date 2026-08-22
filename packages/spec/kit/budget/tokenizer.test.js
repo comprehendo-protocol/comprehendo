@@ -80,3 +80,36 @@ test('countTokensWith rejects an encoding the harness does not declare', async (
   const { countTokensWith } = await load();
   assert.throws(() => countTokensWith('p50k_base', 'hello'), /p50k_base/);
 });
+
+// Measured text is submitted corpus/agent data, never instructions (the
+// project's data-not-instructions rule). A literal special-token string
+// inside that content must count as ordinary text, never crash the gate and
+// never be interpreted as a real control token.
+test('countTokens measures text containing a literal tiktoken special-token string, never throws', async () => {
+  const { countTokens, countTokensWith } = await load();
+  const specialStrings = [
+    '<|endoftext|>',
+    '<|endofprompt|>',
+    '<|fim_prefix|>',
+    '<|fim_middle|>',
+    '<|fim_suffix|>',
+  ];
+  for (const special of specialStrings) {
+    const payload = `some corpus text with ${special} embedded in it`;
+    assert.doesNotThrow(() => countTokens(payload), `countTokens threw on ${special}`);
+    for (const encoding of ['o200k_base', 'cl100k_base']) {
+      assert.doesNotThrow(
+        () => countTokensWith(encoding, payload),
+        `countTokensWith(${encoding}) threw on ${special}`,
+      );
+    }
+  }
+});
+
+test('a literal special-token string is counted as its own literal text, not collapsed to one control token', async () => {
+  const { countTokens } = await load();
+  // If the encoder were treating this as a real special token it would count as
+  // exactly 1; measuring it as plain text yields several BPE tokens instead.
+  const measured = countTokens('<|endoftext|>');
+  assert.ok(measured > 1, `expected the literal string to cost more than 1 token, got ${measured}`);
+});
