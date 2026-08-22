@@ -81,6 +81,22 @@ export type Marked<T extends object> = T & {
  * @returns the same object, now typed as marked. Never a copy.
  */
 export function attachMarker<T extends object>(target: T, entry: ComprehendoEntry): Marked<T> {
+  if (!isEntry(entry)) {
+    // TypeScript's structural typing does not stop a caller from passing a
+    // value that is only CLAIMED to be a ComprehendoEntry (parsed JSON, a
+    // cast, a hand-built object with a typo'd field): without this check,
+    // attachMarker would install it anyway, and probe()/hasMarker() would
+    // then silently report "no marker" on that exact object, an attach
+    // that appeared to succeed but is invisible to the only way anyone
+    // reads it back. Fail loudly at the write instead of going quiet at
+    // every future read.
+    throw new TypeError(
+      'comprehendo: attachMarker() was given a value that is not a valid ' +
+        'ComprehendoEntry (needs comprehendo, name, level (1 or 2), surfaces[], ' +
+        'identity, priming as strings/array). Attaching it would make probe() ' +
+        'and hasMarker() silently report no marker on this exact value.',
+    );
+  }
   const existing = probe(target);
   if (existing !== undefined) {
     if (existing !== entry) {
