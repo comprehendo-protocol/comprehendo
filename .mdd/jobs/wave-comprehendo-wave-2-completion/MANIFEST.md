@@ -15,7 +15,7 @@ rather than a silent backfill.
 
 ## Features
 
-- [x] 15-manifest-wiring (COMPONENT), 69/69 green, merged (384/384 combined)
+- [x] 15-manifest-wiring (COMPONENT), 69/69 green, merged (384/384 combined); review found locateTable missed the [[tool.comprehendo]] array-of-tables spelling, fixed and mutation-verified, 386/386
 - [x] 16-recorder (COMPONENT), 32/32 green, merged; review found nothing, clean pass
 
 ## Judgment log

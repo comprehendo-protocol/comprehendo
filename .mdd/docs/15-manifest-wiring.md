@@ -87,3 +87,19 @@ tooling, not a runtime function.
   Wiring it edits `src/cli/*`, outside this feature's `source_files`.
   The hint's shape is pinned by a test here so the wiring is safe
   whenever the CLI's owner does it.
+
+## Fixed Issues
+
+### `locateTable` didn't recognize `[[tool.comprehendo]]` as occupied (fixed 2026-08-22)
+
+Found by review. A third valid TOML spelling of the `[tool.comprehendo]`
+key, the array-of-tables form `[[tool.comprehendo]]`, wasn't detected
+(the double bracket confused the single-bracket generic header capture),
+so it fell through as silently absent and stamping appended a second,
+conflicting `[tool.comprehendo]` table, producing invalid TOML. The two
+other alternate spellings (inline table, dotted key) were already
+correctly refused.
+
+- Fixed by checking for the array-of-tables header before the generic
+  match, same refuse-rather-than-corrupt path the other two spellings
+  use. Mutation-verified: 2 new tests, both red without the fix.
