@@ -3,7 +3,7 @@ id: 22-router-precedence
 title: Router & Precedence
 type: COMPONENT
 path: Core / Router
-source_files: [packages/core/src/router.ts]
+source_files: [packages/core/src/router.ts, packages/core/src/router-precedence.ts, packages/core/src/router-discovery.ts]
 status: planned
 phase: idle
 last_synced: 2026-08-22
@@ -11,8 +11,12 @@ initiative: comprehendo
 wave: comprehendo-wave-4
 depends_on: [19-cc8-native-precedence, 21-fingerprint-index-matcher, 12-twin-builder]
 tags: [sidecar, comprehend, precedence, fingerprint-match, no-cooperation-required]
-test_files: []
-known_issues: []
+test_files: [packages/core/test/router-decision.test.ts, packages/core/test/router-comprehend.test.ts, packages/core/test/router-docs.test.ts, packages/core/test/router-installed.test.ts]
+known_issues:
+  - "[deferred] The on-disk shape of an installed corpus package (comprehendo.fingerprints.json, comprehendo.twins.json, comprehendo.packed.json, plus an optional comprehendoCorpus.target key) is this adapter's provisional convention, not a ruling: Corpus Format [28] and Scoped Publisher [31] (Wave 5) own the published format, and this is the first consumer asking for one."
+  - "[deferred] The router is not re-exported from packages/core/src/index.ts: the barrel is outside this feature's source_files and sibling Wave-4 lanes build against the same package. The surface is imported from ./router.js (dist/router.js when built); wiring the barrel, and whether a module-level comprehend/docs singleton exists at all, is Wave 7 (Distribution)'s call, the same one core's package.json already defers."
+  - "[deferred] Only the prefer knob is implemented here. pin, disable, require and local belong to Config Loader [23], which widens RouterConfig; the router takes the config as a parameter so 23 needs no reshaping of this surface."
+  - "[gap] Core cannot import @comprehendo/registry-tools (the dependency direction is one-way and tsc rejects the cross-package path), so 21's matcher arrives as a structural port (CorpusMatcher) and the caller injects buildFingerprintIndex. Nothing in the shipped package wires a default matcher yet; that is Wave 7 (Distribution)'s assembly step. The suites load 21's real module at run time so no double is ever in the loop."
 primitives:
   - name: "comprehend(raw)"
     kind: function
@@ -36,7 +40,15 @@ to change anything to be routable.
 
 ## Architecture
 
-`packages/core/src/router.ts`. Consumes Fingerprint Index & Matcher [21]
+Three files, split on the I/O boundary that "side-effect free" forces:
+`router.ts` (the `comprehend`/`docs`/`decideFor` surface),
+`router-precedence.ts` (the matcher port, what "installed" means as data,
+and `decideRoute`, the precedence rule as one pure function), and
+`router-discovery.ts` (the adapter that reads a real
+`node_modules/@comprehendo` tree into that data). The first two import no
+`node:` module at all, which is asserted by a source scan.
+
+Consumes Fingerprint Index & Matcher [21]
 for the match, Twin Builder [12] to construct the resulting twin, and
 Marker & Probe [11] / Manifest Wiring [15] to detect whether a native
 implementation is present for precedence. Consumed by Config Loader [23]
@@ -53,7 +65,14 @@ Proxy [24] (an alternative entry into the same routing logic).
   Fixtures [04]), the marker wins when they conflict.
 - Installing a native implementation flips precedence automatically, with
   no router reconfiguration required, demonstrated live in the Wave 4
-  demo-state.
+  demo-state. The mechanism that makes this true rather than lucky: the
+  authoritative channel is the marker on the caught VALUE, read per call,
+  for free, with no I/O. An installed native build starts throwing marked
+  errors, and the next call sees it. The manifest half is picked up by the
+  next discovery.
+- What is installed arrives as DATA (`Environment`), so the routing half
+  is pure and the filesystem half is one adapter. Config Loader [23] and
+  Wrap Opt-In Proxy [24] both build on the data side, not the disk side.
 
 ## Data Model
 
@@ -79,12 +98,22 @@ knob. Match result: twin (Shape Schemas [03]) or UNSTRUCTURED.
 
 ## Acceptance Criteria
 
-- [ ] `comprehend(raw)` on an uninstalled/un-adopted toy package
-      fingerprints correctly to its `@comprehendo/<toy>` corpus.
-- [ ] An unknown error returns UNSTRUCTURED, never a wrong match.
-- [ ] `docs('<toy>', query)` answers from the sidecar corpus.
-- [ ] Installing the native toy flips precedence automatically, verified
-      live (no router reconfiguration step).
+- [x] `comprehend(raw)` on an uninstalled/un-adopted toy package
+      fingerprints correctly to its `@comprehendo/<toy>` corpus. Proven
+      against a real corpus package on disk, matched by Fingerprint Index
+      & Matcher [21]'s real matcher (never a double), and live through
+      the built `dist/` artifacts.
+- [x] An unknown error returns UNSTRUCTURED, never a wrong match. An
+      ambiguous match degrades the same way with both candidates named
+      (CC10 [20]).
+- [x] `docs('<toy>', query)` answers from the sidecar corpus, in the
+      asker's vocabulary, through Docs Engine [13] unchanged.
+- [x] Installing the native toy flips precedence automatically, verified
+      live (no router reconfiguration step): the suite writes, imports
+      and runs a real natively adopted package and hands the error it
+      really throws to the SAME router instance, which answers native.
+      Verified to have teeth: making native never win turned 15 tests
+      red, and ignoring the native decision in `comprehend` turned 4 red.
 
 ## Dependencies
 
@@ -102,6 +131,14 @@ The router is what lets an agent get twins and docs for a package that
 never adopted Comprehendo at all: install the sidecar corpus, and caught
 errors from that package start resolving through the same two calls as a
 native package would answer.
+
+Both calls live on a router built from what is installed:
+`createRouter(discoverInstalledCorpora({root, buildIndex}))` reads the
+project's `node_modules` once, and the router it returns answers from
+then on with no further I/O. The module-level `import { comprehend } from
+'comprehendo'` form in the examples below is what Distribution (Wave 7)
+assembles; today the two calls are reached through that router object,
+and they take exactly the arguments shown.
 
 | Name | What it does |
 |---|---|
