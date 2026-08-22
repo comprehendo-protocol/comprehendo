@@ -4,15 +4,15 @@ title: Conformance Fixtures
 type: COMPONENT
 path: Spec / Conformance Fixtures
 source_files: [packages/spec/kit/fixtures/]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-1
 depends_on: [01-cc2-shape-identity, 03-shape-schemas]
 tags: [conformance-kit, fixture, probe-transcript, did-you-mean, forward-compat, disagreement-fixture]
-test_files: []
-known_issues: []
+test_files: [packages/spec/test/fixture-kit.test.mjs, packages/spec/test/fixtures-probe.test.mjs, packages/spec/test/fixtures-docs.test.mjs, packages/spec/test/fixtures-compat.test.mjs]
+known_issues: [{type: deferred, note: "config.schema.json and fix.schema.json (covered only transitively through twin.fixes) are not exercised by this positive kit; consumer config knobs belong to Router and Precedence [22] / Config Loader [23]. The gap is explicit: fixture-kit.test.mjs asserts the exact exercised shape set and names both as deliberate absences, so adding a fixture later must update that list."}]
 ---
 
 # Conformance Fixtures
@@ -72,15 +72,15 @@ N/A (fixtures are test data, not runtime exports).
 
 ## Acceptance Criteria
 
-- [ ] Probe-transcript fixtures cover hit, miss, and mid-failure-discovery
+- [x] Probe-transcript fixtures cover hit, miss, and mid-failure-discovery
       scenarios.
-- [ ] The forward-compat fixture is accepted (not rejected) by every
+- [x] The forward-compat fixture is accepted (not rejected) by every
       implementation under test.
-- [ ] The disagreement fixture proves the marker wins over a
+- [x] The disagreement fixture proves the marker wins over a
       contradicting manifest declaration.
-- [ ] The UNDOCUMENTED source-pass fixture proves the explicit,
+- [x] The UNDOCUMENTED source-pass fixture proves the explicit,
       permitted one-question source read that CC10 [20] allows.
-- [ ] Three-vocabulary docs-lookup fixtures exist (tool's own terms, a
+- [x] Three-vocabulary docs-lookup fixtures exist (tool's own terms, a
       known-tool equivalent, and task language).
 
 ## Dependencies
@@ -90,4 +90,9 @@ N/A (fixtures are test data, not runtime exports).
 
 ## Known Issues
 
-None recorded at plan time.
+- [deferred] `config.schema.json` and `fix.schema.json` (covered only
+  transitively through `twin.fixes`) are not exercised by this positive
+  kit; consumer config knobs belong to Router and Precedence [22] / Config
+  Loader [23]. `fixture-kit.test.mjs` asserts the exact exercised shape
+  set and names both as deliberate absences, so a future fixture addition
+  must update that list rather than silently drift.

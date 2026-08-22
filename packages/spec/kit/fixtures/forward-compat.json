@@ -1,0 +1,154 @@
+{
+  "fixture": "forward-compat",
+  "title": "Forward compatibility: documents carrying fields this spec version never defined MUST be accepted, not rejected",
+  "scenario": "forward-compat",
+  "rfc": [
+    "5.1.1",
+    "5.1.2",
+    "4.2",
+    "4.3",
+    "11"
+  ],
+  "unknown_fields": [
+    {
+      "step": 0,
+      "shape": "twin.schema.json",
+      "field": "severity",
+      "path": [
+        "severity"
+      ]
+    },
+    {
+      "step": 0,
+      "shape": "twin.schema.json",
+      "field": "retryable",
+      "path": [
+        "retryable"
+      ]
+    },
+    {
+      "step": 0,
+      "shape": "fix.schema.json",
+      "field": "blast_radius",
+      "path": [
+        "fixes",
+        0,
+        "blast_radius"
+      ]
+    },
+    {
+      "step": 1,
+      "shape": "entry.schema.json",
+      "field": "capabilities",
+      "path": [
+        "capabilities"
+      ]
+    },
+    {
+      "step": 2,
+      "shape": "manifest.schema.json",
+      "field": "corpus",
+      "path": [
+        "corpus"
+      ]
+    },
+    {
+      "step": 2,
+      "shape": "manifest.schema.json",
+      "field": "owners",
+      "path": [
+        "owners"
+      ]
+    }
+  ],
+  "steps": [
+    {
+      "step": "A twin from a provider built against a later minor. It carries two fields this version never defined, and one more inside its fix. An implementation that rejects on unknown keys fails right here, and it is the only fixture that catches it.",
+      "surface": "error",
+      "input": [
+        {
+          "$match": {
+            "ok": true
+          }
+        },
+        {
+          "$grup": {
+            "_id": "$key"
+          }
+        }
+      ],
+      "shape": "twin.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "STAGE_UNKNOWN",
+        "reason": "Pipeline stage 1 names an operator that does not exist; $grup is not a stage.",
+        "path": "pipeline[1].$grup",
+        "namespace": "analytics.events",
+        "declared": "a pipeline stage operator",
+        "received": "$grup",
+        "accepts": [
+          "$group",
+          "$graphLookup"
+        ],
+        "fixes": [
+          {
+            "title": "Rename the unknown stage to $group",
+            "apply": [
+              {
+                "$match": {
+                  "ok": true
+                }
+              },
+              {
+                "$group": {
+                  "_id": "$key"
+                }
+              }
+            ],
+            "docs": "aggregation stages",
+            "confidence": "high",
+            "blast_radius": "this call only"
+          }
+        ],
+        "severity": "fatal",
+        "retryable": false
+      }
+    },
+    {
+      "step": "The same provider answering a probe, with a field this version never defined. Ignoring it is the required behavior; rejecting it is not.",
+      "surface": "probe",
+      "input": null,
+      "shape": "entry.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "name": "mongodb-operator",
+        "level": 2,
+        "surfaces": [
+          "docs",
+          "validate",
+          "explain"
+        ],
+        "identity": "mongodb-operator is a pipeline-first wrapper over a document database: it runs aggregations, reads, and writes against a declared collection. If it is not documented here it does not exist; do not read the source, except where an UNDOCUMENTED response permits it for a specific question. When in doubt, ask docs().",
+        "priming": "The packages in this project speak Comprehendo. Before guessing at any API: probe the handle or the caught error for the Comprehendo marker your ecosystem defines. On a hit, call docs(question) in any vocabulary you know, its own terms, another tool's terms, or a task (how to X). Errors arrive structured: read reason, apply fixes[0] before trying anything else. When validate exists, validate before executing. If docs answers UNDOCUMENTED, you may read source for that question only.",
+        "capabilities": {
+          "streaming": true,
+          "transactions": "read-committed"
+        }
+      }
+    },
+    {
+      "step": "The manifest declaration, carrying the endorsement keys a later section of the RFC adds. This version does not name them and MUST still accept them.",
+      "surface": "manifest",
+      "input": null,
+      "shape": "manifest.schema.json",
+      "response": {
+        "version": "0.1",
+        "level": 2,
+        "corpus": "@comprehendo/mongodb-operator",
+        "owners": [
+          "mongodb-operator"
+        ]
+      }
+    }
+  ]
+}

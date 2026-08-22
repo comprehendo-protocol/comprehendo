@@ -1,0 +1,76 @@
+{
+  "fixture": "undocumented-source-pass",
+  "title": "The UNDOCUMENTED source pass: one question, explicitly permitted, and nothing beyond it",
+  "scenario": "source-pass",
+  "rfc": [
+    "5.2.3",
+    "5.5",
+    "7"
+  ],
+  "source_pass": {
+    "granted_for": "how do I shard a capped collection",
+    "scope": "this question only",
+    "generalizes": false,
+    "permitted_action": "read the provider's own source to answer exactly the question the grant names, and nothing else",
+    "still_forbidden": [
+      "any other question, which needs its own UNDOCUMENTED grant",
+      "a question the corpus already answered, where the completeness contract still stands"
+    ]
+  },
+  "steps": [
+    {
+      "step": "The grant. The corpus cannot answer, says so, and suspends the completeness contract for this one question.",
+      "surface": "docs",
+      "input": "how do I shard a capped collection",
+      "shape": "undocumented.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "UNDOCUMENTED",
+        "query": "how do I shard a capped collection",
+        "nearest": [
+          "sharding",
+          "capped collections"
+        ],
+        "source_permitted": true
+      }
+    },
+    {
+      "step": "A second, different question the corpus also cannot answer. The first grant did not cover it: the permission is per question, so this one carries its own.",
+      "surface": "docs",
+      "input": "how do I resize a capped collection in place",
+      "shape": "undocumented.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "UNDOCUMENTED",
+        "query": "how do I resize a capped collection in place",
+        "nearest": [
+          "capped collections"
+        ],
+        "source_permitted": true
+      }
+    },
+    {
+      "step": "A question the corpus does answer. No permission is granted, and none is needed: the fence stands wherever docs answers.",
+      "surface": "docs",
+      "input": "how to undo a write",
+      "shape": "topic.schema.json",
+      "response": {
+        "topic": "how to undo a write",
+        "summary": "There is no undo. A write that has been acknowledged is durable, so the recovery path is a compensating write you author, against the same identity, in the same collection. Capture what you are about to overwrite in the same call if you may need it back.",
+        "signatures": [
+          "collection.updateOne(filter, update, { returnDocumentBefore: true })"
+        ],
+        "examples": [
+          {
+            "title": "Keep the previous value so a compensating write is possible",
+            "code": "{ \"filter\": { \"_id\": id }, \"update\": { \"$set\": { \"status\": \"active\" } }, \"returnDocumentBefore\": true }"
+          }
+        ],
+        "see_also": [
+          "aggregation stages",
+          "capped collections"
+        ]
+      }
+    }
+  ]
+}

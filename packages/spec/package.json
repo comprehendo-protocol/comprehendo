@@ -1,0 +1,40 @@
+{
+  "name": "@comprehendo/spec",
+  "version": "0.0.1",
+  "description": "The normative Comprehendo protocol shapes as JSON Schema, plus the language-neutral conformance kit",
+  "type": "module",
+  "private": true,
+  "files": [
+    "kit"
+  ],
+  "exports": {
+    "./kit/shapes/*": "./kit/shapes/*"
+  },
+  "bin": {
+    "comprehendo-budget": "./kit/budget/run.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "budget": "node kit/budget/run.js"
+  },
+  "keywords": [
+    "comprehendo",
+    "json-schema",
+    "conformance"
+  ],
+  "author": "TheDecipherist",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheDecipherist/comprehendo.git",
+    "directory": "packages/spec"
+  },
+  "homepage": "https://github.com/TheDecipherist/comprehendo#readme",
+  "bugs": {
+    "url": "https://github.com/TheDecipherist/comprehendo/issues"
+  },
+  "devDependencies": {
+    "ajv": "^8.17.1",
+    "js-tiktoken": "1.0.21"
+  }
+}

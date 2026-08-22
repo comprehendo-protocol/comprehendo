@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/explanation.schema.json",
+  "title": "Explanation",
+  "description": "What `explain(input)` returns (RFC §5.4): the compiled, expanded, or resolved form of an invocation, after the wrapper has done whatever it does. Nothing the wrapper does is invisible. `explain` MUST NOT execute the invocation; that is a behavioral constraint the negative fixtures enforce, not something this schema can express.",
+  "type": "object",
+  "required": ["would_execute"],
+  "properties": {
+    "would_execute": {
+      "description": "The literal form handed to the underlying tool: a command line, a wire-protocol document, an expanded config. Untyped in the RFC (`unknown` in TypeScript), because the form belongs to the underlying tool, not to this spec."
+    },
+    "notes": {
+      "type": "array",
+      "description": "Defaults applied, rewrites made.",
+      "items": { "type": "string" }
+    }
+  }
+}

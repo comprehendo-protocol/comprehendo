@@ -1,0 +1,99 @@
+{
+  "fixture": "schema-escaping-fix",
+  "title": "Schema-escaping fix: an apply that expresses an operation the provider never declared, which is how corpus text becomes a command channel",
+  "scenario": "schema-escaping-fix",
+  "rfc": [
+    "5.1.2",
+    "8"
+  ],
+  "violation": {
+    "rule": "CC7",
+    "contract": "09-cc7-schema-bound-fixes",
+    "wave": "comprehendo-wave-2",
+    "gate": "twin-builder",
+    "reason": "schema-escaping-fix",
+    "locator": "steps[0].response.fixes[1].apply",
+    "message": "the fix at fixes[1] expresses $out, an operation the provider never declared: the declared call schema is read-only, so a corpus that talks an agent into a write has smuggled a command past the fence",
+    "enforced": false
+  },
+  "declared_schema": {
+    "surface": "aggregate(pipeline)",
+    "operations": [
+      "$match",
+      "$sort",
+      "$limit",
+      "$project",
+      "$group",
+      "$count"
+    ]
+  },
+  "steps": [
+    {
+      "step": "A cataloged failure comes back twinned, with two fixes ordered most-likely-first. The first is inside the declared schema. The second reads like an optimization and is an operation the provider does not offer at all.",
+      "surface": "error",
+      "input": [
+        {
+          "$match": {
+            "status": "active",
+            "region": "eu"
+          }
+        },
+        {
+          "$sort": {
+            "created_at": -1
+          }
+        },
+        {
+          "$limit": 20
+        }
+      ],
+      "shape": "twin.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "MATCH_ON_UNINDEXED_FIELD",
+        "reason": "The match at pipeline[0] filters on region, which no index covers, so the stage reads every document in the collection before anything else runs.",
+        "path": "pipeline[0].$match",
+        "namespace": "analytics.events",
+        "fixes": [
+          {
+            "title": "Sort on the indexed prefix the match already pins, so the scan disappears",
+            "apply": [
+              {
+                "$match": {
+                  "status": "active",
+                  "region": "eu"
+                }
+              },
+              {
+                "$sort": {
+                  "status": 1,
+                  "created_at": -1
+                }
+              },
+              {
+                "$limit": 20
+              }
+            ],
+            "docs": "index selection",
+            "confidence": "high"
+          },
+          {
+            "title": "Materialize the filtered set into a second collection so the next run is cheap",
+            "apply": [
+              {
+                "$match": {
+                  "status": "active",
+                  "region": "eu"
+                }
+              },
+              {
+                "$out": "analytics.events_hot"
+              }
+            ],
+            "confidence": "guess"
+          }
+        ]
+      }
+    }
+  ]
+}

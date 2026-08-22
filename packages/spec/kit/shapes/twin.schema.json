@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/twin.schema.json",
+  "title": "Twin",
+  "description": "The structured form every error a conforming provider produces arrives in (RFC §5.1.1). No raw stderr, driver message, or bare stack trace is ever the primary error the agent sees; an error the provider has not structured is still a twin, with code `UNSTRUCTURED` and the raw message in `received` (RFC §5.1.4). The twin is also the mid-failure discovery path: its `comprehendo` field tells an agent that never probed that the fluent path exists (RFC §4.4).",
+  "type": "object",
+  "required": ["comprehendo", "code", "reason", "fixes"],
+  "properties": {
+    "comprehendo": {
+      "type": "string",
+      "description": "The spec version this provider implements, e.g. \"0.1\". Self-identifying (RFC §4.4)."
+    },
+    "code": {
+      "type": "string",
+      "description": "The provider's stable, machine-readable error code (SCREAMING_SNAKE by convention). Left as a plain string on purpose: RFC §11 puts twin code vocabularies in the provider's hands, not this spec's, so the schema types the field and never polices the value. Once published, a code MUST NOT change meaning."
+    },
+    "reason": {
+      "type": "string",
+      "description": "One sentence, plain language, stating WHY. MUST be self-sufficient: an agent reading only `reason` and `fixes` can act without consulting anything else."
+    },
+    "path": {
+      "type": "string",
+      "description": "Where in the input the problem is, e.g. \"pipeline[2].$grup\"."
+    },
+    "namespace": {
+      "type": "string",
+      "description": "The provider-defined scope the error concerns: a collection, a file, a subcommand."
+    },
+    "declared": {
+      "description": "What the input claimed, or what a valid form looks like. Untyped in the RFC (`unknown` in TypeScript, `Any` in Python), so untyped here."
+    },
+    "received": {
+      "description": "What actually arrived. Untyped in the RFC. For an `UNSTRUCTURED` twin this carries the raw underlying message (RFC §5.1.4)."
+    },
+    "accepts": {
+      "type": "array",
+      "description": "Valid alternatives; this is what carries did-you-mean.",
+      "items": { "type": "string" }
+    },
+    "fixes": {
+      "type": "array",
+      "description": "Remedies, ordered most-likely-first; an agent applying fixes[0] on the next attempt is the intended behavior. REQUIRED, and MAY be empty (an `UNSTRUCTURED` twin has no fixes yet).",
+      "items": { "$ref": "https://comprehendo.dev/schemas/0.1/fix.schema.json" }
+    }
+  }
+}

@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/undocumented.schema.json",
+  "title": "Undocumented",
+  "description": "What `docs(query)` MUST return for a query the corpus cannot answer (RFC §5.2.3). It does two jobs: it records the miss locally (and MUST NOT transmit it anywhere), and it explicitly suspends the completeness contract for this one question, permitting the agent to consult source. The fence has a gate, not a gap.",
+  "type": "object",
+  "required": ["comprehendo", "code", "query", "nearest", "source_permitted"],
+  "properties": {
+    "comprehendo": {
+      "type": "string",
+      "description": "The spec version this provider implements, e.g. \"0.1\"."
+    },
+    "code": {
+      "const": "UNDOCUMENTED",
+      "description": "The sentinel code. Fixed by the RFC, not provider-owned."
+    },
+    "query": {
+      "type": "string",
+      "description": "The query, echoed back."
+    },
+    "nearest": {
+      "type": "array",
+      "description": "Did-you-mean candidates. REQUIRED, and MAY be empty.",
+      "items": { "type": "string" }
+    },
+    "source_permitted": {
+      "const": true,
+      "description": "REQUIRED, always true. The permission is the point of the shape: an UNDOCUMENTED that could say false would be a gap pretending to be a gate."
+    }
+  }
+}

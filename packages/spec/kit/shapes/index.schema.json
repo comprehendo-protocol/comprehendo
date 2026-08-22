@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/index.schema.json",
+  "title": "DocsIndex",
+  "description": "What `docs()` returns with no argument (RFC §5.2.1): the list of topics the corpus can answer, so an agent can orient in one call. Topic NAMES only, never the topics themselves. The index is a menu, not the meal, and that is normative: context economy is the product, and an index that carries summaries has already un-solved the problem the contract exists to solve.",
+  "type": "object",
+  "required": ["topics"],
+  "properties": {
+    "topics": {
+      "type": "array",
+      "description": "Topic names the corpus can answer. MAY be empty.",
+      "items": { "type": "string" }
+    }
+  }
+}

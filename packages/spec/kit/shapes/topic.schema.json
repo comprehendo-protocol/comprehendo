@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/topic.schema.json",
+  "title": "DocsTopic",
+  "description": "One topic-sized answer from `docs(query)` (RFC §5.2.2). A query returns what was asked for and nothing more: `docs` MUST NOT return the full reference in a single call, and breadth belongs in the index and in `see_also`, never in the payload. Size is not expressible in JSON Schema; the token ceiling is enforced by the budget harness (CC5).",
+  "type": "object",
+  "required": ["topic", "summary"],
+  "properties": {
+    "topic": {
+      "type": "string",
+      "description": "The topic name, matching the name carried in the index."
+    },
+    "summary": {
+      "type": "string",
+      "description": "The answer, written for an agent: dense, correct, example-first."
+    },
+    "signatures": {
+      "type": "array",
+      "description": "Exact call forms.",
+      "items": { "type": "string" }
+    },
+    "examples": {
+      "type": "array",
+      "description": "Worked examples. A topic SHOULD show, in its examples, the twin produced when the operation is misused, so the error and the doc recognize each other (RFC §5.2.4).",
+      "items": {
+        "type": "object",
+        "required": ["title", "code"],
+        "properties": {
+          "title": { "type": "string" },
+          "code": { "type": "string" }
+        }
+      }
+    },
+    "see_also": {
+      "type": "array",
+      "description": "Related topic names. Pointers, not payload.",
+      "items": { "type": "string" }
+    }
+  }
+}

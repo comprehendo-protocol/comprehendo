@@ -1,0 +1,117 @@
+{
+  "fixture": "probe-mid-failure-discovery",
+  "title": "Probe transcript, mid-failure discovery: an agent that never probed learns the fluent path from the twin it caught",
+  "scenario": "probe-transcript",
+  "rfc": [
+    "4.4",
+    "5.1.1",
+    "5.1.2",
+    "5.2.2",
+    "5.2.4"
+  ],
+  "discovery": {
+    "never_probed_before": true,
+    "learned_from": {
+      "step": 0,
+      "field": "comprehendo"
+    },
+    "what_was_learned": "the package this error came from speaks Comprehendo, so a fix is already attached and the corpus can be asked instead of guessed at"
+  },
+  "steps": [
+    {
+      "step": "The agent called the operator without ever probing it, and caught this. The twin carries the spec version, so the failure itself is the discovery.",
+      "surface": "error",
+      "input": [
+        {
+          "$match": {
+            "ok": true
+          }
+        },
+        {
+          "$grup": {
+            "_id": "$key"
+          }
+        }
+      ],
+      "shape": "twin.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "STAGE_UNKNOWN",
+        "reason": "Pipeline stage 1 names an operator that does not exist; $grup is not a stage.",
+        "path": "pipeline[1].$grup",
+        "namespace": "analytics.events",
+        "declared": "a pipeline stage operator",
+        "received": "$grup",
+        "accepts": [
+          "$group",
+          "$graphLookup"
+        ],
+        "fixes": [
+          {
+            "title": "Rename the unknown stage to $group",
+            "apply": [
+              {
+                "$match": {
+                  "ok": true
+                }
+              },
+              {
+                "$group": {
+                  "_id": "$key"
+                }
+              }
+            ],
+            "docs": "aggregation stages",
+            "confidence": "high"
+          }
+        ]
+      }
+    },
+    {
+      "step": "Having learned the contract exists, the agent probes the caught error itself and gets the entry.",
+      "surface": "probe",
+      "input": null,
+      "shape": "entry.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "name": "mongodb-operator",
+        "level": 2,
+        "surfaces": [
+          "docs",
+          "validate",
+          "explain"
+        ],
+        "identity": "mongodb-operator is a pipeline-first wrapper over a document database: it runs aggregations, reads, and writes against a declared collection. If it is not documented here it does not exist; do not read the source, except where an UNDOCUMENTED response permits it for a specific question. When in doubt, ask docs().",
+        "priming": "The packages in this project speak Comprehendo. Before guessing at any API: probe the handle or the caught error for the Comprehendo marker your ecosystem defines. On a hit, call docs(question) in any vocabulary you know, its own terms, another tool's terms, or a task (how to X). Errors arrive structured: read reason, apply fixes[0] before trying anything else. When validate exists, validate before executing. If docs answers UNDOCUMENTED, you may read source for that question only."
+      }
+    },
+    {
+      "step": "The fix named a topic, so the agent follows it into the corpus instead of guessing at the rest of the API.",
+      "surface": "docs",
+      "input": "aggregation stages",
+      "shape": "topic.schema.json",
+      "response": {
+        "topic": "aggregation stages",
+        "summary": "A pipeline is an ordered array of stage documents, and each stage document names exactly one stage operator. Stages run in order, each one consuming what the previous stage emitted. An unknown operator name fails the whole pipeline before any document is read.",
+        "signatures": [
+          "collection.aggregate(pipeline)"
+        ],
+        "examples": [
+          {
+            "title": "Count events per key",
+            "code": "[{ \"$match\": { \"ok\": true } }, { \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+          },
+          {
+            "title": "The twin a misspelled stage produces",
+            "code": "{ \"code\": \"STAGE_UNKNOWN\", \"path\": \"pipeline[1].$grup\", \"accepts\": [\"$group\", \"$graphLookup\"] }"
+          }
+        ],
+        "see_also": [
+          "$group",
+          "$match",
+          "index selection"
+        ]
+      }
+    }
+  ]
+}

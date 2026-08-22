@@ -78,17 +78,17 @@ overlap_count: 3
 **Registry / Submission Gate**
   └── `29-submission-gate` - Submission Gate (planned)
 **Spec / Budget Harness**
-  └── `06-budget-harness` - Budget Harness (planned)
+  └── `06-budget-harness` - Budget Harness (complete)
 **Spec / Conformance Fixtures**
-  └── `04-conformance-fixtures` - Conformance Fixtures (planned)
+  └── `04-conformance-fixtures` - Conformance Fixtures (complete)
 **Spec / Cross-Cutting Contracts / Context Budget**
-  └── `02-cc5-context-budget` - CC5 Context Budget (planned)
+  └── `02-cc5-context-budget` - CC5 Context Budget (complete)
 **Spec / Cross-Cutting Contracts / Shape Identity**
-  └── `01-cc2-shape-identity` - CC2 Shape Identity (planned)
+  └── `01-cc2-shape-identity` - CC2 Shape Identity (complete)
 **Spec / Negative Fixtures**
-  └── `05-negative-fixtures` - Negative Fixtures (planned)
+  └── `05-negative-fixtures` - Negative Fixtures (complete)
 **Spec / Shape Schemas**
-  └── `03-shape-schemas` - Shape Schemas (planned)
+  └── `03-shape-schemas` - Shape Schemas (complete)
 
 ## Dependency Graph
 
@@ -98,12 +98,12 @@ graph TD
   classDef active fill:#ffd700,stroke:#b8860b,color:#000
   classDef done fill:#00e5cc,stroke:#008080,color:#000
   classDef deprecated fill:#f44,stroke:#a00,color:#fff
-  01_cc2_shape_identity["01-cc2-shape-identity"]:::planned
-  02_cc5_context_budget["02-cc5-context-budget"]:::planned
-  03_shape_schemas["03-shape-schemas"]:::planned
-  04_conformance_fixtures["04-conformance-fixtures"]:::planned
-  05_negative_fixtures["05-negative-fixtures"]:::planned
-  06_budget_harness["06-budget-harness"]:::planned
+  01_cc2_shape_identity["01-cc2-shape-identity"]:::done
+  02_cc5_context_budget["02-cc5-context-budget"]:::done
+  03_shape_schemas["03-shape-schemas"]:::done
+  04_conformance_fixtures["04-conformance-fixtures"]:::done
+  05_negative_fixtures["05-negative-fixtures"]:::done
+  06_budget_harness["06-budget-harness"]:::done
   07_cc1_probe_purity["07-cc1-probe-purity"]:::planned
   08_cc3_no_raw_errors["08-cc3-no-raw-errors"]:::planned
   09_cc7_schema_bound_fixes["09-cc7-schema-bound-fixes"]:::planned

@@ -1,0 +1,34 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/config.schema.json",
+  "title": "ConsumerConfig",
+  "description": "The five consumer-side configuration knobs (RFC §10.5). The default requires no configuration; this exists only as the escape hatch, and it lives in the manifest the ecosystem already has (the `comprehendo` key in package.json, `[tool.comprehendo]` in pyproject.toml), never a new file format. Every knob is optional, so an empty object is a conforming config. Only the CONSUMER can override precedence: a provider gets no veto over a community corpus (RFC §10.4).",
+  "type": "object",
+  "properties": {
+    "prefer": {
+      "type": "object",
+      "description": "Per-package tier override, for when a native corpus is broken or stale. Keys are package names. Values are left as plain strings rather than an enum: RFC §10.5 shows only the `sidecar` value, and enumerating the tier vocabulary here would narrow the knob below what the RFC states.",
+      "additionalProperties": { "type": "string" }
+    },
+    "pin": {
+      "type": "object",
+      "description": "Per-corpus version pin, for reproducibility. Keys are corpus package names, values are version strings.",
+      "additionalProperties": { "type": "string" }
+    },
+    "disable": {
+      "type": "array",
+      "description": "Packages for which the consumer wants raw errors, please.",
+      "items": { "type": "string" }
+    },
+    "require": {
+      "type": "object",
+      "description": "Per-package strictness, e.g. owner-endorsed corpus releases only (RFC §10.6). Keys are package names.",
+      "additionalProperties": { "type": "string" }
+    },
+    "local": {
+      "type": "object",
+      "description": "Mounts corpora for private packages, so an organization can make its internal libraries as fluent to agents as public ones without publishing anything. Keys are package names, values are paths.",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

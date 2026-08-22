@@ -1,0 +1,159 @@
+{
+  "fixture": "probe-hit",
+  "title": "Probe transcript, hit: a real corpus answers, and the level-2 surfaces answer too",
+  "scenario": "probe-transcript",
+  "rfc": [
+    "4.1",
+    "4.2",
+    "5.2.1",
+    "5.2.2",
+    "5.3.2",
+    "5.4"
+  ],
+  "steps": [
+    {
+      "step": "The agent probes the marker on a handle it is already holding. No I/O, no configuration, no argument.",
+      "surface": "probe",
+      "input": null,
+      "shape": "entry.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "name": "mongodb-operator",
+        "level": 2,
+        "surfaces": [
+          "docs",
+          "validate",
+          "explain"
+        ],
+        "identity": "mongodb-operator is a pipeline-first wrapper over a document database: it runs aggregations, reads, and writes against a declared collection. If it is not documented here it does not exist; do not read the source, except where an UNDOCUMENTED response permits it for a specific question. When in doubt, ask docs().",
+        "priming": "The packages in this project speak Comprehendo. Before guessing at any API: probe the handle or the caught error for the Comprehendo marker your ecosystem defines. On a hit, call docs(question) in any vocabulary you know, its own terms, another tool's terms, or a task (how to X). Errors arrive structured: read reason, apply fixes[0] before trying anything else. When validate exists, validate before executing. If docs answers UNDOCUMENTED, you may read source for that question only."
+      }
+    },
+    {
+      "step": "docs() with no argument returns the index, so the agent can orient in one call. Topic names only: the index is a menu, never the meal.",
+      "surface": "docs",
+      "input": null,
+      "shape": "index.schema.json",
+      "response": {
+        "topics": [
+          "aggregation stages",
+          "$group",
+          "$graphLookup",
+          "$match",
+          "$merge",
+          "capped collections",
+          "sharding",
+          "index selection",
+          "how to undo a write"
+        ]
+      }
+    },
+    {
+      "step": "One question, one topic-sized answer. The topic is one the index advertised.",
+      "surface": "docs",
+      "input": "aggregation stages",
+      "shape": "topic.schema.json",
+      "response": {
+        "topic": "aggregation stages",
+        "summary": "A pipeline is an ordered array of stage documents, and each stage document names exactly one stage operator. Stages run in order, each one consuming what the previous stage emitted. An unknown operator name fails the whole pipeline before any document is read.",
+        "signatures": [
+          "collection.aggregate(pipeline)"
+        ],
+        "examples": [
+          {
+            "title": "Count events per key",
+            "code": "[{ \"$match\": { \"ok\": true } }, { \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+          },
+          {
+            "title": "The twin a misspelled stage produces",
+            "code": "{ \"code\": \"STAGE_UNKNOWN\", \"path\": \"pipeline[1].$grup\", \"accepts\": [\"$group\", \"$graphLookup\"] }"
+          }
+        ],
+        "see_also": [
+          "$group",
+          "$match",
+          "index selection"
+        ]
+      }
+    },
+    {
+      "step": "validate() abstains rather than guessing: the target of this write is computed per document, so no verdict is available without running it.",
+      "surface": "validate",
+      "input": [
+        {
+          "$match": {
+            "status": "active"
+          }
+        },
+        {
+          "$merge": {
+            "into": {
+              "$concat": [
+                "events_",
+                "$region"
+              ]
+            }
+          }
+        }
+      ],
+      "shape": "unvalidatable.schema.json",
+      "response": {
+        "valid": null,
+        "code": "UNVALIDATABLE",
+        "reason": "The $merge target is computed from each document's own data, so whether it names a collection this operator may write to cannot be decided without executing the pipeline."
+      }
+    },
+    {
+      "step": "explain() shows what would actually run, with every default the wrapper applied. It never executes the invocation.",
+      "surface": "explain",
+      "input": [
+        {
+          "$match": {
+            "status": "active"
+          }
+        },
+        {
+          "$group": {
+            "_id": "$region",
+            "n": {
+              "$sum": 1
+            }
+          }
+        }
+      ],
+      "shape": "explanation.schema.json",
+      "response": {
+        "would_execute": {
+          "aggregate": "events",
+          "pipeline": [
+            {
+              "$match": {
+                "status": "active"
+              }
+            },
+            {
+              "$group": {
+                "_id": "$region",
+                "n": {
+                  "$sum": 1
+                }
+              }
+            }
+          ],
+          "cursor": {
+            "batchSize": 101
+          },
+          "readConcern": {
+            "level": "majority"
+          },
+          "maxTimeMS": 5000
+        },
+        "notes": [
+          "applied the operator's default read concern, majority",
+          "applied the operator's default deadline, 5000 ms",
+          "resolved the collection name from the handle, events"
+        ]
+      }
+    }
+  ]
+}

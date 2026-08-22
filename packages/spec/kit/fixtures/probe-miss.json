@@ -1,0 +1,46 @@
+{
+  "fixture": "probe-miss",
+  "title": "Probe transcript, miss: the corpus cannot answer, so it says UNDOCUMENTED with did-you-mean",
+  "scenario": "probe-transcript",
+  "rfc": [
+    "4.1",
+    "4.2",
+    "5.2.3"
+  ],
+  "steps": [
+    {
+      "step": "The probe hits. A miss on one question is not a miss on the contract: the package still speaks Comprehendo.",
+      "surface": "probe",
+      "input": null,
+      "shape": "entry.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "name": "mongodb-operator",
+        "level": 2,
+        "surfaces": [
+          "docs",
+          "validate",
+          "explain"
+        ],
+        "identity": "mongodb-operator is a pipeline-first wrapper over a document database: it runs aggregations, reads, and writes against a declared collection. If it is not documented here it does not exist; do not read the source, except where an UNDOCUMENTED response permits it for a specific question. When in doubt, ask docs().",
+        "priming": "The packages in this project speak Comprehendo. Before guessing at any API: probe the handle or the caught error for the Comprehendo marker your ecosystem defines. On a hit, call docs(question) in any vocabulary you know, its own terms, another tool's terms, or a task (how to X). Errors arrive structured: read reason, apply fixes[0] before trying anything else. When validate exists, validate before executing. If docs answers UNDOCUMENTED, you may read source for that question only."
+      }
+    },
+    {
+      "step": "The corpus cannot answer this one. It says so, echoes the query back, names what it was near, and suspends the completeness contract for this question only.",
+      "surface": "docs",
+      "input": "how do I shard a capped collection",
+      "shape": "undocumented.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "UNDOCUMENTED",
+        "query": "how do I shard a capped collection",
+        "nearest": [
+          "sharding",
+          "capped collections"
+        ],
+        "source_permitted": true
+      }
+    }
+  ]
+}

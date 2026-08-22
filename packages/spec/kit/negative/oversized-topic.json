@@ -1,0 +1,87 @@
+{
+  "fixture": "oversized-topic",
+  "title": "Oversized topic: one query answered with the whole reference, measured over the CC5 topic budget by the real harness",
+  "scenario": "oversized-topic",
+  "rfc": [
+    "5.2.2"
+  ],
+  "violation": {
+    "rule": "CC5",
+    "contract": "02-cc5-context-budget",
+    "wave": "comprehendo-wave-1",
+    "gate": "budget-harness",
+    "reason": "oversized-topic",
+    "locator": "steps[0].response",
+    "message": "the topic response measures over the CC5 topic budget: one query returns one topic-sized answer, and a corpus that ships its whole reference in a single response has un-solved the context economy the contract exists to protect",
+    "enforced": true
+  },
+  "budget": {
+    "scope": "topic"
+  },
+  "steps": [
+    {
+      "step": "One question, and the corpus answers with everything it knows: every stage, every signature, every worked example, in a single response. It is correct, it validates, and it is exactly the failure CC5 exists to catch.",
+      "surface": "docs",
+      "input": "aggregation stages",
+      "shape": "topic.schema.json",
+      "response": {
+        "topic": "the whole aggregation reference",
+        "summary": "A pipeline is an ordered array of stage documents, and each stage document names exactly one stage operator. Stages run in order, each one consuming what the previous stage emitted, and an unknown operator name fails the whole pipeline before a single document is read. $match filters documents and belongs as early as possible, because every later stage pays for what it lets through; a $match placed after a $group has already lost the index that could have served it. $project reshapes each document, adds computed fields, and drops the ones nothing downstream reads, which is the cheapest way to shrink a large intermediate set. $group folds documents into one document per key, with accumulators such as $sum, $avg, $min, $max, $push and $addToSet, and it always breaks the sort order of whatever came before it. $sort orders the stream and is the stage most likely to be the reason a pipeline is slow: a sort an index cannot serve buffers the whole matched set in memory and fails once that buffer is exceeded. $limit and $skip trim the stream, and $skip does not scale, because the server still walks every document it skips; a range predicate on the sort key with the document identifier as the tie-breaker does the same job in constant work per page. $lookup joins another collection into the stream and is the stage that turns a fast pipeline into a slow one when the foreign field is unindexed. $unwind expands an array field into one document per element, which multiplies the size of the stream and is the usual reason a pipeline that worked on sample data falls over on production data. $count, $facet, $bucket and $sortByCount are conveniences built on the stages above and carry the same index rules. $merge and $out write the result somewhere, which makes them the only stages in this list that are not read-only, and neither of them belongs in a read path. Stage order is the whole performance story: filter first, reduce the shape second, sort on something an index covers, and join last, on an indexed foreign field, against the smallest stream you can arrange.",
+        "signatures": [
+          "collection.aggregate(pipeline)",
+          "collection.aggregate(pipeline, options)",
+          "{ $match: <query> }",
+          "{ $project: <specification> }",
+          "{ $group: { _id: <expression>, <field>: { <accumulator>: <expression> } } }",
+          "{ $sort: { <field>: 1 | -1 } }",
+          "{ $limit: <positive integer> }",
+          "{ $skip: <non-negative integer> }",
+          "{ $lookup: { from: <collection>, localField: <field>, foreignField: <field>, as: <field> } }",
+          "{ $unwind: <field path> }",
+          "{ $count: <field name> }",
+          "{ $facet: { <name>: <pipeline> } }"
+        ],
+        "examples": [
+          {
+            "title": "Count events per key",
+            "code": "[{ \"$match\": { \"ok\": true } }, { \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+          },
+          {
+            "title": "Page a sorted result without $skip",
+            "code": "[{ \"$match\": { \"status\": \"active\", \"created_at\": { \"$lt\": \"2026-01-01\" } } }, { \"$sort\": { \"created_at\": -1, \"_id\": -1 } }, { \"$limit\": 20 }]"
+          },
+          {
+            "title": "Join on an indexed foreign field, after filtering",
+            "code": "[{ \"$match\": { \"status\": \"active\" } }, { \"$lookup\": { \"from\": \"accounts\", \"localField\": \"account_id\", \"foreignField\": \"_id\", \"as\": \"account\" } }, { \"$unwind\": \"$account\" }]"
+          },
+          {
+            "title": "Reshape before grouping, so the group works on the smaller document",
+            "code": "[{ \"$project\": { \"region\": 1, \"amount\": 1 } }, { \"$group\": { \"_id\": \"$region\", \"total\": { \"$sum\": \"$amount\" } } }, { \"$sort\": { \"total\": -1 } }]"
+          },
+          {
+            "title": "Bucket a numeric field into ranges",
+            "code": "[{ \"$bucket\": { \"groupBy\": \"$amount\", \"boundaries\": [0, 100, 1000], \"default\": \"over\", \"output\": { \"n\": { \"$sum\": 1 } } } }]"
+          },
+          {
+            "title": "The twin a misspelled stage produces",
+            "code": "{ \"code\": \"STAGE_UNKNOWN\", \"path\": \"pipeline[1].$grup\", \"accepts\": [\"$group\", \"$graphLookup\"] }"
+          },
+          {
+            "title": "The twin an unservable sort produces",
+            "code": "{ \"code\": \"SORT_UNINDEXED_SPILL\", \"path\": \"pipeline[1].$sort\", \"declared\": \"a sort an index can serve\" }"
+          }
+        ],
+        "see_also": [
+          "$group",
+          "$match",
+          "$merge",
+          "$graphLookup",
+          "index selection",
+          "capped collections",
+          "sharding",
+          "how to undo a write"
+        ]
+      }
+    }
+  ]
+}

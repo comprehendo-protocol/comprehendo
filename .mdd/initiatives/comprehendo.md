@@ -3,7 +3,7 @@ id: comprehendo
 title: Comprehendo Protocol and Reference Implementation
 status: active
 version: 1
-content_hash: 72ddcc4f0084bf4c
+content_hash: ef1a04296aacd208
 ---
 
 # Comprehendo Protocol and Reference Implementation
@@ -86,7 +86,7 @@ gate as community submissions.
 
 | Wave | Title | Status | Demo-state |
 |---|---|---|---|
-| comprehendo-wave-1 | Spec Freeze and the Conformance Kit | planned | Every RFC shape exists as a JSON Schema and fixture; every MUST traces to a kit fixture or negative fixture; budget gates run and report. |
+| comprehendo-wave-1 | Spec Freeze and the Conformance Kit | complete | Every RFC shape exists as a JSON Schema and fixture; every MUST traces to a kit fixture or negative fixture; budget gates run and report. |
 | comprehendo-wave-2 | Core Provider SDK (JavaScript) | planned | A toy package built with the SDK passes the full kit: marker, twins, UNSTRUCTURED passthrough, three-vocabulary docs, UNDOCUMENTED with a working miss log, Level 2 validate/explain, priming under budget. |
 | comprehendo-wave-3 | Python Port | planned | The identical kit passes with zero fixture changes; a Python-serialized twin is byte-identical to its Node fixture. |
 | comprehendo-wave-4 | The Sidecar Router | planned | `comprehend(raw)` on an un-adopted toy returns the right twin or an honest UNSTRUCTURED; each config knob demonstrably changes routing; native adoption flips precedence automatically. |
@@ -109,15 +109,16 @@ gate as community submissions.
   it. Revisit only on evidence that release cadence is too slow for
   corpus fixes (lines 665-668).
 - Wave 1 open design questions the spec itself defers to the kit-freeze
-  work, not yet closed: the packed-corpus binary format and its
-  versioning; the fingerprint index format and cross-registry collision
-  policy; whether `wrap()` ships in the first release or waits for
-  evidence; the exact topic/index token budgets; submission-gate policy
-  for packages with hostile or rapidly-moving error surfaces; the
-  `apply` grammar (literal code vs. a `template` form with
-  fingerprint-capture-group placeholders); and who runs `static-pattern`
-  fingerprint matching (`wrap()`, a lint integration, or both). See
-  lines 712-724.
+  work: the packed-corpus binary format and its versioning; the
+  fingerprint index format and cross-registry collision policy; whether
+  `wrap()` ships in the first release or waits for evidence;
+  submission-gate policy for packages with hostile or rapidly-moving
+  error surfaces; the `apply` grammar (literal code vs. a `template`
+  form with fingerprint-capture-group placeholders); and who runs
+  `static-pattern` fingerprint matching (`wrap()`, a lint integration, or
+  both). See lines 712-724. **Closed by Wave 1:** the exact topic/index
+  token budgets (index 1200, topic 600, priming 150, measured and
+  ratcheted by [06-budget-harness](../docs/06-budget-harness.md)).
 - Trademark: a small Austrian firm (Comprehendo e.U.) exists in an
   unrelated class. A proper trademark search is needed before public
   announcement, not before building (line 709-711).
@@ -138,3 +139,13 @@ gate as community submissions.
   material only; see the Scope decision on `32-ffmpeg-corpus`.
 - `comprehendo.dev`'s registry-browsing website (spec lines 423-427) is
   tracked as its own doc, `40-registry-website`, in Wave 7.
+- Wave 1's Negative Fixtures [05] ships all six must-fail fixtures as
+  data, but only the one gate that exists in Wave 1 (CC5 [02] /
+  [06-budget-harness](../docs/06-budget-harness.md)) actually rejects
+  its fixture today. The other three demo-state-named fixtures
+  (raw-error-leak/CC3, schema-escaping-fix/CC7, telemetry-attempt/CC6)
+  are proven genuinely non-conforming at the content level but wait on
+  their owning gate: CC3 [08] and CC7 [09] land in Wave 2 (Twin Builder
+  [12]), CC6 [27] lands in Wave 5 (Submission Gate [29]). When each gate
+  lands, re-running its negative fixture through the real gate is part
+  of that feature's own build, not new scope.
