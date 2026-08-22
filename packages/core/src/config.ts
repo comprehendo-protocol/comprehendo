@@ -210,11 +210,26 @@ interface TomlTable {
 }
 
 const TABLE_HEADER = new RegExp(`^\\s*\\[${PYPROJECT_TABLE.replace('.', '\\.')}\\]\\s*(#.*)?$`);
+// The array-of-tables spelling, [[tool.comprehendo]]: a third valid TOML way
+// to occupy this key, alongside the inline-table and dotted-assignment forms
+// already refused below. Checked BEFORE the generic ANY_HEADER match, which
+// would otherwise capture the inner "[tool.comprehendo" (double brackets
+// confuse the single-bracket capture) as garbage and silently ignore it.
+const ARRAY_TABLE_HEADER = new RegExp(`^\\s*\\[\\[${PYPROJECT_TABLE.replace('.', '\\.')}\\]\\]\\s*(#.*)?$`);
 const ANY_HEADER = /^\s*\[/;
 
 function locateTable(lines: readonly string[]): TomlTable {
   let current = '';
   for (const [index, line] of lines.entries()) {
+    if (ARRAY_TABLE_HEADER.test(line)) {
+      return {
+        header: -1,
+        end: -1,
+        inline:
+          `[${PYPROJECT_TABLE}] is written as an array of tables ([[...]]) at line ${String(index + 1)}; ` +
+          'this build reads and writes only the single-table-header form',
+      };
+    }
     if (TABLE_HEADER.test(line)) {
       let end = index + 1;
       while (end < lines.length && !ANY_HEADER.test(lines[end] ?? '')) end += 1;

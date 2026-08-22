@@ -342,6 +342,16 @@ describe('reading [tool.comprehendo] out of a pyproject.toml', () => {
     expect(unreadable(readPyproject(text))).toMatch(/inline|dotted|table/i);
   });
 
+  it('says unreadable for the array-of-tables spelling too, not absent', () => {
+    // [[tool.comprehendo]] is a third valid way to occupy this key, beside
+    // the inline-table and dotted-key forms above. The bug this guards:
+    // the double bracket confused the single-bracket header capture and
+    // this spelling fell through as silently absent.
+    const text = `${PYPROJECT}[[${PYPROJECT_TABLE}]]\nversion = "0.1"\nlevel = 1\n`;
+
+    expect(unreadable(readPyproject(text))).toMatch(/array|table/i);
+  });
+
   it('says unreadable, naming the field, when the table is incomplete', () => {
     expect(unreadable(readPyproject(withTable(['version = "0.1"'])))).toMatch(/level/);
     expect(unreadable(readPyproject(withTable(['level = 1'])))).toMatch(/version/);
@@ -400,6 +410,12 @@ describe('stamping a pyproject.toml', () => {
 
   it('refuses the inline spelling rather than writing a duplicate table into it', () => {
     const text = `${PYPROJECT}[tool]\ncomprehendo = { version = "0.1", level = 1 }\n`;
+
+    expect(() => stampPyproject(text, DECLARATION)).toThrow(ManifestError);
+  });
+
+  it('refuses the array-of-tables spelling rather than writing a conflicting table into it', () => {
+    const text = `${PYPROJECT}[[${PYPROJECT_TABLE}]]\nversion = "0.1"\nlevel = 1\n`;
 
     expect(() => stampPyproject(text, DECLARATION)).toThrow(ManifestError);
   });
