@@ -11,8 +11,14 @@ initiative: comprehendo
 wave: comprehendo-wave-3
 depends_on: [01-cc2-shape-identity, 03-shape-schemas, 04-conformance-fixtures, 11-marker-probe, 12-twin-builder, 13-docs-engine, 14-sdk-entry, 15-manifest-wiring]
 tags: [python-port, dunder-marker, typing-protocol, typed-dict, byte-identical, zero-fixture-change]
-test_files: []
-known_issues: []
+test_files: [packages/python/tests/test_marker.py, packages/python/tests/test_marker_purity.py, packages/python/tests/test_marker_freeze.py, packages/python/tests/test_twin.py, packages/python/tests/test_twin_validate.py, packages/python/tests/test_twin_kit.py, packages/python/tests/test_docs.py, packages/python/tests/test_docs_miss_log.py, packages/python/tests/test_sdk.py, packages/python/tests/test_sdk_toy_package.py, packages/python/tests/test_config.py, packages/python/tests/test_config_cc8.py, packages/python/tests/test_conformance_kit.py, packages/python/tests/test_byte_identical.py, packages/python/tests/test_cross_language_parity.py, packages/python/tests/test_budget_cc5.py, packages/python/tests/test_jsonschema_mini.py, packages/python/tests/test_zero_runtime_deps.py]
+known_issues:
+  - {type: deferred, note: "py/ (the PyPI name-reservation stub) and packages/python/ both declare the name comprehendo. How they relate at publish time (the stub re-exporting from here, or being replaced by it) is a Wave 7 Distribution decision, the same deferral pattern as packages/core versus the root package.json in Wave 2. py/ was not touched."}
+  - {type: deferred, note: "comprehend(raw) is not ported. Three of the four surfaces this doc's API section names exist in packages/core today; comprehend(raw) is the agent-side entry Router & Precedence [22] owns, which is Wave 4 and unbuilt in TypeScript, so there is no JS surface to mirror. Porting it would mean guessing the router's precedence rules."}
+  - {type: gap, note: "The CC3 catalog-time raw-leak check is a substring test (reason contains received), so a cataloged entry whose received IS the token its reason must name trips it. The kit's own STAGE_UNKNOWN twin (received: \"$grup\") is that shape. Identical in packages/core/src/twin-validate.ts, so this is a shared heuristic, not a port divergence, and not a fixture bug: a provider producing that twin through its real raise site (received supplied as raise-site context, where it belongs) never trips it."}
+  - {type: gap, note: "The docs did-you-mean ranking reproduces every kit transcript's nearest candidate SET but not two of their exact lists: a 1.0/1.0 tie returns in corpus-index order (transcript shows the other order), and a fuzzy match sitting exactly on the 0.5 floor adds one extra candidate. Proven identical to the TypeScript reference by RUNNING it (packages/python/tests/test_cross_language_parity.py), and nearest is unordered and open in undocumented.schema.json. Whether the ranking should be deterministic against the transcripts is a spec question for the kit's owner."}
+  - {type: gap, note: "packages/core/test/fixtures/mongodb-operator.packed.json's aggregation-stages topic drifts from the kit's own probe-hit transcript (missing the second worked example, see_also ordered differently), so the TypeScript docs suite cannot assert that transcript exactly and sorts around it. The Python port's copy carries the kit's body verbatim. Fixing core's copy is Docs Engine [13]'s file, not this feature's."}
+  - {type: deferred, note: "The local miss-log timestamp is Python's datetime.isoformat() (2026-08-22T10:00:00+00:00) where the JS engine writes Date.toISOString() (...Z, milliseconds). The miss log is a local maintainer file, not one of CC2's wire shapes, and nothing reads it across languages."}
 primitives:
   - name: "__comprehendo__"
     kind: probe
@@ -93,7 +99,42 @@ UNVALIDATABLE, manifest keys, config knobs), expressed as `TypedDict`
 
 ## Known Issues
 
-None recorded at plan time.
+- [deferred] `py/` (the PyPI name-reservation stub) and `packages/python/`
+  both declare the name `comprehendo`. How they relate at publish time (the
+  stub re-exporting from here, or being replaced by it) is a Wave 7
+  Distribution decision, the same deferral pattern as `packages/core` versus
+  the root `package.json` in Wave 2. `py/` was not touched by this build.
+- [deferred] `comprehend(raw)` is not ported. Three of the four surfaces the
+  API section above names exist in `packages/core` today; `comprehend(raw)` is
+  the agent-side entry Router & Precedence [22] owns, which is Wave 4 and
+  unbuilt in TypeScript, so there is no JS surface to mirror.
+- [gap] The CC3 [08] catalog-time raw-leak check is a substring test (`reason`
+  contains `received`), so a cataloged entry whose `received` IS the token its
+  `reason` must name trips it. The kit's own `STAGE_UNKNOWN` twin
+  (`received: "$grup"`) is exactly that shape. Identical in
+  `packages/core/src/twin-validate.ts`: a shared heuristic, not a port
+  divergence, and not a fixture bug, since a provider producing that twin
+  through its real raise site (with `received` supplied as raise-site context,
+  where it belongs) never trips it.
+- [gap] The docs did-you-mean ranking reproduces every kit transcript's
+  `nearest` candidate SET but not two of their exact lists: a 1.0/1.0 tie comes
+  back in corpus-index order where the transcript shows the other order, and a
+  fuzzy match sitting exactly on the 0.5 floor adds one extra candidate.
+  Proven identical to the TypeScript reference by RUNNING it
+  (`packages/python/tests/test_cross_language_parity.py` drives both), and
+  `nearest` is unordered and open in `undocumented.schema.json`. Whether the
+  ranking should be deterministic against the transcripts is a spec question
+  for the kit's owner, not something a port may decide.
+- [gap] `packages/core/test/fixtures/mongodb-operator.packed.json`'s
+  `aggregation stages` topic drifts from the kit's own `probe-hit` transcript
+  (missing the second worked example, `see_also` ordered differently), which is
+  why the TypeScript docs suite cannot assert that transcript exactly. The
+  Python port's copy carries the kit's body verbatim. Correcting core's copy is
+  Docs Engine [13]'s file, not this feature's.
+- [deferred] The local miss-log timestamp is Python's `datetime.isoformat()`
+  where the JS engine writes `Date.toISOString()`. The miss log is a local
+  maintainer file, not one of CC2's wire shapes, and nothing reads it across
+  languages.
 
 ## Interface Overview
 
