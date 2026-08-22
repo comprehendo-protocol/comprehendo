@@ -14,7 +14,7 @@
     "reason": "raw-error-leak",
     "locator": "steps[0].response.reason",
     "message": "the twin surfaced the underlying raw error text as its primary reason; an un-cataloged failure is UNSTRUCTURED with the raw text preserved verbatim in received, never handed back as the answer",
-    "enforced": false
+    "enforced": true
   },
   "raw_error": "Sort exceeded memory limit of 33554432 bytes",
   "steps": [

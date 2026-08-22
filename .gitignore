@@ -14,3 +14,4 @@ ruby/Gemfile.lock
 ruby/.bundle/
 .ai_temp/
 .worktrees/
+packages/*/dist/

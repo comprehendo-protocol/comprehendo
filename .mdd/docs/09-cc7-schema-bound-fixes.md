@@ -4,8 +4,8 @@ title: CC7 Schema-Bound Fixes
 type: SPEC
 path: Core / Cross-Cutting Contracts / Schema-Bound Fixes
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2

@@ -1,0 +1,7 @@
+{
+  "name": "toy-encoder",
+  "version": "1.0.0",
+  "description": "A deliberately tiny target package for the corpus generator's tests: real exports, real docstrings, real throw sites, nothing else.",
+  "type": "module",
+  "private": true
+}

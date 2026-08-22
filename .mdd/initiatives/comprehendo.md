@@ -3,7 +3,7 @@ id: comprehendo
 title: Comprehendo Protocol and Reference Implementation
 status: active
 version: 1
-content_hash: ef1a04296aacd208
+content_hash: 11ed4ad0ca7d98cd
 ---
 
 # Comprehendo Protocol and Reference Implementation
@@ -87,7 +87,7 @@ gate as community submissions.
 | Wave | Title | Status | Demo-state |
 |---|---|---|---|
 | comprehendo-wave-1 | Spec Freeze and the Conformance Kit | complete | Every RFC shape exists as a JSON Schema and fixture; every MUST traces to a kit fixture or negative fixture; budget gates run and report. |
-| comprehendo-wave-2 | Core Provider SDK (JavaScript) | planned | A toy package built with the SDK passes the full kit: marker, twins, UNSTRUCTURED passthrough, three-vocabulary docs, UNDOCUMENTED with a working miss log, Level 2 validate/explain, priming under budget. |
+| comprehendo-wave-2 | Core Provider SDK (JavaScript) | complete | A toy package built with the SDK passes the full kit: marker, twins, UNSTRUCTURED passthrough, three-vocabulary docs, UNDOCUMENTED with a working miss log, Level 2 validate/explain, priming under budget. |
 | comprehendo-wave-3 | Python Port | planned | The identical kit passes with zero fixture changes; a Python-serialized twin is byte-identical to its Node fixture. |
 | comprehendo-wave-4 | The Sidecar Router | planned | `comprehend(raw)` on an un-adopted toy returns the right twin or an honest UNSTRUCTURED; each config knob demonstrably changes routing; native adoption flips precedence automatically. |
 | comprehendo-wave-5 | Registry and the Submission Gate | planned | An untestable-fix submission is rejected naming the folklore rule; a passing submission publishes as `@comprehendo/<pkg>` with its fingerprint index built. |

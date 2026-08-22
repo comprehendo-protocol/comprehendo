@@ -14,7 +14,7 @@
     "reason": "schema-escaping-fix",
     "locator": "steps[0].response.fixes[1].apply",
     "message": "the fix at fixes[1] expresses $out, an operation the provider never declared: the declared call schema is read-only, so a corpus that talks an agent into a write has smuggled a command past the fence",
-    "enforced": false
+    "enforced": true
   },
   "declared_schema": {
     "surface": "aggregate(pipeline)",

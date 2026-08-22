@@ -43,10 +43,12 @@ export const EXPECTED_NEGATIVE_FIXTURES = Object.freeze([
  * red X. Keyed by the fixture's `reason`, which equals its scenario and its
  * file stem.
  *
- * `enforced` is the honest Wave-1 answer to "can this kit actually run the
- * gate today": only CC5's budget gate exists in Wave 1 (Budget Harness [06]).
- * The other five gates land with their own contract's component, in the wave
- * named here, and this table is what stops that deferral from being silent.
+ * `enforced` is the honest answer to "can this kit actually run the gate
+ * today": as of comprehendo-wave-2, four of six gates exist (CC5/Budget
+ * Harness [06] in wave 1; CC3/CC9 in wave 2 via Twin Builder [12] and
+ * Marker & Probe [11]; CC7 in wave 2 via Twin Builder [12]). CC6 and CC8
+ * land with their own contract's component, in the wave named here, and
+ * this table is what stops that deferral from being silent.
  */
 export const CONTRACTS = Object.freeze({
   'raw-error-leak': Object.freeze({
@@ -54,7 +56,7 @@ export const CONTRACTS = Object.freeze({
     contract: '08-cc3-no-raw-errors',
     wave: 'comprehendo-wave-2',
     gate: 'twin-builder',
-    enforced: false,
+    enforced: true,
   }),
   'oversized-topic': Object.freeze({
     rule: 'CC5',
@@ -68,7 +70,7 @@ export const CONTRACTS = Object.freeze({
     contract: '09-cc7-schema-bound-fixes',
     wave: 'comprehendo-wave-2',
     gate: 'twin-builder',
-    enforced: false,
+    enforced: true,
   }),
   'telemetry-attempt': Object.freeze({
     rule: 'CC6',
@@ -89,7 +91,7 @@ export const CONTRACTS = Object.freeze({
     contract: '10-cc9-marker-freeze',
     wave: 'comprehendo-wave-2',
     gate: 'marker-scan',
-    enforced: false,
+    enforced: true,
   }),
 });
 

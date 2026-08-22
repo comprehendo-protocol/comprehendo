@@ -4,8 +4,8 @@ title: CC9 Marker Freeze
 type: SPEC
 path: Core / Cross-Cutting Contracts / Marker Freeze
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
