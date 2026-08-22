@@ -90,8 +90,8 @@ describe('attachMarker', () => {
     const descriptor = Object.getOwnPropertyDescriptor(target, COMPREHENDO_MARKER);
 
     expect(descriptor).toBeDefined();
-    expect(descriptor?.get).toBeUndefined();
-    expect(descriptor?.set).toBeUndefined();
+    expect(typeof descriptor?.get).toBe('undefined');
+    expect(typeof descriptor?.set).toBe('undefined');
     expect(descriptor?.value).toBeDefined();
   });
 

@@ -74,7 +74,7 @@ export function watch<T extends object>(target: T): Watched<T> {
     },
     getPrototypeOf(object) {
       note('getPrototypeOf');
-      return Reflect.getPrototypeOf(object) as object | null;
+      return Reflect.getPrototypeOf(object);
     },
     preventExtensions(object) {
       note('preventExtensions');
@@ -138,7 +138,7 @@ export function hostileValues(): unknown[] {
   const revocable = Proxy.revocable({}, {});
   revocable.revoke();
 
-  const nullPrototype: Record<string, unknown> = Object.create(null) as Record<string, unknown>;
+  const nullPrototype = Object.create(null) as Record<string, unknown>;
   nullPrototype['shape'] = 'null-prototype';
 
   return [

@@ -60,7 +60,7 @@ describe('CC9: one definition site', () => {
     );
 
     expect(exportedSymbols).toEqual([COMPREHENDO_MARKER]);
-    expect(Symbol.keyFor(exportedSymbols[0] as symbol)).toBe('comprehendo');
+    expect(exportedSymbols.map((exported) => Symbol.keyFor(exported))).toEqual(['comprehendo']);
   });
 
   it('scans real source, not an empty set (a scan that finds nothing proves nothing)', () => {
@@ -121,7 +121,7 @@ describe('CC9: what the frozen marker guarantees at run time', () => {
   });
 
   it('is the same symbol on every import of this module', async () => {
-    const reimported = (await import('../src/marker.js')) as typeof markerModule;
+    const reimported = await import('../src/marker.js');
 
     expect(reimported.COMPREHENDO_MARKER).toBe(COMPREHENDO_MARKER);
     expect(reimported.COMPREHENDO_MARKER).toBe(Symbol.for('comprehendo'));

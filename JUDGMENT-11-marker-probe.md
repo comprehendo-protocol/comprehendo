@@ -104,3 +104,27 @@ is not this feature's to edit. Proved the claim two deterministic ways instead:
 reference identity of the returned entry across 10,000 probes (nothing is
 allocated per probe), and a Proxy trap census showing exactly 10,000 `get`
 traps for the marker key and zero mutating traps.
+
+## 11. Lint fixes touched test files after the Red Gate
+
+Four `typescript-eslint` errors (an unbound-method read of a descriptor's
+`get`/`set`, two unnecessary assertions, one unsafe `any` assignment) were in
+the test files, not the implementation. Fixed by changing the EXPRESSION form
+only (`expect(typeof descriptor?.get).toBe('undefined')` for the same claim);
+no assertion was weakened, removed, or retargeted, and the suite was re-run
+red-to-green afterwards to confirm the tests still bind.
+
+## 12. Attaching to an already-frozen target is left to the runtime
+
+`attachMarker` on a frozen object throws the engine's own
+`TypeError: Cannot define property`. Not wrapped: attachment happens at
+construction or throw time, before anything freezes the value, and inventing a
+second error message for a case the doc does not describe would be scope.
+
+## 13. Acceptance criterion 2 is demonstrated, not owned, here
+
+"A provider's root export, every raised error, and named controlled handles all
+carry the marker" is wired for real providers by SDK Entry [14]. This component
+owns the helper that does it; the unit suite and the live entry-surface run
+exercise all three value shapes (root export, raised error, cursor handle)
+through the built artifact.
