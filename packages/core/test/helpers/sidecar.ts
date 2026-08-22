@@ -15,6 +15,8 @@
  * catalog, standing in for an installed `@comprehendo/mongodb-operator`
  * published for a package that never adopted anything.
  */
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
@@ -148,4 +150,102 @@ export function markedError(message: string, twin?: Twin): Error {
 /** An error carrying the marker but no twin of its own. */
 export function markedBare(message: string): Error {
   return attachMarker(new Error(message), nativeEntry());
+}
+
+// --- a real installed tree ---------------------------------------------------
+
+/** The twin the generated NATIVE toy raises. Only a native implementation has it. */
+export const NATIVE_CODE = 'NATIVE_SORT_SPILL';
+
+const trees: string[] = [];
+
+/** A real project root with a real node_modules, on a real disk. */
+export interface Tree {
+  readonly root: string;
+  /** Write an installed `@comprehendo/<target>` corpus package. */
+  installCorpus(files: Readonly<Record<string, string>>, directory?: string): string;
+  /** Write an installed target package's package.json. */
+  installTarget(name: string, manifest?: Readonly<Record<string, unknown>>): string;
+  /** Path inside the tree. */
+  path(...segments: string[]): string;
+}
+
+export function makeTree(): Tree {
+  const root = mkdtempSync(join(tmpdir(), 'comprehendo-router-'));
+  trees.push(root);
+  const path = (...segments: string[]): string => join(root, ...segments);
+  const write = (file: string, text: string): void => {
+    mkdirSync(join(file, '..'), { recursive: true });
+    writeFileSync(file, text, 'utf8');
+  };
+  return {
+    root,
+    path,
+    installCorpus(files, directory = TOY) {
+      const home = path('node_modules', '@comprehendo', directory);
+      for (const [name, text] of Object.entries(files)) write(join(home, name), text);
+      return home;
+    },
+    installTarget(name, manifest = {}) {
+      const home = path('node_modules', ...name.split('/'));
+      write(join(home, 'package.json'), `${JSON.stringify({ name, version: '1.4.0', ...manifest }, null, 2)}\n`);
+      return home;
+    },
+  };
+}
+
+/** Delete every temp tree this suite made. */
+export function cleanTrees(): void {
+  for (const root of trees.splice(0)) rmSync(root, { recursive: true, force: true });
+}
+
+/**
+ * The files a published `@comprehendo/<toy>` corpus package ships, built with
+ * the real tools: 21's `serializeIndex` for the fingerprint artifact, the
+ * shared twin catalog for the twins, and the packed corpus 13 reads.
+ */
+export async function toyCorpusFiles(): Promise<Record<string, string>> {
+  const { serializeIndex } = await fingerprintModule();
+  return {
+    'package.json': `${JSON.stringify(
+      { name: TOY_CORPUS_PACKAGE, version: '0.3.1', comprehendoCorpus: { target: TOY } },
+      null,
+      2,
+    )}\n`,
+    'comprehendo.fingerprints.json': serializeIndex(await realMatcher([TOY_FINGERPRINT])),
+    'comprehendo.twins.json': `${JSON.stringify(catalog(sortEntry), null, 2)}\n`,
+    'comprehendo.packed.json': `${JSON.stringify(toyPacked(), null, 2)}\n`,
+  };
+}
+
+/**
+ * The source of a real, natively adopted toy: an ESM package that attaches the
+ * well-known marker and its own twin to the error it raises. It cannot import
+ * core's TypeScript source (Node loads a module written outside this package
+ * with its own loader, not the test runner's transform), so it speaks the
+ * protocol directly, exactly as an independent package would. The suite
+ * asserts the symbol it uses is identical to core's COMPREHENDO_MARKER.
+ */
+export function nativeToySource(): string {
+  const entry = nativeEntry();
+  const twin = {
+    comprehendo: '0.1',
+    code: NATIVE_CODE,
+    reason: 'The sort spilled to disk; the native build knows which index would satisfy it.',
+    received: TOY_RAW,
+    fixes: [{ title: 'Create the compound index this sort needs', confidence: 'high' }],
+  };
+  return [
+    "const MARKER = Symbol.for('comprehendo');",
+    `const entry = Object.freeze(${JSON.stringify(entry)});`,
+    `const twin = Object.freeze(${JSON.stringify(twin)});`,
+    'export const marker = MARKER;',
+    'export function sortByCreatedAt() {',
+    `  const error = new Error(${JSON.stringify(TOY_RAW)});`,
+    "  Object.defineProperty(error, 'twin', { value: twin, enumerable: true });",
+    '  Object.defineProperty(error, MARKER, { value: entry, enumerable: false });',
+    '  throw error;',
+    '}',
+    '',
+  ].join('\n');
 }
