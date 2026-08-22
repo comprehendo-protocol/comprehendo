@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/unvalidatable.schema.json",
+  "title": "Unvalidatable",
+  "description": "What `validate(input)` MUST return where it cannot judge a particular input without executing it (RFC §5.3.2), rather than guess in either direction. `valid` is null, never a boolean: an honest abstention, not a verdict. Note the level-2 rule this sits next to (RFC §3): a provider that cannot judge without executing MUST omit `validate` entirely and declare Level 1, so the absence of the surface and this shape are two different honest answers, and neither is a fake pass.",
+  "type": "object",
+  "required": ["valid", "code", "reason"],
+  "properties": {
+    "valid": {
+      "type": "null",
+      "description": "Always null. `true` would be a guess and `false` would be a verdict; abstention is the whole shape."
+    },
+    "code": {
+      "const": "UNVALIDATABLE",
+      "description": "The sentinel code. Fixed by the RFC, not provider-owned."
+    },
+    "reason": {
+      "type": "string",
+      "description": "Why this input cannot be judged without executing it."
+    }
+  }
+}

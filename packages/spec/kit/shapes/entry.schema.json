@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/entry.schema.json",
+  "title": "ComprehendoEntry",
+  "description": "What a successful marker probe returns (RFC §4.2), carrying identity and priming (RFC §5.5). This schema covers the DATA fields only: in each ecosystem the entry also carries the callable surfaces themselves (docs, validate, explain, comprehend) as native functions on the same object, which no JSON Schema can describe. Twinned errors deliberately do not appear in `surfaces`: they are unconditional at every level (RFC §3), so listing them would carry no information.",
+  "type": "object",
+  "required": ["comprehendo", "name", "level", "surfaces", "identity", "priming"],
+  "properties": {
+    "comprehendo": {
+      "type": "string",
+      "description": "The spec version this provider implements, e.g. \"0.1\"."
+    },
+    "name": {
+      "type": "string",
+      "description": "The provider's own name."
+    },
+    "level": {
+      "type": "integer",
+      "enum": [1, 2],
+      "description": "The conformance level (RFC §3). 1 is twins plus docs plus identity; 2 adds validate and explain."
+    },
+    "surfaces": {
+      "type": "array",
+      "description": "The CALLABLE surfaces this provider offers. A provider that cannot judge without executing MUST omit `validate` here rather than fake it, so this list is a statement of what exists, never a set of nullable placeholders.",
+      "items": {
+        "type": "string",
+        "enum": ["docs", "validate", "explain", "comprehend"]
+      }
+    },
+    "identity": {
+      "type": "string",
+      "description": "What the tool is, the completeness contract, and the pointer, in that order (RFC §5.5)."
+    },
+    "priming": {
+      "type": "string",
+      "description": "The adoption unit: the snippet a project pastes into its agents file. MUST fit in 150 tokens (RFC §5.5); the ceiling is enforced by the budget harness, not here."
+    }
+  }
+}

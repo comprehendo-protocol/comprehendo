@@ -1,0 +1,19 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/manifest.schema.json",
+  "title": "ManifestDeclaration",
+  "description": "The provider-side declaration a conforming provider MUST carry in its package manifest so the probe can be answered without loading code (RFC §4.3): the `comprehendo` key in package.json, `[tool.comprehendo]` in pyproject.toml, the gemspec metadata hash. This declaration is ADVISORY; the marker on the value is the source of truth at runtime, and if they disagree the marker wins. The endorsement keys of RFC §10.6 (`corpus`, `owners`) ride the same manifest key and validate here by virtue of the open-object rule, without this version of the spec having to name them.",
+  "type": "object",
+  "required": ["version", "level"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "description": "The spec version this provider implements, e.g. \"0.1\"."
+    },
+    "level": {
+      "type": "integer",
+      "enum": [1, 2],
+      "description": "The declared conformance level (RFC §3). An integer, not a string: the manifest form in the RFC is `level: 2`."
+    }
+  }
+}
