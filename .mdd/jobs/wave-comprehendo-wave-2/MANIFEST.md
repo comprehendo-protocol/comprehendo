@@ -21,7 +21,7 @@ started: 2026-08-22
 - [x] 11-marker-probe (COMPONENT), 58/58 green, merged, all 4 gates (typecheck/lint/test/build) clean; review found attachMarker() didn't validate its entry on write (a malformed attach silently became invisible to probe()/hasMarker()), fixed and mutation-verified, 100/100
 - [x] 12-twin-builder (COMPONENT), 40/40 green, merged; resolved the apply-grammar gap to LITERAL against the wave-1 kit fixtures; review found 3 real gaps (auditTwin unwired, nested-pipeline CC7 bypass, empty-reason unchecked), all fixed and mutation-verified, 154/154
 - [x] 13-docs-engine (COMPONENT), 46/46 green, merged; defined the wave-2 packed-corpus format (17's contract); found+fixed an 11-marker-probe CC1 scan over-scope bug on integration; review found an uncapped ambiguous-tie nearest list and a translations-shape crash-not-reject gap, both fixed and mutation-verified, 162/162
-- [ ] 14-sdk-entry (COMPONENT)
+- [x] 14-sdk-entry (COMPONENT), 52/52 green, merged (214/214 combined); closed 12's deferred marker-entry wiring for real; corrected two doc shapes to the RFC (explain/UNVALIDATABLE)
 - [ ] 17-corpus-generator (COMPONENT)
 - [ ] 15-manifest-wiring (COMPONENT)
 - [ ] 16-recorder (COMPONENT)
@@ -188,3 +188,49 @@ dedicated commit for the 3 files touched
 packages/spec/test/helpers/negative.mjs, packages/spec/test/negative-kit
 .test.mjs), all in the wave-1 negative kit's territory, done here because
 12 correctly declined to touch a sibling wave's files itself.
+
+### 14-sdk-entry (8 calls, unattended, no blockers)
+
+1. `explain()` returns the schema shape `{would_execute, notes?}`, not
+   the doc's `{literalForm, notes}`; UNVALIDATABLE is `{valid: null,
+   code: "UNVALIDATABLE", reason}`, not `{query, reason}`. RFC/kit wins
+   per CLAUDE.md, same precedent 13 set; doc corrected, acceptance suite
+   asserts produced objects against the schema files' own required-key
+   lists so they cannot drift apart again.
+2. Level 2 requires BOTH `validate` and `explain`; one alone gets that
+   surface listed in `entry.surfaces` but `level` stays 1, since a
+   consumer branching on `level` must never be told to call a surface
+   that is not there.
+3. `hooks` needed `catalog` and `identity` beyond the doc's abbreviated
+   `{twinResolvers, validate?, explain?}` sketch (a twin builder needs a
+   full `ProviderCatalog`; `attachMarker` refuses an entry without
+   `identity`), neither derivable from the packed corpus. Added as
+   required hook fields; doc corrected.
+4. **Priming snippet, real cross-cutting collision, resolved in-lane:**
+   a first attempt shipped a `DEFAULT_PRIMING` constant (the RFC 5.5
+   snippet), which tripped 11's CC9 one-definition-site scan
+   (`findMarkerCalls` blanks comments, not string literals, so the
+   snippet's own prose mentioning `Symbol.for('comprehendo')` read as a
+   second definition site). Did NOT split the literal (that is the
+   negative kit's own computed-marker anti-pattern) and did NOT edit
+   11's scan (not this lane's file). Made `priming` a required hook
+   instead, no reference text ships in core source; the toy package
+   test reads the real snippet from the kit fixture so the CC5 budget
+   assertion still runs for real. Recorded `[deferred]`, real fix
+   belongs to 36-priming-snippet or a string-literal-aware CC9 scan.
+5. A `validate` verdict naming a cataloged code builds its twin through
+   the SAME twin builder throw sites use (always CC7-checked); an
+   unreadable verdict raises rather than defaulting to valid, "the one
+   answer a judge must never guess."
+6. An UNSTRUCTURED twin raised via `provider.raise(raw, context)` drops
+   `context` (12's `unstructuredTwin(raw)` takes no context argument,
+   not this lane's file to change); recorded `[deferred]`, a one
+   -argument change in 12 when someone next touches it.
+7. Entry/manifest carry `SPEC_VERSION` from `twin.ts` (what this
+   implementation actually runs), not the packed corpus's own
+   `comprehendo` field; no mismatch check added since no doc requires
+   one and 13 already owns what this runtime can read via `packed`.
+8. `packages/core/src/index.ts` addition kept to one re-export line
+   (`makeProvider` and its directly-tied types), leaving room for 15/16
+   to add their own lines beside it rather than restructuring the
+   barrel.
