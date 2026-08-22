@@ -4,8 +4,8 @@ title: CC2 Shape Identity
 type: SPEC
 path: Spec / Cross-Cutting Contracts / Shape Identity
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-1
