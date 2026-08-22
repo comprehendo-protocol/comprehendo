@@ -16,15 +16,15 @@ overlap_count: 3
 **Core / Cross-Cutting Contracts / Honest Miss**
   └── `20-cc10-honest-miss` - CC10 Honest Miss (planned)
 **Core / Cross-Cutting Contracts / Marker Freeze**
-  └── `10-cc9-marker-freeze` - CC9 Marker Freeze (planned)
+  └── `10-cc9-marker-freeze` - CC9 Marker Freeze (complete)
 **Core / Cross-Cutting Contracts / Native Precedence**
   └── `19-cc8-native-precedence` - CC8 Native Precedence (planned)
 **Core / Cross-Cutting Contracts / No Raw Errors**
-  └── `08-cc3-no-raw-errors` - CC3 No Raw Errors (planned)
+  └── `08-cc3-no-raw-errors` - CC3 No Raw Errors (complete)
 **Core / Cross-Cutting Contracts / Probe Purity**
-  └── `07-cc1-probe-purity` - CC1 Probe Purity (planned)
+  └── `07-cc1-probe-purity` - CC1 Probe Purity (complete)
 **Core / Cross-Cutting Contracts / Schema-Bound Fixes**
-  └── `09-cc7-schema-bound-fixes` - CC7 Schema-Bound Fixes (planned)
+  └── `09-cc7-schema-bound-fixes` - CC7 Schema-Bound Fixes (complete)
 **Core / Docs Engine**
   └── `13-docs-engine` - Docs Engine (planned)
 **Core / Manifest Wiring**
@@ -104,10 +104,10 @@ graph TD
   04_conformance_fixtures["04-conformance-fixtures"]:::done
   05_negative_fixtures["05-negative-fixtures"]:::done
   06_budget_harness["06-budget-harness"]:::done
-  07_cc1_probe_purity["07-cc1-probe-purity"]:::planned
-  08_cc3_no_raw_errors["08-cc3-no-raw-errors"]:::planned
-  09_cc7_schema_bound_fixes["09-cc7-schema-bound-fixes"]:::planned
-  10_cc9_marker_freeze["10-cc9-marker-freeze"]:::planned
+  07_cc1_probe_purity["07-cc1-probe-purity"]:::done
+  08_cc3_no_raw_errors["08-cc3-no-raw-errors"]:::done
+  09_cc7_schema_bound_fixes["09-cc7-schema-bound-fixes"]:::done
+  10_cc9_marker_freeze["10-cc9-marker-freeze"]:::done
   11_marker_probe["11-marker-probe"]:::planned
   12_twin_builder["12-twin-builder"]:::planned
   13_docs_engine["13-docs-engine"]:::planned
