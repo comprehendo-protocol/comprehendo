@@ -23,7 +23,8 @@ import {
 const CORPUS_PATH = fileURLToPath(
   new URL('./fixtures/mongodb-operator.packed.json', import.meta.url),
 );
-const SOURCE_PATH = fileURLToPath(new URL('../src/docs.ts', import.meta.url));
+/** Every module the docs engine is made of. The CC6 scan covers all of them. */
+const ENGINE_MODULES = ['docs.ts', 'docs-vocabulary.ts'];
 
 const dirs: string[] = [];
 const tempDir = (): string => {
@@ -159,12 +160,30 @@ describe('the local miss log', () => {
 // in the same block (the exact import allowlist, the exact node:fs surface)
 // were red at the gate and anchor the absence claims to a real implementation.
 describe('nothing here can reach the network (CC6 [27])', () => {
-  const source = (): string => readFileSync(SOURCE_PATH, 'utf8');
+  // The whole engine, not just its entry module: CC1 [07] says the scan covers
+  // "any module it imports", because a transitive import defeats the guarantee.
+  const MODULES = ENGINE_MODULES.map((name) => ({
+    name,
+    text: readFileSync(fileURLToPath(new URL(`../src/${name}`, import.meta.url)), 'utf8'),
+  }));
+
   const importSpecifiers = (text: string): string[] =>
     [...text.matchAll(/(?:^|\n)\s*import\s[^;]*?from\s+['"]([^'"]+)['"]/g)].map((m) => m[1] ?? '');
 
-  it('imports nothing beyond local-filesystem modules', () => {
-    expect([...new Set(importSpecifiers(source()))].sort()).toEqual(['node:fs', 'node:path']);
+  it('the engine as a whole imports nothing beyond local-filesystem modules', () => {
+    const specifiers = MODULES.flatMap(({ text }) => importSpecifiers(text))
+      .filter((specifier) => !specifier.startsWith('.'));
+    expect([...new Set(specifiers)].sort()).toEqual(['node:fs', 'node:path']);
+  });
+
+  it('every relative import stays inside the engine', () => {
+    for (const { name, text } of MODULES) {
+      for (const specifier of importSpecifiers(text).filter((s) => s.startsWith('.'))) {
+        expect(ENGINE_MODULES, `${name} imports ${specifier}`).toContain(
+          specifier.replace(/^\.\//, '').replace(/\.js$/, '.ts'),
+        );
+      }
+    }
   });
 
   it('imports no network-capable module, statically or dynamically', () => {
@@ -181,34 +200,37 @@ describe('nothing here can reach the network (CC6 [27])', () => {
       'inspector',
       'cluster',
     ];
-    const text = source();
-    for (const name of forbidden) {
-      expect(text, `docs.ts references ${name}`).not.toMatch(
-        new RegExp(`['"](?:node:)?${name.replace(/[.*+?^$()|[\]\\]/g, '\\$&')}['"]`),
-      );
+    for (const { name, text } of MODULES) {
+      for (const module of forbidden) {
+        expect(text, `${name} references ${module}`).not.toMatch(
+          new RegExp(`['"](?:node:)?${module}['"]`),
+        );
+      }
+      expect(text, `${name} imports dynamically`).not.toMatch(/\bimport\s*\(/);
+      expect(text, `${name} calls require`).not.toMatch(/\brequire\s*\(/);
     }
-    expect(text).not.toMatch(/\bimport\s*\(/);
-    expect(text).not.toMatch(/\brequire\s*\(/);
   });
 
-  it('calls no network global', () => {
-    const text = source();
-    for (const global of ['fetch(', 'XMLHttpRequest', 'WebSocket', 'sendBeacon', 'EventSource']) {
-      expect(text, `docs.ts uses ${global}`).not.toContain(global);
+  it('calls no network-capable builtin', () => {
+    for (const { name, text } of MODULES) {
+      for (const builtin of ['fetch(', 'XMLHttpRequest', 'WebSocket', 'sendBeacon', 'EventSource']) {
+        expect(text, `${name} uses ${builtin}`).not.toContain(builtin);
+      }
+      expect(text, `${name} carries a URL`).not.toMatch(/https?:\/\//);
     }
-    expect(text).not.toMatch(/https?:\/\//);
   });
 
   it('never walks a directory: the corpus is one artifact, read once', () => {
-    const text = source();
-    for (const api of ['readdir', 'opendir', 'glob', 'watch', 'scandir']) {
-      expect(text, `docs.ts uses ${api}`).not.toContain(api);
+    for (const { name, text } of MODULES) {
+      for (const api of ['readdir', 'opendir', 'glob', 'watch', 'scandir']) {
+        expect(text, `${name} uses ${api}`).not.toContain(api);
+      }
     }
   });
 
   it('touches the filesystem only to read the artifact and append the log', () => {
-    const text = source();
-    const fsImport = /import\s*\{([^}]*)\}\s*from\s*'node:fs'/.exec(text);
+    const entry = MODULES.find(({ name }) => name === 'docs.ts')?.text ?? '';
+    const fsImport = /import\s*\{([^}]*)\}\s*from\s*'node:fs'/.exec(entry);
     expect(fsImport).not.toBeNull();
     const used = (fsImport?.[1] ?? '')
       .split(',')

@@ -105,6 +105,34 @@ a query with zero signal against the corpus gets `nearest: []` rather than
 three plausible-looking wrong topics. Padding it would be exactly the
 "confident wrong answer" the project forbids.
 
+## J10, the matcher was extracted to `src/docs-vocabulary.ts` at the size gate
+
+`docs.ts` came out at 379 lines against the project's 300-line limit
+(`.claude/hooks/quality-gate.sh`, `MDD_MAX_FILE_LINES:-300`). The flow doc's
+own instruction for this case: "an oversized file whose bulk is pure
+functions gets those functions extracted BECAUSE they are the testable
+part". Extracted normalize/tokenize/buildAliases/matchTopics/levenshtein/
+tokenSimilarity/aliasScore/suggest into a new sibling module with zero
+imports; `docs.ts` is now 252 lines and `docs-vocabulary.ts` 153.
+
+The new file is added to this feature's `source_files`. It is a new,
+uniquely named module no sibling Wave-2 feature owns (they own marker.ts,
+twin.ts, sdk.ts, config.ts, recorder.ts, cli/), so it cannot collide at
+merge. This was NOT treated as a blocker for that reason: it is a file this
+feature creates and its own doc now declares, not a shared file the lane
+plan assigned elsewhere.
+
+## J11, two test edits after the Phase 5 freeze, neither weakens an assertion
+
+1. The CC6 scan was widened from `docs.ts` to every module the engine is
+   made of, because J10 gave it a second one and CC1 [07] is explicit that a
+   transitive import defeats the guarantee. This made the scan strictly
+   stronger and added one test ("every relative import stays inside the
+   engine").
+2. `docs(term as string)` became `if (term === undefined) continue; docs(term)`
+   to clear `@typescript-eslint/no-unnecessary-type-assertion`. Same
+   assertions, no behaviour change.
+
 ## J9, test-fixture packed corpus lives in `packages/core/test/fixtures/`
 
 As instructed. Bodies for `aggregation stages`, `$group`, `how to undo a

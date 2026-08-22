@@ -222,7 +222,8 @@ describe('docs(query), the three vocabularies (RFC 5.2.2)', () => {
       ];
       for (const term of tiers) {
         expect(term).toBeDefined();
-        const response = docs(term as string);
+        if (term === undefined) continue;
+        const response = docs(term);
         expect(isMiss(response), `${topic.topic} unreachable from "${term ?? ''}"`).toBe(false);
         expect(asTopic(response).topic).toBe(topic.topic);
       }
