@@ -3,16 +3,16 @@ id: 21-fingerprint-index-matcher
 title: Fingerprint Index & Matcher
 type: COMPONENT
 path: Registry / Fingerprint Index
-source_files: [packages/registry-tools/src/fingerprint.ts]
-status: planned
-phase: idle
+source_files: [packages/registry-tools/src/fingerprint.ts, packages/registry-tools/src/fingerprint-facets.ts]
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-4
 depends_on: [20-cc10-honest-miss]
 tags: [fingerprint, static-index, error-class, stack-shape, precision-first, static-pattern]
-test_files: []
-known_issues: []
+test_files: [packages/registry-tools/test/fingerprint-index.test.ts, packages/registry-tools/test/fingerprint-collision.test.ts, packages/registry-tools/test/fingerprint-match.test.ts, packages/registry-tools/test/cc10-honest-miss.property.test.ts, packages/registry-tools/test/unstructured-shape-drift.test.ts]
+known_issues: [{type: gap, note: "The static-pattern fingerprint kind (matching source rather than runtime errors) is an open Wave-1 design question: who runs it (wrap(), lint integration, or both) is not yet decided."}, {type: gap, note: "registry-tools takes no runtime import from core (packages install independently; a ../../core/src import from src/ breaks rootDir), so the three UNSTRUCTURED literals this component produces are duplicated rather than shared. A drift test reads core's actual source and packages/spec/kit/shapes/undocumented.schema.json directly to keep the duplicate honest, but a real shared-constants package (if one is ever wanted) is a later call, not this feature's."}]
 ---
 
 # Fingerprint Index & Matcher
@@ -72,12 +72,16 @@ by agents.
 
 ## Acceptance Criteria
 
-- [ ] The index builds deterministically from a corpus's declared
+- [x] The index builds deterministically from a corpus's declared
       fingerprints (error class, message pattern, stack shape).
-- [ ] An ambiguous input degrades to UNSTRUCTURED with named candidates
-      (CC10 [20] property test).
-- [ ] A synthetic cross-package collision fails the registry build with
-      the colliding packages named.
+- [x] An ambiguous input degrades to UNSTRUCTURED with named candidates
+      (CC10 [20] property test). Verified to have teeth: patching the
+      matcher to guess a best candidate instead of degrading turned 16
+      tests red.
+- [x] A synthetic cross-package collision fails the registry build with
+      the colliding packages named. (Enforced by index construction
+      itself; Submission Gate [29]'s CI wrapper around this check is
+      Wave 5's job, not built here.)
 
 ## Dependencies
 
@@ -88,3 +92,9 @@ by agents.
 - [gap] The `static-pattern` fingerprint kind (matching source rather
   than runtime errors) is an open Wave-1 design question: who runs it
   (`wrap()`, lint integration, or both) is not yet decided.
+- [gap] `registry-tools` takes no runtime import from `core` (packages
+  install independently; a `../../core/src` import from `src/` would
+  break `rootDir`), so the three UNSTRUCTURED literals this component
+  produces are duplicated rather than shared. A drift test reads
+  core's actual source and `packages/spec/kit/shapes/undocumented.schema.json`
+  directly to keep the duplicate honest.
