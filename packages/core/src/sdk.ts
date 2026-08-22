@@ -137,17 +137,33 @@ const mergeContext = (
 ): TwinContext | undefined =>
   derived === undefined && given === undefined ? undefined : { ...derived, ...given };
 
+// `ValidationVerdict` is a compile-time-only type: nothing at runtime stops a
+// `validate` hook from returning `undefined` (a missing `return` in one
+// branch is a plausible authoring bug), `null`, or a primitive. Without this
+// guard, the bare `in` operator throws its OWN unguarded TypeError
+// ("Cannot use 'in' operator to search for 'valid' in undefined") before
+// shapeVerdict's crafted, explanatory error ever gets a chance to fire, for
+// exactly the malformed-hook case that error message exists to explain.
+const isVerdictLike = (value: unknown): value is Record<string, unknown> =>
+  typeof value === 'object' && value !== null;
+
 const isClean = (verdict: ValidationVerdict): verdict is { readonly valid: true } =>
-  'valid' in verdict && verdict.valid === true;
+  isVerdictLike(verdict) && 'valid' in verdict && verdict.valid === true;
 
 const isAbstention = (verdict: ValidationVerdict): verdict is { readonly unvalidatable: string } =>
-  'unvalidatable' in verdict && typeof verdict.unvalidatable === 'string';
+  isVerdictLike(verdict) && 'unvalidatable' in verdict && typeof verdict.unvalidatable === 'string';
 
 const isResolution = (verdict: ValidationVerdict): verdict is TwinResolution =>
-  'code' in verdict && typeof verdict.code === 'string';
+  isVerdictLike(verdict) && 'code' in verdict && typeof verdict.code === 'string';
 
 /** Frozen so an explanation cannot be edited after the caller has been handed it. */
 const freezeExplanation = (explanation: Explanation): Explanation => {
+  if (!isVerdictLike(explanation)) {
+    throw new TypeError(
+      'comprehendo: the explain() hook returned something other than an object. ' +
+        'Return {would_execute, notes?}: the literal form input would execute as.',
+    );
+  }
   if (explanation.notes !== undefined) Object.freeze(explanation.notes);
   return Object.freeze(explanation);
 };

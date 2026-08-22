@@ -289,6 +289,22 @@ describe('validate(input), Level 2', () => {
 
     expect(() => provider.validate?.('anything')).toThrow(/verdict/i);
   });
+
+  // A missing `return` in one branch of a hook is a plausible authoring bug:
+  // these must reach the SDK's own explanatory error, not a native
+  // "Cannot use 'in' operator" TypeError from an unguarded property check.
+  it.each([undefined, null, 'fine', 42, true])(
+    'raises the SDK\'s own explanatory error on a %p verdict, not a native one',
+    (badVerdict) => {
+      const provider = makeProvider(toyCorpus(), {
+        ...toyHooks(),
+        validate: () => badVerdict as never,
+      });
+
+      expect(() => provider.validate?.('anything')).toThrow(/verdict/i);
+      expect(() => provider.validate?.('anything')).not.toThrow(/in operator/i);
+    },
+  );
 });
 
 describe('explain(input), Level 2', () => {
@@ -307,4 +323,17 @@ describe('explain(input), Level 2', () => {
 
     expect(Object.isFrozen(explanation)).toBe(true);
   });
+
+  it.each([undefined, null, 'fine', 42])(
+    'raises the SDK\'s own explanatory error when the explain hook returns %p, not a native one',
+    (badExplanation) => {
+      const provider = makeProvider(toyCorpus(), {
+        ...toyHooks(),
+        explain: () => badExplanation as never,
+      });
+
+      expect(() => provider.explain?.('anything')).toThrow(/explain/i);
+      expect(() => provider.explain?.('anything')).not.toThrow(/cannot read propert/i);
+    },
+  );
 });
