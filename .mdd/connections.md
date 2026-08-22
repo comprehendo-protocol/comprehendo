@@ -60,7 +60,7 @@ overlap_count: 3
 **Distribution / Registry Website**
   └── `40-registry-website` - Registry Website (planned)
 **Python / Python Core**
-  └── `18-python-core` - Python Core (planned)
+  └── `18-python-core` - Python Core (complete)
 **Registry / Corpus Format**
   └── `28-corpus-format` - Corpus Format (planned)
 **Registry / Cross-Cutting Contracts / Folklore Gate**
@@ -115,7 +115,7 @@ graph TD
   15_manifest_wiring["15-manifest-wiring"]:::done
   16_recorder["16-recorder"]:::done
   17_corpus_generator["17-corpus-generator"]:::done
-  18_python_core["18-python-core"]:::planned
+  18_python_core["18-python-core"]:::done
   19_cc8_native_precedence["19-cc8-native-precedence"]:::planned
   20_cc10_honest_miss["20-cc10-honest-miss"]:::planned
   21_fingerprint_index_matcher["21-fingerprint-index-matcher"]:::planned

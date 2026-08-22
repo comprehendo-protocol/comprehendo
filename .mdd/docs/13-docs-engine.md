@@ -197,6 +197,19 @@ None open.
 
 ## Fixed Issues
 
+### Test fixture drifted from the kit's probe-hit transcript (fixed 2026-08-22)
+
+Found by 18-python-core's build (Wave 3): `test/fixtures/mongodb
+-operator.packed.json`'s `aggregation stages` topic was missing the
+second worked example the kit's `probe-hit.json` transcript shows (the
+`STAGE_UNKNOWN` twin a misspelled stage produces) and ordered
+`see_also` differently. A corpus that answers a transcript's question
+with a different body cannot reproduce the transcript.
+
+- Fixed by matching the fixture body to the kit transcript verbatim,
+  the same correction the Python port independently made to its own
+  copy of this fixture; the two are now byte-identical.
+
 ### Two review findings (fixed 2026-08-22)
 
 Found by review, both mutation-verified after fixing:
