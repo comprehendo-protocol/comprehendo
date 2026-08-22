@@ -78,7 +78,7 @@ overlap_count: 3
 **Registry / Submission Gate**
   └── `29-submission-gate` - Submission Gate (planned)
 **Spec / Budget Harness**
-  └── `06-budget-harness` - Budget Harness (planned)
+  └── `06-budget-harness` - Budget Harness (complete)
 **Spec / Conformance Fixtures**
   └── `04-conformance-fixtures` - Conformance Fixtures (planned)
 **Spec / Cross-Cutting Contracts / Context Budget**
@@ -103,7 +103,7 @@ graph TD
   03_shape_schemas["03-shape-schemas"]:::done
   04_conformance_fixtures["04-conformance-fixtures"]:::planned
   05_negative_fixtures["05-negative-fixtures"]:::planned
-  06_budget_harness["06-budget-harness"]:::planned
+  06_budget_harness["06-budget-harness"]:::done
   07_cc1_probe_purity["07-cc1-probe-purity"]:::planned
   08_cc3_no_raw_errors["08-cc3-no-raw-errors"]:::planned
   09_cc7_schema_bound_fixes["09-cc7-schema-bound-fixes"]:::planned
