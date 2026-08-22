@@ -118,18 +118,25 @@ def _received_of(raw: Any) -> Any:
 
 
 def _first_present(*candidates: Any) -> Any:
-    """The first candidate that is not the absent sentinel, or the sentinel."""
+    """The first candidate that is neither the absent sentinel NOR ``None``, or
+    the sentinel. Mirrors `packages/core/src/twin.ts`'s `??` chain
+    (`context?.field ?? entry.field ?? ...`) exactly: JavaScript's nullish
+    -coalescing falls through on BOTH `undefined` and an explicit `null`, so
+    an explicit `None` here must fall through too, not be treated as a real
+    value. Found by review: treating `None` as present broke the
+    byte-identical guarantee (CC2 [01]) for `context={"received": None}` on
+    an entry with no `received`, TS correctly omits the field, this used to
+    write `"received": null`."""
     for candidate in candidates:
-        if candidate is not _ABSENT:
+        if candidate is not _ABSENT and candidate is not None:
             return candidate
     return _ABSENT
 
 
 class _Absent:
-    """Distinguishes "no value" from a legitimate ``None``. A twin's `received`
-    may honestly be ``None`` (a provider that received nothing), which is a
-    different fact from "this twin has no received field at all", and the two
-    serialize differently (CC2 [01])."""
+    """The "no value at all" sentinel, distinct from Python's ``None`` (which
+    `_first_present` treats as equivalent to absent, matching JavaScript's
+    `??`, see there)."""
 
     def __repr__(self) -> str:  # pragma: no cover, debugging aid only
         return "<absent>"

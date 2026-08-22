@@ -134,9 +134,22 @@ def declaration_for(entry: ComprehendoEntry) -> ManifestDeclaration:
 
 
 def parse_declaration(value: Any) -> ManifestReading:
-    """Read the value found AT the manifest key (or the pyproject table)."""
-    if value is None:
-        return {"status": "absent"}
+    """Read the value found AT the manifest key (or the pyproject table).
+
+    Both callers (`config.py`'s `read_package_json`, `pyproject.py`'s
+    `read_pyproject`) already handle the TRUE "key is not present at all"
+    case before ever calling this function, so by the time `value` arrives
+    here it is never a stand-in for "absent". Found by review: this used to
+    treat Python's `None` as that absent signal, which conflated it with a
+    manifest key holding an explicit JSON `null` (`{"comprehendo": null}`
+    parses to `None` in Python too), reporting `status: "absent"` (no
+    claim) about a package whose OWN manifest is broken (should be
+    `status: "unreadable"`), mirroring `packages/core/src/config.ts`'s
+    `parseDeclaration`, which only treats JavaScript's `undefined` (the
+    real "key never existed" value) as absent and lets a `null` fall
+    through to `declarationProblem`. `declaration_problem(None)` already
+    reports "must be an object", so no special case is needed here at all.
+    """
     problem = declaration_problem(value)
     if problem is not None:
         return {"status": "unreadable", "reason": problem}
