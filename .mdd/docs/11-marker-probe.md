@@ -4,14 +4,14 @@ title: Marker & Probe
 type: COMPONENT
 path: Core / Marker & Probe
 source_files: [packages/core/src/marker.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
 depends_on: [07-cc1-probe-purity, 10-cc9-marker-freeze]
 tags: [marker, symbol, probe, discovery, side-effect-free]
-test_files: []
+test_files: [packages/core/test/marker.test.ts, packages/core/test/marker-purity.test.ts, packages/core/test/marker-freeze.test.ts]
 known_issues: []
 primitives:
   - name: "Symbol.for('comprehendo')"
@@ -71,11 +71,13 @@ No other state.
 
 ## Acceptance Criteria
 
-- [ ] `Symbol.for('comprehendo')` is defined exactly once in
+- [x] `Symbol.for('comprehendo')` is defined exactly once in
       `packages/core/src/marker.ts`.
-- [ ] A provider's root export, every raised error, and named controlled
-      handles all carry the marker.
-- [ ] A 10,000-iteration probe test (CC1 [07]) passes with identical
+- [x] A provider's root export, every raised error, and named controlled
+      handles all carry the marker. (The `attachMarker` helper is proven
+      against all three value shapes; wiring a real provider through it
+      end-to-end is SDK Entry [14]'s job.)
+- [x] A 10,000-iteration probe test (CC1 [07]) passes with identical
       results and zero observable side effects.
 
 ## Dependencies

@@ -30,7 +30,7 @@ overlap_count: 3
 **Core / Manifest Wiring**
   └── `15-manifest-wiring` - Manifest Wiring (planned)
 **Core / Marker & Probe**
-  └── `11-marker-probe` - Marker & Probe (planned)
+  └── `11-marker-probe` - Marker & Probe (complete)
 **Core / Recorder**
   └── `16-recorder` - Recorder (planned)
 **Core / Router**
@@ -108,7 +108,7 @@ graph TD
   08_cc3_no_raw_errors["08-cc3-no-raw-errors"]:::done
   09_cc7_schema_bound_fixes["09-cc7-schema-bound-fixes"]:::done
   10_cc9_marker_freeze["10-cc9-marker-freeze"]:::done
-  11_marker_probe["11-marker-probe"]:::planned
+  11_marker_probe["11-marker-probe"]:::done
   12_twin_builder["12-twin-builder"]:::planned
   13_docs_engine["13-docs-engine"]:::planned
   14_sdk_entry["14-sdk-entry"]:::planned
