@@ -230,13 +230,29 @@ function docsSurface(
  * projected down to those two fields before it ever reaches a decision, which
  * is why no provider-side field can suppress a corpus (CC8 [19]).
  */
-function nativeEvidence(root: string, target: string): NativeEvidence | undefined {
+function nativeEvidence(
+  root: string,
+  target: string,
+  defects: EnvironmentDefect[],
+): NativeEvidence | undefined {
   const manifest = join(root, 'node_modules', ...target.split('/'), 'package.json');
   if (!existsSync(manifest)) return undefined;
   let reading: ManifestReading;
   try {
     reading = readManifestFile(manifest);
-  } catch {
+  } catch (error) {
+    // A path that EXISTS but cannot be READ (a directory sitting where the
+    // file should be, a permissions error) is not "no evidence", it is
+    // evidence this adapter failed to read. Found by review: silently
+    // returning undefined here meant a real natively-adopted package with a
+    // transiently unreadable manifest lost precedence to the sidecar with
+    // zero diagnostic trail, the exact "reported, never silently skipped"
+    // rule every other unreadable-artifact path in this file already
+    // follows (see loadCorpus/artifact above).
+    defects.push({
+      at: target,
+      detail: error instanceof Error ? error.message : String(error),
+    });
     return undefined;
   }
   return reading.status === 'absent' ? undefined : { manifest: reading };
@@ -268,7 +284,7 @@ export function discoverInstalledCorpora(options: DiscoveryOptions): Environment
     if (loaded === undefined) continue;
     corpora.push(loaded.corpus);
     fingerprints.push(...loaded.fingerprints);
-    const evidence = nativeEvidence(options.root, loaded.corpus.package);
+    const evidence = nativeEvidence(options.root, loaded.corpus.package, defects);
     if (evidence !== undefined) native[loaded.corpus.package] = evidence;
   }
 
