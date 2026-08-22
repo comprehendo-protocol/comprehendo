@@ -15,7 +15,7 @@ started: 2026-08-22
 
 - [x] 19-cc8-native-precedence (SPEC)
 - [x] 20-cc10-honest-miss (SPEC)
-- [x] 21-fingerprint-index-matcher (COMPONENT), 39/39 green, merged; scaffolded packages/registry-tools
+- [x] 21-fingerprint-index-matcher (COMPONENT), 39/39 green, merged; scaffolded packages/registry-tools; review found a same-id-different-facets silent drop, fixed and mutation-verified, 41/41
 - [ ] 22-router-precedence (COMPONENT)
 - [ ] 23-config-loader (COMPONENT)
 - [ ] 24-wrap-proxy (COMPONENT)

@@ -98,3 +98,22 @@ by agents.
   produces are duplicated rather than shared. A drift test reads
   core's actual source and `packages/spec/kit/shapes/undocumented.schema.json`
   directly to keep the duplicate honest.
+
+## Fixed Issues
+
+### Two entries sharing an id with different facets silently dropped one (fixed 2026-08-22)
+
+Found by review. Two entries sharing `package#corpusEntryId` but
+declaring DIFFERENT facets fell through both the id-based dedup (last
+write wins) and the signature-based collision check (they land in
+different signature buckets), so one entry vanished silently and
+order-dependently instead of failing the build, the exact silent-pick
+failure mode the collision detector exists to prevent, on the id axis
+instead of the fingerprint-signature axis.
+
+- Fixed by `identityDefects()`, which checks for this before the
+  dedup step and raises a `FingerprintIndexError` naming the id. An
+  identical entry declared twice (same id AND same facets) remains a
+  legitimate no-op dedup, unaffected. Mutation-verified: 2 new tests,
+  both red without the fix, one specifically proving the refusal is
+  order-independent.
