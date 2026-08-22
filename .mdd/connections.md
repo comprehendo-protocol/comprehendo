@@ -14,11 +14,11 @@ overlap_count: 3
 **Core / Corpus Generator**
   └── `17-corpus-generator` - Corpus Generator (complete)
 **Core / Cross-Cutting Contracts / Honest Miss**
-  └── `20-cc10-honest-miss` - CC10 Honest Miss (planned)
+  └── `20-cc10-honest-miss` - CC10 Honest Miss (complete)
 **Core / Cross-Cutting Contracts / Marker Freeze**
   └── `10-cc9-marker-freeze` - CC9 Marker Freeze (complete)
 **Core / Cross-Cutting Contracts / Native Precedence**
-  └── `19-cc8-native-precedence` - CC8 Native Precedence (planned)
+  └── `19-cc8-native-precedence` - CC8 Native Precedence (complete)
 **Core / Cross-Cutting Contracts / No Raw Errors**
   └── `08-cc3-no-raw-errors` - CC3 No Raw Errors (complete)
 **Core / Cross-Cutting Contracts / Probe Purity**
@@ -116,8 +116,8 @@ graph TD
   16_recorder["16-recorder"]:::done
   17_corpus_generator["17-corpus-generator"]:::done
   18_python_core["18-python-core"]:::done
-  19_cc8_native_precedence["19-cc8-native-precedence"]:::planned
-  20_cc10_honest_miss["20-cc10-honest-miss"]:::planned
+  19_cc8_native_precedence["19-cc8-native-precedence"]:::done
+  20_cc10_honest_miss["20-cc10-honest-miss"]:::done
   21_fingerprint_index_matcher["21-fingerprint-index-matcher"]:::planned
   22_router_precedence["22-router-precedence"]:::planned
   23_config_loader["23-config-loader"]:::planned
