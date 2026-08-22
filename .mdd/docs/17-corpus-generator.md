@@ -19,7 +19,7 @@ known_issues:
   - "[deferred] No `bin` entry was added to `packages/core/package.json`: that file is outside this feature's `source_files`, 14-sdk-entry builds against the same package concurrently, and how this package assembles into the published `comprehendo` npm package is already declared a Wave 7 (Distribution) decision. The entry point exists and is invoked as `node dist/cli/main.js <verb>`; wiring the bin name is a one-line job for whoever owns that manifest."
   - "[deferred] `packed: 1` (Docs Engine [13]) has no slot for twins or fixes, so `pack` emits the docs half of the corpus only. Getting authored twins into a running provider is SDK Entry [14]'s surface, and a combined artifact, if one is ever wanted, is Corpus Format [28]'s (Wave 5) call behind its version number."
   - "[gap] The scanner is a lexer, not a type checker (see Implementation Notes for why). A symbol re-exported through a barrel, an inferred return type, and a `throw` of a variable rather than a `new X(...)` are not resolved. They surface as an absent topic or twin, never as a wrong one, and `diff` reports the absence; a target that needs more will want the compiler API in a package that is allowed to depend on it."
-  - "[gap] Topic file names are lower-cased slugs, so two topics differing only in case (`Codec` and `codec`) would collide on disk. A scan seeds one topic per exported symbol and those names are unique, so it cannot happen from a scan; a hand-added topic can trip it."
+  - "[gap] Topic file names are lower-cased slugs, so two topics differing only in case (`Codec` and `codec`) would collide on disk. A same-bare-name collision from two different files is now disambiguated before it reaches this point (see Fixed Issues), but a case-only collision between two DIFFERENT topic name strings is not caught by that fix; a hand-added topic can still trip it."
   - "[gap] The comment-blanking lexer in `src/cli/lexer.ts` duplicates the one in `packages/core/test/helpers/source-scan.ts` (owned by 07/10/11's tests). Neither can import the other: the test helper needs `node:fs`, and src cannot import from test. Worth collapsing when something else forces one of them to change."
 primitives:
   - name: "comprehendo init"
@@ -337,6 +337,32 @@ a process (Upstream Watch [34] will want `diff`'s report, not its stdout):
   other.
 
 ## Fixed Issues
+
+### Three review findings (fixed 2026-08-22)
+
+Found by review, all mutation-verified after fixing:
+
+1. `mergeScan` keyed topics by bare export name alone, so two different
+   files exporting a same-named symbol (`export function validate` in
+   two modules) silently collapsed into one topic: the second export's
+   signature/docstring vanished, while its own twin's `docs` pointer
+   kept pointing at the surviving, unrelated topic. Contradicted this
+   doc's own (and `format.ts`'s) claim that a scan cannot produce a
+   name collision. Fixed: `disambiguateExports()` renames BOTH
+   colliding topics to `name (file-stem)` (never just the second, so
+   the result never depends on scan order) and re-points each
+   colliding throw site's `docs` pointer at its own file's
+   disambiguated topic.
+2. A malformed target `package.json` and a hand-corrupted topic file's
+   YAML front matter both surfaced as exit `70` ("a bug in this
+   tool") instead of exit `2` ("a precondition the user can fix"),
+   inconsistent with `corpus-io.ts`'s own `readJson`, which already
+   wraps the identical failure mode for the corpus's own files. Both
+   are ordinary, doc-invited user mistakes. Fixed: both now throw
+   `CliError` naming the file and the parse failure.
+3. `writeTopicFiles`'s stale-file cleanup crashed with `ERR_FS_EISDIR`
+   on a stray subdirectory under `topics/`. Fixed: `rmSync(...,
+   {recursive: true, force: true})`.
 
 ### Doc named a Wave 5 component as this feature's file format (fixed 2026-08-22)
 
