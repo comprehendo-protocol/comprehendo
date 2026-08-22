@@ -175,6 +175,40 @@ function collisionsIn(entries: readonly FingerprintEntry[]): readonly Fingerprin
 }
 
 /**
+ * Two entries sharing an identity (`package#corpusEntryId`) whose declared
+ * facets DISAGREE: same defect class as any other "two entries, one
+ * identity" case this feature refuses, found by review. Without this check,
+ * the dedup step below (`new Map(entries.map(e => [nameOf(e), e]))`) picks
+ * whichever one happens to appear last in iteration order and silently
+ * drops the other, which is exactly the silent-pick failure mode the
+ * collision detector exists to prevent, just on the id axis instead of the
+ * fingerprint-signature axis. Two entries sharing BOTH id and facets
+ * (identical in every way) are one entry declared twice, not a conflict.
+ */
+function identityDefects(entries: readonly FingerprintEntry[]): readonly IndexDefect[] {
+  const seen = new Map<string, FingerprintEntry>();
+  const defects: IndexDefect[] = [];
+  for (const entry of entries) {
+    const name = nameOf(entry);
+    const existing = seen.get(name);
+    if (existing === undefined) {
+      seen.set(name, entry);
+      continue;
+    }
+    if (signatureOf(existing) !== signatureOf(entry)) {
+      defects.push({
+        at: name,
+        detail:
+          `${name} is declared more than once with DIFFERENT fingerprints; ` +
+          'the registry build cannot pick one, each corpus entry ID must ' +
+          'name exactly one fingerprint',
+      });
+    }
+  }
+  return defects;
+}
+
+/**
  * Compile the static index. Refuses on a defective entry
  * (`FingerprintIndexError`) and on any fingerprint claimed by two different
  * corpus entries (`FingerprintCollisionError`), naming the packages. An
@@ -190,6 +224,7 @@ export function buildFingerprintIndex(source: Iterable<unknown>): FingerprintInd
     if (Array.isArray(normalized)) defects.push(...(normalized as IndexDefect[]));
     else entries.push(normalized as FingerprintEntry);
   }
+  defects.push(...identityDefects(entries));
   if (defects.length > 0) throw new FingerprintIndexError(defects);
 
   const collisions = collisionsIn(entries);
