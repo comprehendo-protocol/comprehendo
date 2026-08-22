@@ -141,3 +141,24 @@ They were not accepted on their word. Two targeted mutation rounds:
 Both mutations were reverted; the only scan green through both is the
 deliberate non-vacuity guard ("a scan over nothing proves nothing"), which is
 the test that exists to make the others honest.
+
+## 9. Where the file-size call landed
+
+`config.ts` first came in at 451 lines and was brought to exactly 400, the
+project's ceiling. What was cut was prose, not behavior: the module header and
+several doc blocks were tightened, and the one real code change was factoring
+the shared JSON host-parse out of `readPackageJson` and `stampPackageJson`,
+which removed a duplicated try/catch pair rather than hiding anything. The
+suite (347 core, 418 spec) is green before and after the trim, no test was
+touched, and no function exceeds 50 lines.
+
+## 10. Entry surfaces, exercised live
+
+The feature doc says "N/A as a consumer-callable surface" and carries no
+`primitives`, so there is no CLI verb or route to hit. The real surface is a
+real manifest file on disk, and it was exercised live against the BUILT `dist`
+output (not the test suite): a temp package.json already carrying a consumer
+`disable` knob, and a temp pyproject.toml with only a `[project]` table, both
+stamped, both read back, the re-stamp returning false without writing, and the
+marker-vs-manifest resolution printed for a drifted manifest. Output captured
+in the build report.
