@@ -11,7 +11,7 @@ initiative: comprehendo
 wave: comprehendo-wave-2
 depends_on: [11-marker-probe, 12-twin-builder, 13-docs-engine]
 tags: [provider-sdk, makeProvider, native-adoption, level-1, level-2]
-test_files: []
+test_files: [packages/core/test/sdk.test.ts, packages/core/test/sdk-toy-package.test.ts, packages/core/test/helpers/toy-provider.ts]
 known_issues:
   - "[deferred] An UNSTRUCTURED twin raised through provider.raise(raw, context) carries the raw value in received and nothing else: unstructuredTwin(raw) in twin.ts (owned by 12-twin-builder) takes no context, and twin.ts is not this feature's file to change. The twin schema would permit path/namespace on an UNSTRUCTURED twin, so a throw site's own detail is dropped on the un-cataloged path only. Closing it is a one-argument change in 12."
   - "[deferred] makeProvider ships no default priming snippet: a copy of the RFC section 5.5 reference text in this package's source reads as a second Symbol.for('comprehendo') definition site to CC9 [10]'s source scan, which blanks comments but not string literals. priming is therefore a required hook. Shipping the canonical snippet as a constant belongs to Priming Snippet [36], which can either place it outside the scanned closure or teach the scan about string literals."
