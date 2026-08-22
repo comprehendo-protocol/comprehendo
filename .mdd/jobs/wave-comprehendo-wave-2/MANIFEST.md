@@ -22,7 +22,7 @@ started: 2026-08-22
 - [x] 12-twin-builder (COMPONENT), 40/40 green, merged; resolved the apply-grammar gap to LITERAL against the wave-1 kit fixtures; review found 3 real gaps (auditTwin unwired, nested-pipeline CC7 bypass, empty-reason unchecked), all fixed and mutation-verified, 154/154
 - [x] 13-docs-engine (COMPONENT), 46/46 green, merged; defined the wave-2 packed-corpus format (17's contract); found+fixed an 11-marker-probe CC1 scan over-scope bug on integration; review found an uncapped ambiguous-tie nearest list and a translations-shape crash-not-reject gap, both fixed and mutation-verified, 162/162
 - [x] 14-sdk-entry (COMPONENT), 52/52 green, merged (214/214 combined); closed 12's deferred marker-entry wiring for real; corrected two doc shapes to the RFC (explain/UNVALIDATABLE); review found validate/explain hook returns unguarded against non-objects, fixed and mutation-verified, 223/223
-- [ ] 17-corpus-generator (COMPONENT)
+- [x] 17-corpus-generator (COMPONENT), 55/55 green, merged (278/278 combined); defined a real five-file authoring format plus a `pack` compile step, since 13's packed format is structurally unable to represent stubs/twins/ownership
 - [ ] 15-manifest-wiring (COMPONENT)
 - [ ] 16-recorder (COMPONENT)
 
@@ -234,3 +234,53 @@ packages/spec/test/helpers/negative.mjs, packages/spec/test/negative-kit
    (`makeProvider` and its directly-tied types), leaving room for 15/16
    to add their own lines beside it rather than restructuring the
    barrel.
+
+### 17-corpus-generator (12 calls, unattended, no blockers)
+
+1. **Doc problem resolved, same shape as 13's:** "Corpus Format [28]"
+   (wave 5, unbuilt) was named as the file format, but 13 already
+   shipped a real `packed: 1` runtime format naming 17 as producer.
+   Three independently-decisive reasons the authoring output can't BE
+   the packed format: `parsePackedCorpus` refuses empty-summary/no
+   -vocabulary topics (exactly what a stub-bearing scan produces),
+   `packed: 1` has no slot for twins/fixes/fingerprints (half of what
+   `scan` must pre-fill), and no field-ownership metadata (the
+   must-not needs somewhere to record it). Defined a real five-file
+   AUTHORING format (`corpus_authoring: 1`) plus a 4th verb, `pack`,
+   compiling authoring -> 13's packed format, validated through 13's
+   own loader. `pack` refusing a stub-bearing corpus is an encoder
+   reporting what the format can't represent, explicitly NOT the
+   Submission Gate.
+2. Field ownership is ONE rule (machine-owned regenerates every scan;
+   human-owned written only while still `stub`, never again), not
+   per-field heuristics; avoids clobbering a human-edited draft summary.
+   Nothing is ever deleted, a vanished export is marked `orphaned`.
+3. Scanner is a self-contained lexer, not the TypeScript compiler API:
+   `typescript` is a devDependency, importing it from `src/` would make
+   it a runtime dependency of the published core. Honest about the
+   limit (barrel re-exports, inferred types, non-literal throws surface
+   as an absence, never a wrong answer).
+4. `bin` wiring deferred to Wave 7 (package.json outside source_files,
+   14 building against the same package concurrently, publish shape
+   already declared Wave 7's call).
+5. `scan` on a missing corpus errors naming `init`, doesn't
+   auto-initialize (two verbs each doing the other's job breaks init's
+   "refuses to overwrite" promise).
+6. Output goes through an injected writer, never bare `console.*`
+   (logging rule), which also makes verb output assertable in tests.
+7. Toy target fixtures are real, valid, strict-mode TypeScript (two
+   versions, v1 and v2 for `diff`), typechecked/linted by the package's
+   own gates, so the scanner's input is representative.
+8. One Red-Gate skeleton assertion described nothing real (init
+   scaffolds no records to check `status: stub` on) and was retargeted
+   to init's actual promise, not deleted.
+9. Two tests added post-freeze for error paths the skeleton set only
+   had for `scan` (diff/pack on a missing corpus).
+10. Found while smoke-testing: `scan ... | head` raised an unhandled
+    EPIPE crash; the default writer now swallows the write error and
+    exits 0, a normal way to use a CLI.
+11. Twin `id` and drift comparisons exclude line numbers (code moving
+    down a file is formatting, not drift); still recorded machine-owned
+    in `fingerprint.source`.
+12. Every verb test runs against real files in a real temp directory,
+    no mocked filesystem.

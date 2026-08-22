@@ -4,8 +4,8 @@ title: Corpus Generator
 type: COMPONENT
 path: Core / Corpus Generator
 source_files: [packages/core/src/cli/]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
