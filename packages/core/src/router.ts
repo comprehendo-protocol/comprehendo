@@ -24,7 +24,13 @@ import type { ComprehendoEntry } from './marker.js';
 import { createTwinBuilder, unstructuredTwin } from './twin.js';
 import type { Twin, TwinBuilder } from './twin.js';
 import { decideRoute } from './router-precedence.js';
-import type { Environment, NativeEvidence, RouterConfig, RouterDecision } from './router-precedence.js';
+import type {
+  CorpusEvidence,
+  Environment,
+  NativeEvidence,
+  RouterConfig,
+  RouterDecision,
+} from './router-precedence.js';
 
 // The ports, the environment shape and the precedence rule are re-exported
 // here, so a consumer of the router imports one module (the same thing
@@ -95,8 +101,23 @@ export function createRouter(environment: Environment, config: RouterConfig = {}
     };
   };
 
+  /**
+   * What is installed for this package on the sidecar side. The consumer's
+   * `pin` and `require` knobs are answered against the corpus that is really
+   * there (its version, its rung on the trust ladder), never against a claim.
+   */
+  const corpusEvidence = (pkg: string): CorpusEvidence => {
+    const corpus = corpora.get(pkg);
+    return {
+      installed: corpus !== undefined,
+      ...(corpus?.corpusPackage === undefined ? {} : { corpusPackage: corpus.corpusPackage }),
+      ...(corpus?.version === undefined ? {} : { version: corpus.version }),
+      ...(corpus?.trust === undefined ? {} : { trust: corpus.trust }),
+    };
+  };
+
   const decideFor = (pkg: string, raw?: unknown): RouterDecision =>
-    decideRoute(pkg, evidenceFor(pkg, probe(raw)), config);
+    decideRoute(pkg, evidenceFor(pkg, probe(raw)), config, corpusEvidence(pkg));
 
   const comprehend = (raw: unknown): Twin => {
     const match = environment.matcher.match(raw);
@@ -104,12 +125,20 @@ export function createRouter(environment: Environment, config: RouterConfig = {}
     const pkg = marker?.name ?? (match.outcome === 'matched' ? match.entry.package : undefined);
     // Nothing claims it: the matcher's own honest miss, candidates and all.
     if (pkg === undefined) return match.outcome === 'matched' ? unstructuredTwin(raw) : match.twin;
-    if (decideRoute(pkg, evidenceFor(pkg, marker), config).source === 'native') {
+    const source = decideRoute(pkg, evidenceFor(pkg, marker), config, corpusEvidence(pkg)).source;
+    if (source === 'native') {
       // Defer: the package's own twin if it attached one, and otherwise the
       // same UNSTRUCTURED it would answer for a failure its catalog does not
       // cover. Never the sidecar's twin, which is exactly the CC8 violation
       // a helpful fallback would be.
       return carriedTwin(raw) ?? unstructuredTwin(raw);
+    }
+    if (source === 'none') {
+      // The consumer ruled this package's corpus out (`disable`, `require` or
+      // `pin`). What comes back is the honest UNSTRUCTURED passthrough with
+      // the raw preserved, never the corpus that was ruled out and never a
+      // twin the value happened to carry: "not routed" has to be visible.
+      return unstructuredTwin(raw);
     }
     if (match.outcome !== 'matched') return match.twin;
     const builder = builders.get(match.entry.package);
@@ -119,7 +148,10 @@ export function createRouter(environment: Environment, config: RouterConfig = {}
   };
 
   const docs = (pkg: string, query?: string): DocsResponse => {
-    const surface = corpora.get(pkg)?.docs;
+    // A corpus the consumer ruled out does not answer questions either, so
+    // this is the same honest miss a package with no corpus installed gets.
+    const ruledOut = decideFor(pkg).source === 'none';
+    const surface = ruledOut ? undefined : corpora.get(pkg)?.docs;
     if (surface !== undefined) return surface(query);
     // No corpus installed for this package: an empty menu, or an honest miss
     // that permits source for the one question asked. Never a throw, and
