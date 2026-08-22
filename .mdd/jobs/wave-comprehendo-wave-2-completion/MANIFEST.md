@@ -15,8 +15,8 @@ rather than a silent backfill.
 
 ## Features
 
-- [ ] 15-manifest-wiring (COMPONENT), still building
-- [x] 16-recorder (COMPONENT), 32/32 green, merged (315/315 combined)
+- [x] 15-manifest-wiring (COMPONENT), 69/69 green, merged (384/384 combined)
+- [x] 16-recorder (COMPONENT), 32/32 green, merged; review found nothing, clean pass
 
 ## Judgment log
 
@@ -59,3 +59,57 @@ rather than a silent backfill.
 10. Default log path `.comprehendo/recording.log`, beside 13's
     `.comprehendo/docs-usage.log`, already covered by the repo's `*.log`
     gitignore.
+
+Review: clean pass, no findings.
+
+### 15-manifest-wiring (10 calls, unattended, no blockers)
+
+1. Minimal hand-written TOML table reader/writer for `[tool.comprehendo]`
+   (zero runtime deps is hard), not a general parser: reads/writes
+   exactly the standard `[tool.comprehendo]` + flat `version`/`level`
+   form, preserves everything else in the file byte-for-byte (edits the
+   table's own lines, never re-serializes). Alternate TOML spellings
+   (`[tool]` + inline table, dotted assignment) come back
+   `{status: 'unreadable', reason}` rather than a false "absent", and
+   the writer REFUSES them rather than appending a second table.
+2. Reading is three-state (`absent`/`declared`/`unreadable`), not
+   `T | undefined`: collapsing the last two would conflate "no claim"
+   with "a claim I could not read", exactly the distinction static
+   discovery needs. Writing stays strict: a declaration that wouldn't
+   validate against `manifest.schema.json` throws.
+3. Stamper is idempotent at the byte level: compares the on-disk
+   declaration first, writes nothing when it already matches (an
+   already-stamped package is never reformatted).
+4. Stamper MERGES into the `comprehendo` key (sets `version`/`level`,
+   preserves every other key, e.g. consumer knobs, endorsement fields),
+   never replaces it. The reverse (provider-side READ) is asymmetric on
+   purpose: projects exactly `MANIFEST_FIELDS`, so a provider stuffing
+   `disable`/`suppress`/etc into their own manifest gets back a
+   2-field declaration with no suppression reachable through any
+   provider-side export (CC8's schema half).
+5. `Discovery.surfaces` is ABSENT, never `[]`, on a manifest-only
+   resolution: static discovery can't know which surfaces exist, `[]`
+   would falsely claim none do.
+6. CC8 scope: this feature proves the schema half only (scan over
+   `manifest.schema.json` + the projection, same shape 11's CC1/CC9
+   scans use); runtime precedence enforcement is Wave 4's [22]/[19].
+7. File size: 400 lines (the project's stated ceiling, `config.ts` is
+   this feature's only owned file, splitting off the TOML half would
+   have added a second shared file mid-wave). Trimmed from 451 by
+   tightening prose and removing one duplicated try/catch, not cutting
+   behavior; suite green before and after.
+8. 7 of 69 tests green at the Red Gate (static scans over Wave-1 schema
+   data, the same generated-conformance-suite exemption 11's CC1/CC9
+   scans get), verified non-vacuous by two targeted mutation rounds
+   (8/12 and 9/12 cc8 tests went red each time), both reverted.
+9. **Raised, not decided, for the orchestrator (left deferred, see
+   doc known_issues):** `packages/core/src/index.ts` not touched (same
+   lane-safety reason as 16); `comprehendo init`'s `manifest_hint` is
+   exactly `stampManifestFile` but wiring it touches `src/cli/*`, not
+   this feature's file, so the hint's shape is pinned by a test instead
+   and left for whoever next touches the CLI.
+10. Entry surfaces exercised live against the BUILT dist (not the test
+    suite): a real package.json with a pre-existing consumer `disable`
+    knob and a real pyproject.toml, both stamped, both read back, the
+    re-stamp correctly writing nothing, marker-vs-manifest resolution
+    printed for a drifted manifest.
