@@ -4,14 +4,14 @@ title: Recorder
 type: COMPONENT
 path: Core / Recorder
 source_files: [packages/core/src/recorder.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
 depends_on: [14-sdk-entry]
 tags: [recorder, black-box, local-log, maintainer-tool, opt-in]
-test_files: []
+test_files: [packages/core/test/recorder.test.ts]
 known_issues: []
 ---
 
@@ -59,10 +59,12 @@ wrapper, not part of the agent-facing surface.
 
 ## Acceptance Criteria
 
-- [ ] Recording is opt-in and off by default.
-- [ ] Every call and response through a wrapped provider is captured with
+- [x] Recording is opt-in and off by default. (Off means IDENTITY:
+      `recordProvider(p)` returns the same object reference when not
+      enabled, not a disabled branch inside a wrapper.)
+- [x] Every call and response through a wrapped provider is captured with
       a timestamp.
-- [ ] A CC6 [27] network scan of this module passes (no network imports).
+- [x] A CC6 [27] network scan of this module passes (no network imports).
 
 ## Dependencies
 
