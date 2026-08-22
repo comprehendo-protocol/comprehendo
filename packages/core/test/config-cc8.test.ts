@@ -39,7 +39,7 @@ const SUPPRESSION = /suppress|veto|disable|deny|block|exclude|opt[-_]?out|ignore
 
 const schemaProperties = (file: string): string[] => {
   const properties = at(readKitJson('shapes', file), 'properties');
-  return Object.keys((properties ?? {}) as Record<string, unknown>);
+  return Object.keys((properties ?? {}));
 };
 
 const declarationKeys = (value: unknown): string[] => {

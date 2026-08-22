@@ -3,27 +3,20 @@
  * and read back out of the manifest each ecosystem already has (the
  * `comprehendo` key in package.json, `[tool.comprehendo]` in pyproject.toml).
  *
- * This is discovery channel two of four, and the only one that answers BEFORE
- * anything is imported: an agent, or a tool, can learn that a package speaks
- * Comprehendo by reading its manifest, with no code loaded and no side effect.
- * The marker (Marker & Probe [11]) is the runtime truth; this is the pre-import
- * truth, and it is ADVISORY. When the two disagree, {@link resolveDiscovery}
- * resolves in the marker's favor, always, per the conformance kit's own
- * disagreement fixture (Conformance Fixtures [04]).
+ * Discovery channel two of four, and the only one that answers BEFORE anything
+ * is imported: a tool can learn that a package speaks Comprehendo by reading
+ * its manifest, no code loaded, no side effect. The marker (Marker & Probe
+ * [11]) is the runtime truth, this is the pre-import truth, and it is
+ * ADVISORY: when they disagree, {@link resolveDiscovery} resolves in the
+ * marker's favor (the disagreement fixture, Conformance Fixtures [04]).
  *
- * Two contracts land in this file:
- *
- * CC8, no provider veto. The declaration is exactly `{version, level}`
- * ({@link MANIFEST_FIELDS}), and every read here PROJECTS to those two fields.
- * A provider cannot express "do not use a registry corpus for my package",
- * because there is no field for it and nothing carries one through. That is a
- * structural guarantee, not a policy, and it is scanned for directly
- * (test/config-cc8.test.ts). CC8's runtime half (native beats sidecar, the
- * consumer `prefer` knob reverses it) is Router & Precedence [22]'s.
- *
- * CC9, frozen literals. The manifest key names are frozen literals with one
- * definition site each, exactly like the marker symbol: {@link MANIFEST_KEY}
- * and {@link PYPROJECT_TABLE} below, imported everywhere else.
+ * Two contracts land here. CC8, no provider veto: the declaration is exactly
+ * `{version, level}` ({@link MANIFEST_FIELDS}) and every read PROJECTS to those
+ * two fields, so a provider cannot express "do not use a registry corpus for my
+ * package", there being no field for it and nothing to carry one through.
+ * Structural, not policy, and scanned for directly (test/config-cc8.test.ts);
+ * CC8's runtime half is Router & Precedence [22]'s. CC9, frozen literals: the
+ * manifest key names have one definition site each, like the marker symbol.
  *
  * @see .mdd/docs/15-manifest-wiring.md
  * @see .mdd/docs/19-cc8-native-precedence.md
@@ -45,17 +38,15 @@ export const MANIFEST_KEY = 'comprehendo';
 export const PYPROJECT_TABLE = 'tool.comprehendo';
 
 /**
- * Exactly the fields a provider-side declaration carries
- * (manifest.schema.json), and the projection every read here applies. Adding a
- * third field is a CC8 [19] decision, not a convenience.
+ * Exactly the fields a provider-side declaration carries (manifest.schema.json),
+ * and the projection every read applies. A third field is a CC8 [19] decision.
  */
 export const MANIFEST_FIELDS = Object.freeze(['version', 'level'] as const);
 
 /**
- * What a manifest read found. Three states, not two: "this package makes no
- * claim" and "this package makes a claim I could not read" are different
- * answers, and static discovery is exactly where conflating them turns a
- * broken manifest into a silent "does not speak Comprehendo".
+ * What a manifest read found. Three states, not two: "makes no claim" and
+ * "makes a claim I could not read" are different answers, and conflating them
+ * turns a broken manifest into a silent "does not speak Comprehendo".
  */
 export type ManifestReading =
   | { readonly status: 'absent' }
@@ -66,10 +57,7 @@ export type ManifestReading =
 export interface Discovery {
   readonly comprehendo: string;
   readonly level: ComprehendoLevel;
-  /**
-   * Present only from the marker. Static discovery cannot know which callable
-   * surfaces exist, and `[]` would be a claim that none do.
-   */
+  /** Present only from the marker: static discovery cannot know the surfaces. */
   readonly surfaces?: readonly ComprehendoSurface[];
   readonly source: 'marker' | 'manifest';
 }
@@ -81,10 +69,10 @@ export interface DiscoveryInput {
 }
 
 /**
- * Raised when a manifest cannot be WRITTEN: a declaration that would not
- * validate, host text that is not the format it claims to be, a file that is
- * not a manifest this component knows. Reading never throws; it reports
- * (see {@link ManifestReading}).
+ * Raised when a manifest cannot be WRITTEN (a declaration that would not
+ * validate, host text that is not the format it claims to be), or when there
+ * is no manifest FILE at all (unknown file name, unreadable path). What a
+ * manifest SAYS never raises, it is reported (see {@link ManifestReading}).
  */
 export class ManifestError extends Error {
   public override readonly name = 'ManifestError';
@@ -93,38 +81,30 @@ export class ManifestError extends Error {
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
 
-/**
- * Why this value is not a declaration, or `undefined` when it is one. The
- * reason names the offending FIELD, because the caller is usually a
- * maintainer looking at their own manifest.
- */
+/** Why this value is not a declaration (naming the field), or `undefined` when it is one. */
 function declarationProblem(value: unknown): string | undefined {
-  if (!isRecord(value)) {
-    return `the "${MANIFEST_KEY}" declaration must be an object, got ${describe(value)}`;
-  }
+  const bad = (what: string, got: unknown): string =>
+    `the "${MANIFEST_KEY}" declaration ${what}, got ${describe(got)}`;
+  if (!isRecord(value)) return bad('must be an object', value);
   const version = value['version'];
   const level = value['level'];
   if (typeof version !== 'string' || version.trim() === '') {
-    return `the "${MANIFEST_KEY}" declaration needs a non-empty string version, got ${describe(version)}`;
+    return bad('needs a non-empty string version', version);
   }
-  if (level !== 1 && level !== 2) {
-    return `the "${MANIFEST_KEY}" declaration needs level 1 or 2 as an integer, got ${describe(level)}`;
-  }
+  if (level !== 1 && level !== 2) return bad('needs level 1 or 2 as an integer', level);
   return undefined;
 }
 
-/** What a value is, for an error message, without ever printing the value itself. */
+/** What a value is, for an error message, without printing the value itself. */
 function describe(value: unknown): string {
-  if (value === undefined) return 'nothing';
-  if (value === null) return 'null';
-  if (Array.isArray(value)) return 'an array';
-  return `a ${typeof value}`;
+  if (value === undefined || value === null) return String(value);
+  return Array.isArray(value) ? 'an array' : `a ${typeof value}`;
 }
 
 /**
  * The projection CC8 rests on: whatever else rode along under the manifest key
- * (the endorsement keys of RFC 10.6, the consumer's own knobs, or a field a
- * provider invented), what comes out is these two fields and nothing else.
+ * (RFC 10.6's endorsement keys, the consumer's knobs, a field a provider
+ * invented), out comes these two fields and nothing else.
  */
 function project(value: Record<string, unknown>): ManifestDeclaration {
   return Object.freeze({
@@ -144,15 +124,11 @@ function assertDeclaration(declaration: ManifestDeclaration): ManifestDeclaratio
 
 /**
  * The declaration a provider stamps, read off the entry its own values carry.
- * Never hand-set: the level is what the runtime actually reached (SDK Entry
- * [14] computes it), so a manifest can only ever overclaim by drifting, never
- * by being authored.
+ * Never hand-set: the level is the one the runtime actually reached (SDK Entry
+ * [14] computes it), so a manifest can only overclaim by drifting.
  */
 export function declarationFor(entry: ComprehendoEntry): ManifestDeclaration {
-  return assertDeclaration({
-    version: entry.comprehendo,
-    level: entry.level,
-  });
+  return assertDeclaration({ version: entry.comprehendo, level: entry.level });
 }
 
 /** Read the value found AT the manifest key (or the pyproject table) as a declaration. */
@@ -163,48 +139,39 @@ export function parseDeclaration(value: unknown): ManifestReading {
   return { status: 'declared', declaration: project(value as Record<string, unknown>) };
 }
 
-/** Read the `comprehendo` key out of package.json text. Never throws. */
-export function readPackageJson(text: string): ManifestReading {
+/** package.json text as the object it must be, or the reason it is not one. */
+function hostJson(text: string): Record<string, unknown> | string {
   let host: unknown;
   try {
     host = JSON.parse(text) as unknown;
   } catch (error) {
-    return {
-      status: 'unreadable',
-      reason: `package.json is not valid JSON: ${(error as Error).message}`,
-    };
+    return `package.json is not valid JSON: ${(error as Error).message}`;
   }
-  if (!isRecord(host)) {
-    return { status: 'unreadable', reason: `a package.json must be a JSON object, got ${describe(host)}` };
-  }
+  return isRecord(host) ? host : `a package.json must be a JSON object, got ${describe(host)}`;
+}
+
+/** Read the `comprehendo` key out of package.json text. Never throws. */
+export function readPackageJson(text: string): ManifestReading {
+  const host = hostJson(text);
+  if (typeof host === 'string') return { status: 'unreadable', reason: host };
   if (!(MANIFEST_KEY in host)) return { status: 'absent' };
   return parseDeclaration(host[MANIFEST_KEY]);
 }
 
 /**
  * Write the declaration into package.json text, merging into whatever the key
- * already carries. It merges rather than replaces on purpose: the consumer's
- * five knobs (config.schema.json) and RFC 10.6's endorsement keys live under
- * this same key, and a provider-side stamp that replaced it would delete a
- * consumer's own configuration.
+ * already carries rather than replacing it: the consumer's five knobs
+ * (config.schema.json) and RFC 10.6's endorsement keys live under this same
+ * key, and a stamp that replaced it would delete a consumer's configuration.
  *
  * @returns the new text: same indentation, same trailing newline, same field
  * order, with `version` and `level` set in place.
  */
 export function stampPackageJson(text: string, declaration: ManifestDeclaration): string {
   const stamped = assertDeclaration(declaration);
-  let host: unknown;
-  try {
-    host = JSON.parse(text) as unknown;
-  } catch (error) {
-    throw new ManifestError(
-      `comprehendo: refusing to stamp a package.json that is not valid JSON: ${(error as Error).message}`,
-    );
-  }
-  if (!isRecord(host)) {
-    throw new ManifestError(
-      `comprehendo: refusing to stamp a package.json that is not a JSON object, got ${describe(host)}`,
-    );
+  const host = hostJson(text);
+  if (typeof host === 'string') {
+    throw new ManifestError(`comprehendo: refusing to stamp a package.json, ${host}`);
   }
   const existing = host[MANIFEST_KEY];
   host[MANIFEST_KEY] = {
@@ -225,23 +192,20 @@ function indentOf(text: string): number | string {
 }
 
 /**
- * The pyproject half is deliberately NOT a TOML parser. `[tool.comprehendo]`
- * is one table of two flat fields, one string and one integer, which is a
- * line-oriented job; a general parser would be a dependency (and zero runtime
- * dependencies is a hard constraint) or several hundred lines of one.
+ * The pyproject half is deliberately NOT a TOML parser: `[tool.comprehendo]`
+ * is one table of two flat scalars, a line-oriented job, and zero runtime
+ * dependencies is a hard constraint. What a minimal reader owes its caller is
+ * honesty about the spellings it does not handle, so the inline forms
+ * (`[tool]` plus `comprehendo = {...}`, and the dotted assignment) come back
+ * `unreadable` with the limitation named, never `absent`: "this package does
+ * not speak Comprehendo" is the one wrong answer available about one that does.
  *
- * What a minimal reader owes its caller is honesty about the spellings it does
- * not handle. TOML can write the same table inline (`[tool]` plus
- * `comprehendo = {...}`) or as a dotted assignment; those come back
- * `unreadable` with the limitation named, never `absent`, because "this
- * package does not speak Comprehendo" is the one wrong answer available here.
+ * `header` is the header line's index (-1 when there is none), `end` one past
+ * the table's last body line, `inline` the reason it could not be read.
  */
 interface TomlTable {
-  /** Index of the `[tool.comprehendo]` header line, or -1. */
   readonly header: number;
-  /** Index one past the table's last body line. */
   readonly end: number;
-  /** Set when the table is written in a form this minimal reader cannot handle. */
   readonly inline?: string;
 }
 
@@ -311,7 +275,6 @@ export function readPyproject(text: string): ManifestReading {
   const table = locateTable(lines);
   if (table.inline !== undefined) return { status: 'unreadable', reason: table.inline };
   if (table.header === -1) return { status: 'absent' };
-
   const found: Record<string, unknown> = {};
   for (const line of lines.slice(table.header + 1, table.end)) {
     const key = tomlKey(line);
@@ -324,9 +287,8 @@ export function readPyproject(text: string): ManifestReading {
 
 /**
  * Write the declaration into pyproject.toml text: the table's own `version`
- * and `level` lines are edited in place, everything else in the document
- * (other tables, other keys in this table, comments, spacing) is preserved
- * character for character.
+ * and `level` lines are edited in place, everything else (other tables, other
+ * keys, comments, spacing) preserved character for character.
  */
 export function stampPyproject(text: string, declaration: ManifestDeclaration): string {
   const stamped = assertDeclaration(declaration);
@@ -345,10 +307,9 @@ export function stampPyproject(text: string, declaration: ManifestDeclaration): 
   };
   if (table.header === -1) {
     const head = text.replace(/\s*$/, '');
-    const table_ = [`[${PYPROJECT_TABLE}]`, written['version'], written['level'], ''].join(newline);
-    return head === '' ? table_ : `${head}${newline}${newline}${table_}`;
+    const added = [`[${PYPROJECT_TABLE}]`, written['version'], written['level'], ''].join(newline);
+    return head === '' ? added : `${head}${newline}${newline}${added}`;
   }
-
   const body = lines.slice(table.header + 1, table.end);
   const missing = Object.keys(written).filter((key) => !body.some((line) => tomlKey(line) === key));
   const edited = body.map((line) => written[tomlKey(line)] ?? line);
@@ -358,21 +319,82 @@ export function stampPyproject(text: string, declaration: ManifestDeclaration): 
   return [...lines.slice(0, table.header + 1), ...edited, ...lines.slice(table.end)].join(newline);
 }
 
+/** The two manifests a provider-side declaration can live in, by file name. */
+const FORMATS = {
+  'package.json': { read: readPackageJson, stamp: stampPackageJson },
+  'pyproject.toml': { read: readPyproject, stamp: stampPyproject },
+} as const;
+
+function formatFor(path: string): (typeof FORMATS)[keyof typeof FORMATS] {
+  const name = basename(path);
+  if (!Object.hasOwn(FORMATS, name)) {
+    throw new ManifestError(
+      `comprehendo: ${name} is not a manifest this build reads or writes ` +
+        `(package.json or pyproject.toml, at ${path})`,
+    );
+  }
+  return FORMATS[name as keyof typeof FORMATS];
+}
+
+function readHost(path: string): string {
+  try {
+    return readFileSync(path, 'utf8');
+  } catch (error) {
+    throw new ManifestError(`comprehendo: cannot read ${path}: ${(error as Error).message}`);
+  }
+}
+
+/**
+ * Read the declaration out of a real manifest on disk. What the manifest SAYS
+ * never throws (an unreadable claim is reported); the absence of a readable
+ * FILE does, because there is nothing to report about.
+ */
 export function readManifestFile(path: string): ManifestReading {
-  void path;
-  void readFileSync;
-  void basename;
-  throw new Error('MDD skeleton: readManifestFile is not implemented');
+  return formatFor(path).read(readHost(path));
 }
 
+/**
+ * Stamp the declaration into a real manifest on disk.
+ *
+ * @returns true when the file was written. A manifest already carrying this
+ * exact declaration is left untouched, byte for byte, so re-stamping is a
+ * no-op rather than a reformat and this is safe to run on every build.
+ */
 export function stampManifestFile(path: string, declaration: ManifestDeclaration): boolean {
-  void path;
-  void declaration;
-  void writeFileSync;
-  throw new Error('MDD skeleton: stampManifestFile is not implemented');
+  const format = formatFor(path);
+  const stamped = assertDeclaration(declaration);
+  const text = readHost(path);
+  const current = format.read(text);
+  const unchanged =
+    current.status === 'declared' &&
+    current.declaration.version === stamped.version &&
+    current.declaration.level === stamped.level;
+  if (unchanged) return false;
+  writeFileSync(path, format.stamp(text, stamped), 'utf8');
+  return true;
 }
 
+/**
+ * The rule this whole component is subordinate to: the marker is
+ * authoritative, the manifest advisory. When both channels answer, the
+ * marker's claim is the resolved one and the manifest's is discarded EVEN
+ * WHERE THEY AGREE, so nothing here depends on them happening to match (the
+ * disagreement fixture, Conformance Fixtures [04]). A manifest-only answer
+ * carries no `surfaces` at all: static discovery cannot know which exist, and
+ * an empty list would be a claim that none do.
+ */
 export function resolveDiscovery(input: DiscoveryInput): Discovery | undefined {
-  void input;
-  throw new Error('MDD skeleton: resolveDiscovery is not implemented');
+  const { marker, manifest } = input;
+  if (marker !== undefined) {
+    const { comprehendo, level, surfaces } = marker;
+    return Object.freeze({ comprehendo, level, surfaces, source: 'marker' as const });
+  }
+  if (manifest !== undefined) {
+    return Object.freeze({
+      comprehendo: manifest.version,
+      level: manifest.level,
+      source: 'manifest' as const,
+    });
+  }
+  return undefined;
 }
