@@ -6,7 +6,7 @@
  * directory, so what is being scanned is TypeScript a compiler accepts, not a
  * string that happens to look like it.
  */
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -119,6 +119,66 @@ describe('comprehendo scan, what a machine can know', () => {
     const corpus = scanned(makeWorkspace());
 
     expect(corpus.target).toEqual({ package: 'toy-encoder', version: '1.0.0', source: 'src' });
+  });
+});
+
+describe('comprehendo scan, two files exporting the same name', () => {
+  // Real bug found by review: keying topics by bare export name alone
+  // silently dropped one export's entire signature/docstring when two
+  // different files exported the same name, and its throw sites kept
+  // pointing docs at the SURVIVING, unrelated topic.
+  const withCollision = (workspace: Workspace): void => {
+    workspace.addFile(
+      'src/other.ts',
+      [
+        '/** A second, unrelated encoder living in its own module. */',
+        'export function encode(value: number): string {',
+        "  if (value < 0) {",
+        "    throw new RangeError('value must not be negative');",
+        '  }',
+        '  return String(value);',
+        '}',
+        '',
+      ].join('\n'),
+    );
+  };
+
+  it('disambiguates both colliding topics instead of dropping one', () => {
+    const workspace = makeWorkspace();
+    withCollision(workspace);
+    const corpus = scanned(workspace);
+
+    const encodeTopics = corpus.topics.filter((entry) => entry.topic.startsWith('encode'));
+    expect(encodeTopics).toHaveLength(2);
+    expect(new Set(encodeTopics.map((entry) => entry.topic)).size).toBe(2);
+    // Both signatures survive, neither is dropped.
+    const fromEncodeTs = encodeTopics.find((entry) => entry.source.startsWith('src/encode.ts'));
+    const fromOtherTs = encodeTopics.find((entry) => entry.source.startsWith('src/other.ts'));
+    expect(fromEncodeTs?.signatures[0]).toContain('options?: EncodeOptions');
+    expect(fromOtherTs?.signatures[0]).toContain('value: number');
+  });
+
+  it('each colliding topic keeps its own throw sites pointed at itself, not the other', () => {
+    const workspace = makeWorkspace();
+    withCollision(workspace);
+    const corpus = scanned(workspace);
+
+    const twinFromOther = corpus.twins.find((entry) => entry.fingerprint.source.startsWith('src/other.ts'));
+    expect(twinFromOther).toBeDefined();
+    const pointedTopic = topic(corpus, twinFromOther?.docs ?? '');
+    expect(pointedTopic.source).toContain('src/other.ts');
+  });
+
+  it('a re-scan of the same collision stays stable (topic identity does not flip on scan order)', () => {
+    const workspace = makeWorkspace();
+    withCollision(workspace);
+    const first = scanned(workspace);
+    runScan(workspace.options());
+    const second = readCorpus(corpusPaths(workspace.corpus));
+
+    expect([...second.topics.map((entry) => entry.topic)].sort()).toEqual(
+      [...first.topics.map((entry) => entry.topic)].sort(),
+    );
   });
 });
 
@@ -305,6 +365,32 @@ describe('comprehendo scan, preconditions', () => {
 
     expect(scan).toThrow(CliError);
     expect(scan).toThrow(/comprehendo init/);
+  });
+
+  it('refuses a malformed target package.json with exit-2 CliError, not a raw crash', () => {
+    const workspace = makeWorkspace();
+    runInit(workspace.options());
+    workspace.edit('package.json', () => '{ not valid json');
+
+    const scan = (): number => runScan(workspace.options());
+
+    expect(scan).toThrow(CliError);
+    expect(scan).toThrow(/not valid JSON/);
+  });
+
+  it('refuses a hand-corrupted topic front matter with exit-2 CliError, not a raw crash', () => {
+    const workspace = makeWorkspace();
+    runInit(workspace.options());
+    runScan(workspace.options());
+    const files = readdirSync(join(workspace.corpus, 'topics'));
+    const first = files[0];
+    if (first === undefined) throw new Error('scan produced no topic files to corrupt');
+    workspace.edit(join('comprehendo', 'topics', first), () => 'no front matter fence at all');
+
+    const rescan = (): number => runScan(workspace.options());
+
+    expect(rescan).toThrow(CliError);
+    expect(rescan).toThrow(/malformed YAML front matter/);
   });
 
   it('serves a local corpus for an internal package through the same code path', () => {

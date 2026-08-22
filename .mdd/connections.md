@@ -28,11 +28,11 @@ overlap_count: 3
 **Core / Docs Engine**
   └── `13-docs-engine` - Docs Engine (complete)
 **Core / Manifest Wiring**
-  └── `15-manifest-wiring` - Manifest Wiring (planned)
+  └── `15-manifest-wiring` - Manifest Wiring (complete)
 **Core / Marker & Probe**
   └── `11-marker-probe` - Marker & Probe (complete)
 **Core / Recorder**
-  └── `16-recorder` - Recorder (planned)
+  └── `16-recorder` - Recorder (complete)
 **Core / Router**
   └── `22-router-precedence` - Router & Precedence (planned)
 **Core / SDK Entry**
@@ -112,8 +112,8 @@ graph TD
   12_twin_builder["12-twin-builder"]:::done
   13_docs_engine["13-docs-engine"]:::done
   14_sdk_entry["14-sdk-entry"]:::done
-  15_manifest_wiring["15-manifest-wiring"]:::planned
-  16_recorder["16-recorder"]:::planned
+  15_manifest_wiring["15-manifest-wiring"]:::done
+  16_recorder["16-recorder"]:::done
   17_corpus_generator["17-corpus-generator"]:::done
   18_python_core["18-python-core"]:::planned
   19_cc8_native_precedence["19-cc8-native-precedence"]:::planned

@@ -119,13 +119,58 @@ function uniqueBy<T>(items: readonly T[], key: (item: T) => string): T[] {
   });
 }
 
+const fileStem = (file: string): string => (file.split('/').pop() ?? file).replace(/\.[^.]+$/, '');
+
+/**
+ * Two different modules can export a same-named symbol (`export function
+ * validate` in both src/a.ts and src/b.ts): `symbol.name` alone is NOT a
+ * unique topic key. Left unhandled, keying topics by bare name would make
+ * one export's signature/docstring silently vanish (the second scan
+ * overwrites the first in a by-name Map) while its own throw sites still
+ * carry `docs:` pointing at the SURVIVING, unrelated topic.
+ *
+ * Disambiguates every member of a colliding name-group to `name (file-stem)`
+ * (both members, not just the second, so the result never depends on scan
+ * order), and returns the rename lookup keyed by `file#name` so callers can
+ * re-point a throw site's `docs` pointer at the correct disambiguated topic
+ * for ITS OWN file.
+ */
+function disambiguateExports(
+  exports: readonly ExportedSymbol[],
+): { readonly symbols: readonly ExportedSymbol[]; readonly topicNameOf: ReadonlyMap<string, string> } {
+  const byName = new Map<string, ExportedSymbol[]>();
+  for (const symbol of exports) {
+    const group = byName.get(symbol.name);
+    if (group === undefined) byName.set(symbol.name, [symbol]);
+    else group.push(symbol);
+  }
+
+  const topicNameOf = new Map<string, string>();
+  const symbols: ExportedSymbol[] = [];
+  for (const [name, group] of byName) {
+    const deduped = uniqueBy(group, (symbol) => `${symbol.file}#${symbol.name}`);
+    const colliding = deduped.length > 1;
+    for (const symbol of deduped) {
+      const topicName = colliding ? `${name} (${fileStem(symbol.file)})` : name;
+      topicNameOf.set(`${symbol.file}#${symbol.name}`, topicName);
+      symbols.push(colliding ? { ...symbol, name: topicName } : symbol);
+    }
+  }
+  return { symbols, topicNameOf };
+}
+
 /**
  * Fold a fresh target scan into an existing corpus. Menu order is preserved
  * (order is a human curation act), new topics are appended in source order.
  */
 export function mergeScan(existing: AuthoringCorpus, scan: TargetScan): AuthoringCorpus {
-  const symbols = uniqueBy(scan.exports, (symbol) => symbol.name);
-  const sites = uniqueBy(scan.throws, (site) => site.id);
+  const { symbols, topicNameOf } = disambiguateExports(scan.exports);
+  const sites = uniqueBy(scan.throws, (site) => site.id).map((site) => {
+    const topicName = topicNameOf.get(`${site.file}#${site.raised_by}`);
+    return topicName === undefined || topicName === site.raised_by
+      ? site
+      : { ...site, raised_by: topicName };
+  });
   const bySymbol = new Map(symbols.map((symbol) => [symbol.name, symbol]));
   const bySite = new Map(sites.map((site) => [site.id, site]));
 

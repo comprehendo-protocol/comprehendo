@@ -6,7 +6,7 @@ initiative_version: 1
 status: complete
 depends_on: [comprehendo-wave-1]
 demo_state: A toy package built with the SDK passes the full kit -- marker on export, errors, and handles; twins at the throw site; UNSTRUCTURED passthrough on an un-cataloged error; docs answering all three vocabularies from a packed corpus; UNDOCUMENTED with a working local miss log; validate and explain on the toy's Level 2 surface; priming and identity under budget.
-content_hash: 55465de59cffe826
+content_hash: 7698c3f2997041d1
 ---
 
 # Wave 2: Core Provider SDK (JavaScript)
@@ -62,6 +62,20 @@ from-scratch toy provider built through the built `dist/index.js`
   both required at construction (refused if empty); `priming` is
   measured against the real CC5 budget harness in 14's own test suite
   (`measureScope('priming', ...)`), not merely asserted short.
+
+**Correction (2026-08-22):** this wave was originally closed with only 7
+of its 9 features built; `15-manifest-wiring` and `16-recorder` were
+accidentally skipped (planned in the lane plan's batch 4, never actually
+executed) and the wave was merged to `main` and marked complete anyway.
+Caught while starting Wave 3 (`18-python-core` depends on
+`15-manifest-wiring`, which did not exist). Both were built, reviewed,
+and merged in a follow-up branch
+(`wave/comprehendo-wave-2-completion`, cut from `main` post-merge);
+see [15-manifest-wiring](../docs/15-manifest-wiring.md) and
+[16-recorder](../docs/16-recorder.md) for their own build records. The
+demo-state result below was independently true without them (neither
+gates anything the toy-provider walkthrough exercises), so it is not
+revised, only this note is added.
 
 One scope note carried from the build, not a demo-state shortfall:
 `makeProvider` ships no DEFAULT priming snippet (a copy of the RFC's

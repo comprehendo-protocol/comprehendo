@@ -188,8 +188,12 @@ export function collectStubs(corpus: AuthoringCorpus): StubRef[] {
 
 /**
  * A topic name is whatever the corpus author wants to call it, so the file name
- * is a slug of it, not the name itself. Collisions are not this layer's problem:
- * a scan seeds one topic per exported symbol, and those names are unique.
+ * is a slug of it, not the name itself. A same-bare-name collision between two
+ * exported symbols in different files is disambiguated upstream, in
+ * merge.ts's disambiguateExports, before a topic name ever reaches this
+ * function; this layer only turns an already-unique name into a file name.
+ * A case-only collision between two hand-authored topic names (`Codec` vs
+ * `codec`) is a separate, still-open gap, see the feature doc.
  */
 export function topicFileName(topic: string): string {
   const slug = topic

@@ -164,7 +164,19 @@ export function readTargetManifest(targetRoot: string): { name: string; version:
   if (!existsSync(manifestPath)) {
     throw new CliError(`no package.json in ${targetRoot}: point comprehendo at a package root`);
   }
-  const manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as TargetManifest;
+  let manifest: TargetManifest;
+  try {
+    manifest = JSON.parse(readFileSync(manifestPath, 'utf8')) as TargetManifest;
+  } catch (error) {
+    // A malformed target package.json is an ordinary, doc-invited user
+    // mistake (the user's OWN package, not this tool's corpus files), so it
+    // owes exit 2 ("a precondition the user can fix"), the same way
+    // corpus-io.ts's readJson already wraps the identical failure mode for
+    // the corpus's own files. Left unguarded, this reached exit 70 ("a bug
+    // in this tool") with a stack trace instead.
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new CliError(`${manifestPath} is not valid JSON: ${reason}`);
+  }
   const name = typeof manifest.name === 'string' ? manifest.name : '';
   if (name === '') {
     throw new CliError(`${manifestPath} declares no package name`);

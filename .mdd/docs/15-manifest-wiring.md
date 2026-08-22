@@ -4,15 +4,15 @@ title: Manifest Wiring
 type: COMPONENT
 path: Core / Manifest Wiring
 source_files: [packages/core/src/config.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
 depends_on: [14-sdk-entry]
 tags: [manifest, package-json, pyproject-toml, static-discovery, provider-declaration]
-test_files: []
-known_issues: []
+test_files: [packages/core/test/config.test.ts, packages/core/test/config-cc8.test.ts]
+known_issues: [{type: deferred, note: "comprehendo init (17-corpus-generator) writes a manifest_hint into the authoring corpus that the author is currently told to paste into package.json by hand; that paste is exactly stampManifestFile. Wiring it edits src/cli/*, outside this feature's source_files. The hint's shape is pinned by a test here (config.test.ts drives the real hint from emptyCorpus through parseDeclaration and stampPackageJson) so the wiring is safe whenever the CLI's owner does it."}]
 ---
 
 # Manifest Wiring
@@ -65,10 +65,14 @@ tooling, not a runtime function.
 
 ## Acceptance Criteria
 
-- [ ] `makeProvider`-built packages stamp `package.json`'s `comprehendo`
-      key with the correct `{version, level}`.
-- [ ] A CC8 [19] scan of the manifest schema finds no suppression field.
-- [ ] The disagreement fixture (Conformance Fixtures [04]) resolves in
+- [x] `makeProvider`-built packages stamp `package.json`'s `comprehendo`
+      key with the correct `{version, level}`. (`declarationFor(entry)`
+      is asserted equal to `provider.manifest` so 14 and 15 cannot
+      drift apart.)
+- [x] A CC8 [19] scan of the manifest schema finds no suppression field.
+      The schema half only; runtime precedence enforcement is Wave 4's
+      Router and Precedence [22]/[19].
+- [x] The disagreement fixture (Conformance Fixtures [04]) resolves in
       the marker's favor when read through this component.
 
 ## Dependencies
@@ -77,4 +81,25 @@ tooling, not a runtime function.
 
 ## Known Issues
 
-None recorded at plan time.
+- [deferred] `comprehendo init` (17-corpus-generator) writes a
+  `manifest_hint` the author is currently told to paste into
+  `package.json` by hand; that paste is exactly `stampManifestFile`.
+  Wiring it edits `src/cli/*`, outside this feature's `source_files`.
+  The hint's shape is pinned by a test here so the wiring is safe
+  whenever the CLI's owner does it.
+
+## Fixed Issues
+
+### `locateTable` didn't recognize `[[tool.comprehendo]]` as occupied (fixed 2026-08-22)
+
+Found by review. A third valid TOML spelling of the `[tool.comprehendo]`
+key, the array-of-tables form `[[tool.comprehendo]]`, wasn't detected
+(the double bracket confused the single-bracket generic header capture),
+so it fell through as silently absent and stamping appended a second,
+conflicting `[tool.comprehendo]` table, producing invalid TOML. The two
+other alternate spellings (inline table, dotted key) were already
+correctly refused.
+
+- Fixed by checking for the array-of-tables header before the generic
+  match, same refuse-rather-than-corrupt path the other two spellings
+  use. Mutation-verified: 2 new tests, both red without the fix.
