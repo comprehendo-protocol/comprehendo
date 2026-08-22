@@ -18,7 +18,7 @@ started: 2026-08-22
 - [x] 21-fingerprint-index-matcher (COMPONENT), 39/39 green, merged; scaffolded packages/registry-tools; review found a same-id-different-facets silent drop, fixed and mutation-verified, 41/41
 - [x] 22-router-precedence (COMPONENT), 57/57 green, merged (443/443 core combined); precedence flip proven live against real files, no reconfiguration; review found a silent-defect-swallow in nativeEvidence(), fixed and mutation-verified (444/444); review also found the "no node: import" claim doesn't hold transitively (config.ts/docs.ts pull in node:fs), left open as a gap since config.ts was under active concurrent development
 - [ ] 23-config-loader (COMPONENT)
-- [ ] 24-wrap-proxy (COMPONENT)
+- [x] 24-wrap-proxy (COMPONENT), wrap.test.ts + wrap-transparency.test.ts green, merged
 
 ## Judgment log
 
@@ -127,3 +127,55 @@ started: 2026-08-22
     on the I/O boundary that also makes the no-node:-import scan
     possible; `source_files` corrected to three files total
     (router.ts, router-precedence.ts, router-discovery.ts).
+
+### 24-wrap-proxy (11 calls, unattended, no blockers)
+
+1. **`via` (a Router or a bare `comprehend`) is a REQUIRED second
+   argument, no default.** 22 deliberately left the module-level
+   singleton question to Wave 7; inventing one here would pre-empt
+   that ruling, and the only alternative default (a null router
+   answering UNSTRUCTURED for everything) is worse than no default.
+   Passing nothing throws a `TypeError` naming the fix at the wrap
+   call, not at the first caught error.
+2. The SAME caught error instance is re-thrown, now carrying `.twin`
+   (stack, prototype, `code`, `cause`, custom fields all survive).
+   Fallback for a value that cannot carry a twin (a thrown string,
+   a frozen/sealed error): a fresh `Error` whose `message` is
+   `twin.reason` (never raw text, CC3 [08]), `cause` set to the raw
+   value. Tested both ways.
+3. `wrap` attaches no marker (`Symbol.for('comprehendo')`): a
+   sidecar twin from a consumer's own `wrap` call is not a native
+   -adoption claim (CC8 [19]). Asserted: the re-thrown error stays
+   probe-negative and `decideFor` still answers `sidecar`.
+4. An already-twinned error (native, or a second `wrap` further down
+   the stack) passes through untouched, `comprehend` never called;
+   makes `wrap` idempotent. Mutation-verified: removing the
+   short-circuit turned 0 tests red until a call-counting test was
+   added specifically to catch it (real hole: the pass-through was
+   only ever observed through behavior the router produced anyway).
+5. Async: a native promise gets `.then(v=>v, raw=>{throw twinned(raw)})`;
+   a NON-native thenable (a lazy query builder) is returned untouched,
+   since calling `.then` on it to install a handler would execute it,
+   a behavior change on the non-error path. Documented limitation, not
+   an accident: a lazy thenable's rejection is not routed.
+6. No deep wrapping: a wrapped method returning an object returns
+   THAT object (`wrapped.child === target.child`); a caller who wants
+   a nested handle wrapped calls `wrap` on it, per call site.
+7. Proxy `get`/method calls use the TARGET as receiver/`this` (class
+   `#private` fields work through the proxy for exactly this reason);
+   non-configurable/non-writable own function properties returned
+   unwrapped (spec invariant); method wrappers cached per function so
+   `proxy.method === proxy.method` holds.
+8. `constructor` returned unwrapped, caught by the suite not planned:
+   an identity slot real code compares by reference.
+9. Per-call `Wrapping` record (module-level functions, no module
+   -level state) rather than closures inside `wrap()`, to clear the
+   size gate; nothing shared between two wrapped targets.
+10. Four mutations, each reverted and reverted-back: no twinning (13
+    red), async rejections not routed (4 red), `this` left as the
+    proxy (11 red), already-twinned short-circuit removed (0 red,
+    see #4 above for the follow-up).
+11. Tests split into two files on the doc's own must-not split:
+    `wrap.test.ts` (the error-routing fence) and
+    `wrap-transparency.test.ts` (the non-error path is identical,
+    nothing global moves).

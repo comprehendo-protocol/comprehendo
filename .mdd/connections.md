@@ -34,13 +34,13 @@ overlap_count: 3
 **Core / Recorder**
   └── `16-recorder` - Recorder (complete)
 **Core / Router**
-  └── `22-router-precedence` - Router & Precedence (planned)
+  └── `22-router-precedence` - Router & Precedence (complete)
 **Core / SDK Entry**
   └── `14-sdk-entry` - SDK Entry (makeProvider) (complete)
 **Core / Twin Builder**
   └── `12-twin-builder` - Twin Builder (complete)
 **Core / Wrap Proxy**
-  └── `24-wrap-proxy` - Wrap Opt-In Proxy (planned)
+  └── `24-wrap-proxy` - Wrap Opt-In Proxy (complete)
 **Corpora / ffmpeg / Corpus**
   └── `32-ffmpeg-corpus` - ffmpeg Corpus (planned)
 **Corpora / ffmpeg / Fingerprints**
@@ -70,7 +70,7 @@ overlap_count: 3
 **Registry / Cross-Cutting Contracts / Registry Truth**
   └── `25-cc11-registry-truth` - CC11 Registry Truth (planned)
 **Registry / Fingerprint Index**
-  └── `21-fingerprint-index-matcher` - Fingerprint Index & Matcher (planned)
+  └── `21-fingerprint-index-matcher` - Fingerprint Index & Matcher (complete)
 **Registry / Owner Endorsement**
   └── `30-owner-endorsement` - Owner Endorsement (planned)
 **Registry / Scoped Publisher**
@@ -118,10 +118,10 @@ graph TD
   18_python_core["18-python-core"]:::done
   19_cc8_native_precedence["19-cc8-native-precedence"]:::done
   20_cc10_honest_miss["20-cc10-honest-miss"]:::done
-  21_fingerprint_index_matcher["21-fingerprint-index-matcher"]:::planned
-  22_router_precedence["22-router-precedence"]:::planned
+  21_fingerprint_index_matcher["21-fingerprint-index-matcher"]:::done
+  22_router_precedence["22-router-precedence"]:::done
   23_config_loader["23-config-loader"]:::planned
-  24_wrap_proxy["24-wrap-proxy"]:::planned
+  24_wrap_proxy["24-wrap-proxy"]:::done
   25_cc11_registry_truth["25-cc11-registry-truth"]:::planned
   26_cc4_folklore_gate["26-cc4-folklore-gate"]:::planned
   27_cc6_no_telemetry["27-cc6-no-telemetry"]:::planned
