@@ -188,7 +188,9 @@ describe('twin-round-trip: the twin variants the RFC names (5.1.1, 5.1.4)', () =
   });
 
   test('no twin anywhere in the kit surfaces a raw error as its reason (CC3 [08])', () => {
-    for (const { file, step } of stepsOfShape('twin.schema.json')) {
+    const twins = stepsOfShape('twin.schema.json');
+    assert.ok(twins.length > 0, 'the kit carries no twin at all');
+    for (const { file, step } of twins) {
       assert.ok(step.response.reason.length > 0, file);
       assert.ok(
         !/^[A-Za-z]*Error:/.test(step.response.reason),
