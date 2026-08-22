@@ -75,6 +75,17 @@ None (foundational SPEC, lowest id in its wave).
 
 ## Known Issues
 
-- [gap] The exact topic and index token budgets are an explicit Wave-1
-  open question in the source spec (not yet numeric); Budget Harness [06]
-  must set them before this contract can be CI-enforced with real numbers.
+None open.
+
+## Fixed Issues
+
+### Exact topic and index token budgets were not yet numeric (fixed 2026-08-22)
+
+Was: the exact topic and index token budgets were an explicit Wave-1 open
+question in the source spec, not yet numeric, so this contract could not be
+CI-enforced with real numbers.
+
+- Fixed by [06-budget-harness](06-budget-harness.md): index 1200 (baseline
+  914), topic 600 (baseline 383), priming 150 (baseline 127, CC5's own hard
+  cap), each held by `assertRatchet` in `packages/spec/kit/budget/budgets.js`
+  and re-measured against real fixtures every run.

@@ -4,8 +4,8 @@ title: Budget Harness
 type: COMPONENT
 path: Spec / Budget Harness
 source_files: [packages/spec/kit/budget/]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-1
