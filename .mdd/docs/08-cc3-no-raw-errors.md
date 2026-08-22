@@ -4,8 +4,8 @@ title: CC3 No Raw Errors
 type: SPEC
 path: Core / Cross-Cutting Contracts / No Raw Errors
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
