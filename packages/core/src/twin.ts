@@ -19,20 +19,13 @@ import {
   validateCatalog,
   violation,
 } from './twin-validate.js';
+import { COMPREHENDO_MARKER } from './marker.js';
 
 export * from './twin-validate.js';
+export { COMPREHENDO_MARKER };
 
 /** The spec version this build implements, carried on every twin. */
 export const SPEC_VERSION = '0.1';
-
-/**
- * The Comprehendo marker (CC9 [10]). The single definition site is
- * Marker & Probe [11], `packages/core/src/marker.ts`; this const is the same
- * value by construction, because `Symbol.for` reads the global symbol
- * registry, and `twin.test.ts` asserts that identity. Once [11] is merged
- * alongside this module, import it from there and delete this line.
- */
-export const COMPREHENDO_MARKER: symbol = Symbol.for('comprehendo');
 
 export type Confidence = 'high' | 'likely' | 'guess';
 
