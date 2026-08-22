@@ -16,7 +16,7 @@ started: 2026-08-22
 - [x] 19-cc8-native-precedence (SPEC)
 - [x] 20-cc10-honest-miss (SPEC)
 - [x] 21-fingerprint-index-matcher (COMPONENT), 39/39 green, merged; scaffolded packages/registry-tools; review found a same-id-different-facets silent drop, fixed and mutation-verified, 41/41
-- [x] 22-router-precedence (COMPONENT), 57/57 green, merged (443/443 core combined); precedence flip proven live against real files, no reconfiguration
+- [x] 22-router-precedence (COMPONENT), 57/57 green, merged (443/443 core combined); precedence flip proven live against real files, no reconfiguration; review found a silent-defect-swallow in nativeEvidence(), fixed and mutation-verified (444/444); review also found the "no node: import" claim doesn't hold transitively (config.ts/docs.ts pull in node:fs), left open as a gap since config.ts was under active concurrent development
 - [ ] 23-config-loader (COMPONENT)
 - [ ] 24-wrap-proxy (COMPONENT)
 

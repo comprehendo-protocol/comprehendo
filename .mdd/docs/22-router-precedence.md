@@ -123,7 +123,35 @@ knob. Match result: twin (Shape Schemas [03]) or UNSTRUCTURED.
 
 ## Known Issues
 
-None recorded at plan time.
+- [gap] The "imports no `node:` module at all" claim (Architecture,
+  and both files' own docstrings) is true of `router.ts`'s and
+  `router-precedence.ts`'s own literal imports, but not of their
+  TRANSITIVE closure: `router-precedence.ts` -> `config.ts` and
+  `router.ts` -> `docs.ts` both pull in `node:fs`/`node:path`. Found
+  by review. Nothing calls a filesystem function at `comprehend()`
+  -call time today (no I/O actually happens at runtime), but the
+  module is not the bundler-safe, `node:`-free unit the claim
+  asserts, and the guard test (`router-comprehend.test.ts`) only
+  scans direct imports, unlike `marker-purity.test.ts`'s CC1 check on
+  `marker.ts`, which correctly uses `transitiveImportClosure`. Fixing
+  this needs either narrowing `router-precedence.ts`'s import of
+  `config.ts` to a pure subset, or widening the test and correcting
+  the claim; not done here since `config.ts` was under active
+  concurrent development by 23-config-loader when this was found.
+
+## Fixed Issues
+
+### `nativeEvidence()` silently swallowed an unreadable target manifest (fixed 2026-08-22)
+
+Found by review. A target `package.json` that EXISTS but cannot be
+READ (a directory sitting where the file should be, a permissions
+error) returned `undefined` with no diagnostic trail, inconsistent
+with every other unreadable-artifact path in `router-discovery.ts`
+(`loadCorpus`, `artifact`), which all push an `EnvironmentDefect`.
+
+- Fixed by having `nativeEvidence()` push a defect naming the target
+  on a read failure, same shape as every sibling function in the
+  file. Mutation-verified: 1 new test, red without the fix.
 
 ## Interface Overview
 
