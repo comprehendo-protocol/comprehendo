@@ -36,6 +36,7 @@ export type ViolationReason =
   | 'fix-without-title'
   | 'dangling-docs-pointer'
   | 'empty-fixes'
+  | 'empty-reason'
   | 'reserved-code'
   | 'duplicate-code'
   | 'unknown-code'
@@ -115,6 +116,52 @@ export function applyOperations(apply: unknown): readonly string[] | null {
   return null;
 }
 
+/**
+ * Recurse into a call/stage record's own values looking for a NESTED
+ * pipeline, but only under a key the schema explicitly names in
+ * `nestedPipelineOperations`. A stage nested there ($facet's per-branch
+ * arrays, $lookup/$unionWith's `pipeline`) is just as capable of expressing
+ * a write as a top-level one, so its keys count too. Every other nested
+ * value, named or not, is left alone: operand data ($match's filter
+ * document) is never scanned for keys, because nothing declares it as a
+ * nesting operation.
+ */
+function collectNestedOperations(
+  record: Record<string, unknown>,
+  nestingKeys: ReadonlySet<string>,
+  operations: string[],
+): void {
+  for (const [key, value] of Object.entries(record)) {
+    if (!nestingKeys.has(key)) continue;
+    collectPipelineLike(value, nestingKeys, operations);
+  }
+}
+
+/** A value that might itself be a pipeline (an array of stages) or a record
+ * of them ($facet's per-branch shape); collects operator keys from either. */
+function collectPipelineLike(
+  value: unknown,
+  nestingKeys: ReadonlySet<string>,
+  operations: string[],
+): void {
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      if (!isRecord(item)) continue;
+      operations.push(...Object.keys(item));
+      collectNestedOperations(item, nestingKeys, operations);
+    }
+    return;
+  }
+  if (isRecord(value)) {
+    // $facet-shaped: an object whose OWN values are pipelines, not a stage
+    // itself, so its keys (the branch names) are never collected as
+    // operations, only recursed through.
+    for (const branch of Object.values(value)) {
+      collectPipelineLike(branch, nestingKeys, operations);
+    }
+  }
+}
+
 /** One fix's `apply`, against the provider's declared call schema (CC7 [09]). */
 function validateApply(apply: unknown, schema: DeclaredCallSchema, at: string): Violation[] {
   const operations = applyOperations(apply);
@@ -138,7 +185,15 @@ function validateApply(apply: unknown, schema: DeclaredCallSchema, at: string): 
       ),
     ];
   }
-  return operations
+  const nestingKeys = new Set(schema.nestedPipelineOperations ?? []);
+  const allOperations = [...operations];
+  if (nestingKeys.size > 0) {
+    const calls = Array.isArray(apply) ? apply : [apply];
+    for (const call of calls) {
+      if (isRecord(call)) collectNestedOperations(call, nestingKeys, allOperations);
+    }
+  }
+  return allOperations
     .filter((operation) => !schema.operations.includes(operation))
     .map((operation) =>
       violation(
@@ -216,6 +271,32 @@ export function validateCatalog(catalog: ProviderCatalog): readonly Violation[] 
       );
     }
     seen.add(entry.code);
+    if (entry.reason.trim() === '') {
+      found.push(
+        violation(
+          'CATALOG',
+          'empty-reason',
+          `${at}.reason`,
+          `the cataloged failure ${entry.code} carries no reason, and a twin owes a self-sufficient explanation`,
+        ),
+      );
+    }
+    // CC3 [08], at catalog time: an author who pastes the driver's raw text
+    // straight into `reason` (rather than leaving it in `received`, where
+    // this contract puts it) ships the exact leak this component exists to
+    // catch, and it MUST fail here, not only when auditTwin() is run by
+    // hand against a constructed Twin. See auditTwin()'s matching check.
+    const rawText = rawTextOf(entry.received);
+    if (rawText !== undefined && rawText !== '' && entry.reason.includes(rawText)) {
+      found.push(
+        violation(
+          'CC3',
+          'raw-error-leak',
+          `${at}.reason`,
+          `the cataloged failure ${entry.code} surfaces its own received text inside reason; the raw text belongs in received, verbatim, and is never the primary answer`,
+        ),
+      );
+    }
     if (entry.fixes.length === 0) {
       found.push(
         violation(
