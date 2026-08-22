@@ -1,0 +1,105 @@
+{
+  "fixture": "docs-three-vocabularies",
+  "title": "Docs lookup in all three vocabularies: the tool's own terms, a known tool's terms, and task language, one topic",
+  "scenario": "docs-lookup",
+  "rfc": [
+    "5.2.1",
+    "5.2.2"
+  ],
+  "steps": [
+    {
+      "step": "Vocabulary one, the tool's own terms. The agent already knows the operator name and asks for it directly.",
+      "surface": "docs",
+      "input": "$group",
+      "vocabulary": {
+        "kind": "own-terms"
+      },
+      "shape": "topic.schema.json",
+      "response": {
+        "topic": "$group",
+        "summary": "$group collapses the documents reaching it into one output document per distinct _id value. _id is required and names the grouping key; every other field of the output is an accumulator over the documents in that group. _id: null groups everything into a single document.",
+        "signatures": [
+          "{ \"$group\": { \"_id\": <expression>, <field>: { <accumulator>: <expression> } } }"
+        ],
+        "examples": [
+          {
+            "title": "Count events per key",
+            "code": "[{ \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+          },
+          {
+            "title": "The twin a group without an accumulator produces",
+            "code": "{ \"code\": \"GROUP_ACCUMULATOR_MISSING\", \"path\": \"pipeline[0].$group.n\", \"accepts\": [\"$sum\", \"$avg\", \"$first\"] }"
+          }
+        ],
+        "see_also": [
+          "aggregation stages",
+          "$match",
+          "index selection"
+        ]
+      }
+    },
+    {
+      "step": "Vocabulary two, the terms of a tool the agent already knows. Translation lookup is the on-ramp: fluency in one tool interviews an unknown one.",
+      "surface": "docs",
+      "input": "the SQL equivalent of GROUP BY",
+      "vocabulary": {
+        "kind": "translation",
+        "known_tool": "SQL"
+      },
+      "shape": "topic.schema.json",
+      "response": {
+        "topic": "$group",
+        "summary": "$group collapses the documents reaching it into one output document per distinct _id value. _id is required and names the grouping key; every other field of the output is an accumulator over the documents in that group. _id: null groups everything into a single document.",
+        "signatures": [
+          "{ \"$group\": { \"_id\": <expression>, <field>: { <accumulator>: <expression> } } }"
+        ],
+        "examples": [
+          {
+            "title": "Count events per key",
+            "code": "[{ \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+          },
+          {
+            "title": "The twin a group without an accumulator produces",
+            "code": "{ \"code\": \"GROUP_ACCUMULATOR_MISSING\", \"path\": \"pipeline[0].$group.n\", \"accepts\": [\"$sum\", \"$avg\", \"$first\"] }"
+          }
+        ],
+        "see_also": [
+          "aggregation stages",
+          "$match",
+          "index selection"
+        ]
+      }
+    },
+    {
+      "step": "Vocabulary three, task language. The agent names the outcome it wants and never has to learn the operator vocabulary first.",
+      "surface": "docs",
+      "input": "how to count events per key",
+      "vocabulary": {
+        "kind": "task"
+      },
+      "shape": "topic.schema.json",
+      "response": {
+        "topic": "$group",
+        "summary": "$group collapses the documents reaching it into one output document per distinct _id value. _id is required and names the grouping key; every other field of the output is an accumulator over the documents in that group. _id: null groups everything into a single document.",
+        "signatures": [
+          "{ \"$group\": { \"_id\": <expression>, <field>: { <accumulator>: <expression> } } }"
+        ],
+        "examples": [
+          {
+            "title": "Count events per key",
+            "code": "[{ \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+          },
+          {
+            "title": "The twin a group without an accumulator produces",
+            "code": "{ \"code\": \"GROUP_ACCUMULATOR_MISSING\", \"path\": \"pipeline[0].$group.n\", \"accepts\": [\"$sum\", \"$avg\", \"$first\"] }"
+          }
+        ],
+        "see_also": [
+          "aggregation stages",
+          "$match",
+          "index selection"
+        ]
+      }
+    }
+  ]
+}
