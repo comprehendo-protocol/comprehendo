@@ -21,7 +21,7 @@ started: 2026-08-22
 - [x] 11-marker-probe (COMPONENT), 58/58 green, merged, all 4 gates (typecheck/lint/test/build) clean; review found attachMarker() didn't validate its entry on write (a malformed attach silently became invisible to probe()/hasMarker()), fixed and mutation-verified, 100/100
 - [x] 12-twin-builder (COMPONENT), 40/40 green, merged; resolved the apply-grammar gap to LITERAL against the wave-1 kit fixtures; review found 3 real gaps (auditTwin unwired, nested-pipeline CC7 bypass, empty-reason unchecked), all fixed and mutation-verified, 154/154
 - [x] 13-docs-engine (COMPONENT), 46/46 green, merged; defined the wave-2 packed-corpus format (17's contract); found+fixed an 11-marker-probe CC1 scan over-scope bug on integration; review found an uncapped ambiguous-tie nearest list and a translations-shape crash-not-reject gap, both fixed and mutation-verified, 162/162
-- [x] 14-sdk-entry (COMPONENT), 52/52 green, merged (214/214 combined); closed 12's deferred marker-entry wiring for real; corrected two doc shapes to the RFC (explain/UNVALIDATABLE)
+- [x] 14-sdk-entry (COMPONENT), 52/52 green, merged (214/214 combined); closed 12's deferred marker-entry wiring for real; corrected two doc shapes to the RFC (explain/UNVALIDATABLE); review found validate/explain hook returns unguarded against non-objects, fixed and mutation-verified, 223/223
 - [ ] 17-corpus-generator (COMPONENT)
 - [ ] 15-manifest-wiring (COMPONENT)
 - [ ] 16-recorder (COMPONENT)

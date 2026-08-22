@@ -172,6 +172,24 @@ defaulting to valid is the one answer a judge must never guess.
 
 ## Fixed Issues
 
+### validate()/explain() hook returns were unguarded against non-objects (fixed 2026-08-22)
+
+Found by review. `isClean`/`isAbstention`/`isResolution` used the bare
+`in` operator on a `validate` hook's verdict with no guard that it was
+even an object; `freezeExplanation` read `.notes` off an `explain`
+hook's return the same way. `ValidationVerdict`/`Explanation` are
+compile-time-only types: a hook returning `undefined` (a missing
+`return` in one branch is a plausible authoring bug), `null`, or a
+primitive threw a native `Cannot use 'in' operator...`/`Cannot read
+properties of undefined` error instead of ever reaching this module's
+own crafted, explanatory message, for exactly the malformed-hook case
+that message exists to explain.
+
+- Fixed by checking `typeof value === 'object' && value !== null`
+  before any property access on either hook's return.
+- Held by 9 new tests (5 verdict shapes x `validate`, 4 x `explain`),
+  mutation-verified: removing either guard turns all of them red.
+
 ### Data Model spelled two response shapes the RFC does not use (fixed 2026-08-22)
 
 Was: this section spelled `explain(input)`'s return as `{literalForm,
