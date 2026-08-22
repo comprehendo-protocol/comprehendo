@@ -10,10 +10,14 @@ started: 2026-08-22
 
 ## Features
 
-- [x] 18-python-core (COMPONENT), 343/343 green, mypy --strict clean, merged;
+- [x] 18-python-core (COMPONENT), 345/345 green, mypy --strict clean, merged;
   conformance kit passes with zero fixture changes; byte-identical
   serialization proven 3 ways including running the actual TS source
-  cross-language; found+fixed a 13-docs-engine test fixture drift
+  cross-language; found+fixed a 13-docs-engine test fixture drift;
+  review found 2 null-handling divergences from the TS reference
+  (context.received=None wrote null instead of omitting the field;
+  an explicit JSON null manifest value reported "absent" instead of
+  "unreadable"), both fixed and mutation-verified
 
 ## Judgment log
 

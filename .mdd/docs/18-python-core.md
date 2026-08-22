@@ -139,6 +139,28 @@ UNVALIDATABLE, manifest keys, config knobs), expressed as `TypedDict`
 
 ## Fixed Issues
 
+### Two null-handling divergences from the TS reference (fixed 2026-08-22)
+
+Found by review, both mutation-verified after fixing, both breaking the
+byte-identical guarantee (CC2 [01]) for the affected input shape:
+
+1. `twin.py`'s `_first_present()` treated an explicit `None` as a real
+   value, so `context={"received": None}` on an entry with no
+   `received` wrote `"received": null` into the twin.
+   `packages/core/src/twin.ts` merges context and entry with
+   JavaScript's `??`, which falls through on BOTH `undefined` and an
+   explicit `null`, so TS omits the field entirely for the identical
+   input. Fixed: `_first_present` now treats `None` the same as the
+   `_ABSENT` sentinel.
+2. `declaration.py`'s `parse_declaration()` treated `None` as "the key
+   is absent", so `{"comprehendo": null}` in `package.json` reported
+   `status: "absent"` (no claim) instead of `status: "unreadable"` (a
+   broken claim), exactly the failure mode the function's own
+   docstring warns against. Both callers already handle the true
+   "key never existed" case before calling this function, so a `None`
+   reaching it is never a stand-in for absence. Fixed: removed the
+   now-provably-wrong branch.
+
 ### `packages/core`'s test fixture drifted from the kit transcript (fixed 2026-08-22)
 
 Was: `packages/core/test/fixtures/mongodb-operator.packed.json`'s
