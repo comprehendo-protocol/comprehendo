@@ -3,15 +3,15 @@ id: 12-twin-builder
 title: Twin Builder
 type: COMPONENT
 path: Core / Twin Builder
-source_files: [packages/core/src/twin.ts]
-status: planned
-phase: idle
+source_files: [packages/core/src/twin.ts, packages/core/src/twin-validate.ts]
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
 depends_on: [03-shape-schemas, 04-conformance-fixtures, 08-cc3-no-raw-errors, 09-cc7-schema-bound-fixes]
 tags: [twin, unstructured, fix-validation, throw-site, apply-grammar, versioning]
-test_files: []
+test_files: [packages/core/test/twin.test.ts, packages/core/test/twin-validate.test.ts, packages/core/test/twin-kit.test.ts]
 known_issues: []
 primitives:
   - name: "err.twin"
@@ -79,13 +79,14 @@ surface so a caller can still probe it.
 
 ## Acceptance Criteria
 
-- [ ] Kit fixtures assert a twin on every cataloged failure.
-- [ ] Kit fixtures assert UNSTRUCTURED wrapping (raw preserved in
+- [x] Kit fixtures assert a twin on every cataloged failure.
+- [x] Kit fixtures assert UNSTRUCTURED wrapping (raw preserved in
       `received`) on every induced novel failure.
-- [ ] A fix with a schema-escaping `apply` fails the build with the
+- [x] A fix with a schema-escaping `apply` fails the build with the
       violation named.
-- [ ] The negative kit's raw-leak and schema-escaping-fix fixtures fail
-      their gates.
+- [x] The negative kit's raw-leak and schema-escaping-fix fixtures fail
+      their gates. Verified against the REAL validator in
+      `packages/core/test/twin-kit.test.ts`, not content-asserted.
 
 ## Dependencies
 
@@ -96,8 +97,27 @@ surface so a caller can still probe it.
 
 ## Known Issues
 
-- [gap] The `apply` grammar (literal vs. `template`) is not yet ruled on;
-  the fix validator's exact parsing rules depend on that Wave-1 decision.
+None open.
+
+## Fixed Issues
+
+### The `apply` grammar was not yet ruled on (fixed 2026-08-22)
+
+Was: literal vs. `template` (with fingerprint capture-group placeholders)
+was an open Wave-1 design question the fix validator's parsing rules
+depended on.
+
+- Resolved to LITERAL: `packages/spec/kit/fixtures/twin-round-trip.json`
+  and `packages/spec/kit/negative/schema-escaping-fix.json` (both built in
+  Wave 1) already express and test every `apply` as literal call data
+  shaped like the provider's own call surface; no fixture anywhere in
+  either kit carries a `template` key. The kit is this component's
+  acceptance criteria, so `applyOperations()` in `twin-validate.ts`
+  implements that same rule for real: every top-level operator key used in
+  `apply` must be a member of `declared_schema.operations`, matching
+  `negative-violations.test.mjs`'s `operatorsOf` helper exactly.
+- A later ruling that adds a `template` form extends `applyOperations()`
+  and nothing else.
 
 ## Interface Overview
 

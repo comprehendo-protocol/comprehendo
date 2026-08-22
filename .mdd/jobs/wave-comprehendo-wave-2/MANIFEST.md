@@ -18,8 +18,8 @@ started: 2026-08-22
 - [x] 08-cc3-no-raw-errors (SPEC)
 - [x] 09-cc7-schema-bound-fixes (SPEC), known_issues [gap] on apply grammar carried forward, 12-twin-builder must judge it
 - [x] 10-cc9-marker-freeze (SPEC)
-- [x] 11-marker-probe (COMPONENT), 58/58 green, merged, all 4 gates (typecheck/lint/test/build) clean
-- [ ] 12-twin-builder (COMPONENT)
+- [x] 11-marker-probe (COMPONENT), 58/58 green, merged, all 4 gates (typecheck/lint/test/build) clean; review found attachMarker() didn't validate its entry on write (a malformed attach silently became invisible to probe()/hasMarker()), fixed and mutation-verified, 100/100
+- [x] 12-twin-builder (COMPONENT), 40/40 green, merged; resolved the apply-grammar gap to LITERAL against the wave-1 kit fixtures
 - [ ] 13-docs-engine (COMPONENT)
 - [ ] 14-sdk-entry (COMPONENT)
 - [ ] 17-corpus-generator (COMPONENT)
@@ -73,3 +73,62 @@ started: 2026-08-22
 13. Acceptance criterion 2 ("root export/error/handle all carry the
     marker") is demonstrated here across all 3 value shapes but owned end
     -to-end by SDK Entry [14], which wires a real provider through it.
+
+### 12-twin-builder (10 calls, unattended, no blockers)
+
+1. Apply grammar resolved to LITERAL against the wave-1 kit fixtures (see
+   the doc's Fixed Issues; full rationale there).
+2. A non-structured `apply` (e.g. a bare string) or one expressing no
+   operation is its own violation kind (`unvalidatable-apply`,
+   `empty-apply`), strictly narrower than "reject anything outside the
+   declared operations", never wider, closing the exact command-channel
+   gap a membership-only check would leave open.
+3. Only TOP-LEVEL operator keys are checked (`{$match: {created_at:
+   {$gte: ...}}}` contributes `$match`, not `$gte`), matching the spec's
+   own `operatorsOf` helper; deeper checking would reject the positive
+   kit itself.
+4. Marker written as a local const with a comment, since marker.ts didn't
+   exist on this branch yet; safe by construction (`Symbol.for` reads the
+   global registry) and tested for identity. Orchestrator swapped it for
+   the real import once both merged (separate commit above).
+5. Marker VALUE on a thrown error defaults to `true` (presence only); a
+   real `ComprehendoEntry` is an optional third arg for SDK Entry [14] to
+   supply. Until [14] wires that through, `hasMarker()`/`probe()` (from
+   11) will NOT recognize a twin-builder-thrown error, only a raw
+   property read (`err[Symbol.for('comprehendo')]`) will. This is
+   BY DESIGN per this call, not a bug; flagged for 14's build to close.
+6. `TwinCatalogError` is a plain Error, deliberately not twinned: it's a
+   build-time developer error (bad catalog) before any provider ships,
+   twinning it would imply a published `code` vocabulary this shared
+   builder doesn't own.
+7. **The negative kit's `enforced: false` flags are now stale** for
+   raw-error-leak and schema-escaping-fix (both gates now exist and both
+   fixtures are proven against the REAL validator in `twin-kit.test.ts`).
+   Flipping them means editing 3 files owned by 05-negative-fixtures
+   (wave 1); not done by this builder, handed to the orchestrator.
+   **Orchestrator: done in a separate commit below.**
+8. Un-cataloged code in `twinFor()` -> UNSTRUCTURED (the ordinary novel
+   -failure path); unknown code in `build()` (explicit "this IS
+   cataloged") -> `TwinCatalogError`. Two call sites, two meanings,
+   neither silently guessing.
+9. Module split at 300 lines: `twin.ts` (223, construction path/public
+   surface) and `twin-validate.ts` (267, the pure CC3/CC7 gate,
+   re-exported wholesale). Checked no other doc claimed
+   `twin-validate.ts` before creating it. Test files split the same way,
+   the moved describes are byte-identical (sed-extracted, not retyped).
+10. A cataloged twin built from a raw error with no catalog-authored
+    `received` keeps the raw text in `received` anyway (CC3 forbids raw
+    text as the PRIMARY message only, never says to drop it).
+
+### Orchestrator: 12-twin-builder marker integration and negative-kit flip
+
+Swapped twin.ts's local marker const for the real `./marker.js` import
+once 11 merged (separate commit, all 4 gates re-verified: 100/100).
+Flipped the negative kit's now-stale `enforced: false` flags for
+raw-error-leak and schema-escaping-fix to `true` (both gates genuinely
+exist and reject their fixture for real as of this wave): see the
+dedicated commit for the 3 files touched
+(packages/spec/kit/negative/{raw-error-leak,schema-escaping-fix}.json,
+packages/spec/test/helpers/negative.mjs, packages/spec/test/negative-kit
+.test.mjs), all in the wave-1 negative kit's territory, done here because
+12 correctly declined to touch a sibling wave's files itself.
