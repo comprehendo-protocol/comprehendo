@@ -22,9 +22,13 @@
         {
           "title": "Count events per key",
           "code": "[{ \"$match\": { \"ok\": true } }, { \"$group\": { \"_id\": \"$key\", \"n\": { \"$sum\": 1 } } }]"
+        },
+        {
+          "title": "The twin a misspelled stage produces",
+          "code": "{ \"code\": \"STAGE_UNKNOWN\", \"path\": \"pipeline[1].$grup\", \"accepts\": [\"$group\", \"$graphLookup\"] }"
         }
       ],
-      "see_also": ["$match", "$group", "index selection"],
+      "see_also": ["$group", "$match", "index selection"],
       "vocabularies_served": {
         "own_terms": ["aggregation stages", "pipeline stages", "stage operator"],
         "translations": [
