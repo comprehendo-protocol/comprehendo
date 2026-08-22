@@ -1,0 +1,30 @@
+{
+  "topic": "how to crop a video",
+  "summary": "Crop with the `crop` video filter: `-vf crop=w:h:x:y`. Width and height come first, then the top-left corner of the kept region, all in pixels of the SOURCE frame. Omit x and y and the crop is centred. Cropping re-encodes, so `-c copy` cannot be combined with `-vf`; pick an encoder and a quality target explicitly or ffmpeg picks defaults you did not choose. Encoders that need even dimensions (libx264 with yuv420p) fail on an odd width or height, which is why `crop=iw-2*20:ih` style expressions are preferred over literal odd numbers.",
+  "signatures": [
+    "ffmpeg -i IN -vf crop=W:H:X:Y -c:v libx264 -crf 20 OUT",
+    "crop=w:h:x:y",
+    "crop=iw/2:ih/2"
+  ],
+  "examples": [
+    {
+      "title": "Crop a centred 1280x720 window",
+      "code": "ffmpeg -i in.mp4 -vf crop=1280:720 -c:v libx264 -crf 20 -c:a copy out.mp4"
+    },
+    {
+      "title": "Trim 20px off every edge, staying even-dimensioned",
+      "code": "ffmpeg -i in.mp4 -vf crop=iw-2*20:ih-2*20 -c:v libx264 -crf 20 -c:a copy out.mp4"
+    },
+    {
+      "title": "Crop then scale, one filter chain",
+      "code": "ffmpeg -i in.mp4 -vf \"crop=1920:800,scale=1280:-2\" -c:v libx264 -crf 20 out.mp4"
+    }
+  ],
+  "see_also": [
+    "crop",
+    "scale",
+    "-vf",
+    "why -c copy is ignored",
+    "how to pad instead of crop"
+  ]
+}

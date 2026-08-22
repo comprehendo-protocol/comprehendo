@@ -1,0 +1,32 @@
+{
+  "name": "@comprehendo/spec",
+  "version": "0.0.1",
+  "description": "The normative Comprehendo protocol document plus the language-neutral conformance kit",
+  "type": "module",
+  "private": false,
+  "license": "MIT",
+  "author": "TheDecipherist",
+  "files": [
+    "kit",
+    "protocol.md"
+  ],
+  "bin": {
+    "comprehendo-budget": "./kit/budget/run.js"
+  },
+  "scripts": {
+    "test": "node --test",
+    "budget": "node kit/budget/run.js"
+  },
+  "devDependencies": {
+    "js-tiktoken": "1.0.21"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheDecipherist/comprehendo.git",
+    "directory": "packages/spec"
+  },
+  "homepage": "https://github.com/TheDecipherist/comprehendo#readme",
+  "bugs": {
+    "url": "https://github.com/TheDecipherist/comprehendo/issues"
+  }
+}
