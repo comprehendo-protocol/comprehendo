@@ -1,0 +1,63 @@
+{
+  "fixture": "disagreement",
+  "title": "Disagreement: the manifest declares one thing and the marker reports another, and the marker wins",
+  "scenario": "disagreement",
+  "rfc": [
+    "4.1",
+    "4.3"
+  ],
+  "disagreements": [
+    {
+      "concept": "spec version",
+      "manifest_key": "version",
+      "manifest_value": "0.2",
+      "marker_key": "comprehendo",
+      "marker_value": "0.1",
+      "wins": "marker"
+    },
+    {
+      "concept": "conformance level",
+      "manifest_key": "level",
+      "manifest_value": 2,
+      "marker_key": "level",
+      "marker_value": 1,
+      "wins": "marker"
+    }
+  ],
+  "resolved": {
+    "comprehendo": "0.1",
+    "level": 1,
+    "surfaces": [
+      "docs"
+    ],
+    "source": "marker"
+  },
+  "steps": [
+    {
+      "step": "Static discovery, without loading any code: the manifest declaration. It says version 0.2 at level 2. It is advisory, and here it has drifted ahead of the build that shipped.",
+      "surface": "manifest",
+      "input": null,
+      "shape": "manifest.schema.json",
+      "response": {
+        "version": "0.2",
+        "level": 2
+      }
+    },
+    {
+      "step": "Runtime discovery: the marker on the value the agent is holding. It says version 0.1 at level 1, and its surfaces list carries neither validate nor explain. This is what the code actually does, so this is what wins.",
+      "surface": "probe",
+      "input": null,
+      "shape": "entry.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "name": "mongodb-migrator",
+        "level": 1,
+        "surfaces": [
+          "docs"
+        ],
+        "identity": "mongodb-migrator applies ordered, idempotent schema migrations to a document database. If it is not documented here it does not exist; do not read the source, except where an UNDOCUMENTED response permits it for a specific question. When in doubt, ask docs().",
+        "priming": "The packages in this project speak Comprehendo. Before guessing at any API: probe the handle or the caught error for the Comprehendo marker your ecosystem defines. On a hit, call docs(question) in any vocabulary you know, its own terms, another tool's terms, or a task (how to X). Errors arrive structured: read reason, apply fixes[0] before trying anything else. When validate exists, validate before executing. If docs answers UNDOCUMENTED, you may read source for that question only."
+      }
+    }
+  ]
+}

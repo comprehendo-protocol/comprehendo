@@ -1,0 +1,135 @@
+{
+  "fixture": "twin-round-trip",
+  "title": "Twin round-trip: the three twin variants the RFC names, in the kit's canonical serialization",
+  "scenario": "twin-round-trip",
+  "rfc": [
+    "5.1.1",
+    "5.1.2",
+    "5.1.4"
+  ],
+  "steps": [
+    {
+      "step": "A fully structured twin: every optional field populated, two fixes ordered most-likely-first.",
+      "surface": "error",
+      "input": [
+        {
+          "$match": {
+            "status": "active"
+          }
+        },
+        {
+          "$sort": {
+            "created_at": -1
+          }
+        },
+        {
+          "$limit": 20
+        }
+      ],
+      "shape": "twin.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "SORT_UNINDEXED_SPILL",
+        "reason": "The sort at pipeline[1] has no index to satisfy it, so it would buffer the whole matched set in memory.",
+        "path": "pipeline[1].$sort",
+        "namespace": "analytics.events",
+        "declared": "a sort an index can serve",
+        "received": "a sort on created_at, which no index covers",
+        "fixes": [
+          {
+            "title": "Sort on the indexed field the pipeline already filters on",
+            "apply": [
+              {
+                "$match": {
+                  "status": "active"
+                }
+              },
+              {
+                "$sort": {
+                  "status": 1,
+                  "created_at": -1
+                }
+              },
+              {
+                "$limit": 20
+              }
+            ],
+            "docs": "index selection",
+            "confidence": "high"
+          },
+          {
+            "title": "Narrow the match before sorting, so the sort fits the memory ceiling",
+            "apply": [
+              {
+                "$match": {
+                  "status": "active",
+                  "created_at": {
+                    "$gte": "2026-01-01"
+                  }
+                }
+              },
+              {
+                "$sort": {
+                  "created_at": -1
+                }
+              },
+              {
+                "$limit": 20
+              }
+            ],
+            "confidence": "likely"
+          }
+        ]
+      }
+    },
+    {
+      "step": "The unstructured passthrough: an error the provider never structured is still a twin, with the raw message preserved and no fix invented for it.",
+      "surface": "error",
+      "input": [
+        {
+          "$match": {
+            "ok": true
+          }
+        },
+        {
+          "$sort": {
+            "created_at": -1
+          }
+        }
+      ],
+      "shape": "twin.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "UNSTRUCTURED",
+        "reason": "This failure is not yet in the corpus; the underlying message is preserved verbatim in received, and no fix is being guessed at.",
+        "received": "Sort exceeded memory limit of 33554432 bytes",
+        "fixes": []
+      }
+    },
+    {
+      "step": "A docs-only fix: the corpus can teach this one, and the pointer is inert by construction, it names a topic and nothing more.",
+      "surface": "error",
+      "input": {
+        "update": {
+          "$set": {
+            "payload": "a value longer than the stored document"
+          }
+        }
+      },
+      "shape": "twin.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "CAPPED_UPDATE_GROWS_DOCUMENT",
+        "reason": "This update would make the document larger than it is stored, which a capped collection cannot do in place.",
+        "namespace": "analytics.events_recent",
+        "fixes": [
+          {
+            "title": "Read why a capped collection rejects a growing update, and what to use instead",
+            "docs": "capped collections",
+            "confidence": "likely"
+          }
+        ]
+      }
+    }
+  ]
+}

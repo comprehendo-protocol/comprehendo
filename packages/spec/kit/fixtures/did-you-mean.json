@@ -1,0 +1,92 @@
+{
+  "fixture": "did-you-mean",
+  "title": "Did-you-mean on both channels: accepts on the twin, nearest on the docs miss",
+  "scenario": "did-you-mean",
+  "rfc": [
+    "5.1.1",
+    "5.2.3"
+  ],
+  "steps": [
+    {
+      "step": "The error channel. A near miss on a stage name comes back with the valid alternatives in accepts, so the agent never has to guess what it meant.",
+      "surface": "error",
+      "input": [
+        {
+          "$match": {
+            "ok": true
+          }
+        },
+        {
+          "$grup": {
+            "_id": "$key"
+          }
+        }
+      ],
+      "did_you_mean": {
+        "field": "accepts",
+        "received": "$grup",
+        "candidates": [
+          "$group",
+          "$graphLookup"
+        ]
+      },
+      "shape": "twin.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "STAGE_UNKNOWN",
+        "reason": "Pipeline stage 1 names an operator that does not exist; $grup is not a stage.",
+        "path": "pipeline[1].$grup",
+        "namespace": "analytics.events",
+        "declared": "a pipeline stage operator",
+        "received": "$grup",
+        "accepts": [
+          "$group",
+          "$graphLookup"
+        ],
+        "fixes": [
+          {
+            "title": "Rename the unknown stage to $group",
+            "apply": [
+              {
+                "$match": {
+                  "ok": true
+                }
+              },
+              {
+                "$group": {
+                  "_id": "$key"
+                }
+              }
+            ],
+            "docs": "aggregation stages",
+            "confidence": "high"
+          }
+        ]
+      }
+    },
+    {
+      "step": "The docs channel. The same near miss asked as a question is an honest UNDOCUMENTED naming what it was near, never a confident wrong topic.",
+      "surface": "docs",
+      "input": "$grup",
+      "did_you_mean": {
+        "field": "nearest",
+        "received": "$grup",
+        "candidates": [
+          "$group",
+          "$graphLookup"
+        ]
+      },
+      "shape": "undocumented.schema.json",
+      "response": {
+        "comprehendo": "0.1",
+        "code": "UNDOCUMENTED",
+        "query": "$grup",
+        "nearest": [
+          "$group",
+          "$graphLookup"
+        ],
+        "source_permitted": true
+      }
+    }
+  ]
+}
