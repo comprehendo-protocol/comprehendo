@@ -12,7 +12,7 @@ overlap_count: 3
 **Core / Config Loader**
   └── `23-config-loader` - Config Loader (planned)
 **Core / Corpus Generator**
-  └── `17-corpus-generator` - Corpus Generator (planned)
+  └── `17-corpus-generator` - Corpus Generator (complete)
 **Core / Cross-Cutting Contracts / Honest Miss**
   └── `20-cc10-honest-miss` - CC10 Honest Miss (planned)
 **Core / Cross-Cutting Contracts / Marker Freeze**
@@ -26,7 +26,7 @@ overlap_count: 3
 **Core / Cross-Cutting Contracts / Schema-Bound Fixes**
   └── `09-cc7-schema-bound-fixes` - CC7 Schema-Bound Fixes (complete)
 **Core / Docs Engine**
-  └── `13-docs-engine` - Docs Engine (planned)
+  └── `13-docs-engine` - Docs Engine (complete)
 **Core / Manifest Wiring**
   └── `15-manifest-wiring` - Manifest Wiring (planned)
 **Core / Marker & Probe**
@@ -36,9 +36,9 @@ overlap_count: 3
 **Core / Router**
   └── `22-router-precedence` - Router & Precedence (planned)
 **Core / SDK Entry**
-  └── `14-sdk-entry` - SDK Entry (makeProvider) (planned)
+  └── `14-sdk-entry` - SDK Entry (makeProvider) (complete)
 **Core / Twin Builder**
-  └── `12-twin-builder` - Twin Builder (planned)
+  └── `12-twin-builder` - Twin Builder (complete)
 **Core / Wrap Proxy**
   └── `24-wrap-proxy` - Wrap Opt-In Proxy (planned)
 **Corpora / ffmpeg / Corpus**
@@ -109,12 +109,12 @@ graph TD
   09_cc7_schema_bound_fixes["09-cc7-schema-bound-fixes"]:::done
   10_cc9_marker_freeze["10-cc9-marker-freeze"]:::done
   11_marker_probe["11-marker-probe"]:::done
-  12_twin_builder["12-twin-builder"]:::planned
-  13_docs_engine["13-docs-engine"]:::planned
-  14_sdk_entry["14-sdk-entry"]:::planned
+  12_twin_builder["12-twin-builder"]:::done
+  13_docs_engine["13-docs-engine"]:::done
+  14_sdk_entry["14-sdk-entry"]:::done
   15_manifest_wiring["15-manifest-wiring"]:::planned
   16_recorder["16-recorder"]:::planned
-  17_corpus_generator["17-corpus-generator"]:::planned
+  17_corpus_generator["17-corpus-generator"]:::done
   18_python_core["18-python-core"]:::planned
   19_cc8_native_precedence["19-cc8-native-precedence"]:::planned
   20_cc10_honest_miss["20-cc10-honest-miss"]:::planned
