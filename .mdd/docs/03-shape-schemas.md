@@ -4,15 +4,15 @@ title: Shape Schemas
 type: COMPONENT
 path: Spec / Shape Schemas
 source_files: [packages/spec/kit/shapes/]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-1
 depends_on: [01-cc2-shape-identity]
 tags: [json-schema, twin, fix, topic-shape, manifest-keys, config-knobs, versioning]
-test_files: []
-known_issues: []
+test_files: [packages/spec/test/shape-set.test.mjs, packages/spec/test/rfc-examples.test.mjs, packages/spec/test/error-shapes.test.mjs, packages/spec/test/docs-shapes.test.mjs, packages/spec/test/judgment-shapes.test.mjs, packages/spec/test/discovery-shapes.test.mjs, packages/spec/test/forward-compat.test.mjs]
+known_issues: [{type: deferred, note: "packages/spec uses node --test plus ajv instead of the CLAUDE.md-documented Vitest, a deliberate call for this zero-runtime-dependency data package; reconsider once Wave 2 packages with real runtime code land, they should very likely use Vitest per the documented stack"}]
 ---
 
 # Shape Schemas
@@ -20,8 +20,13 @@ known_issues: []
 ## What to Build
 
 A JSON Schema per normative shape in the RFC: twin, fix, topic, index,
-entry, UNDOCUMENTED, UNVALIDATABLE, manifest keys, and the five consumer
-config knobs. Each schema is the machine-checkable definition that
+entry, UNDOCUMENTED, UNVALIDATABLE, the `explain(input)` response, manifest
+keys, and the five consumer config knobs. (This list originally omitted
+`explain`'s response shape; the Business Rules line below already required
+one schema per Protocol Surface table row, and `explain` is a row in that
+table, so the build added `explanation.schema.json` and this line is
+corrected to match, rather than the RFC being narrowed to match a short
+list.) Each schema is the machine-checkable definition that
 Conformance Fixtures [04] and Negative Fixtures [05] are validated against.
 Must-not: no schema invents a field the RFC does not define; no schema
 narrows a field's allowed shape below what the RFC allows (that narrowing,
@@ -88,11 +93,11 @@ Engine [13], and Router & Precedence [22]).
 
 ## Acceptance Criteria
 
-- [ ] Every shape named in the RFC's Protocol Surface table has a
+- [x] Every shape named in the RFC's Protocol Surface table has a
       corresponding JSON Schema file in `packages/spec/kit/shapes/`.
-- [ ] Every schema validates the RFC's own worked examples (from
+- [x] Every schema validates the RFC's own worked examples (from
       `comprehendo-spec.md`) without modification.
-- [ ] The forward-compat fixture (a twin carrying unknown fields) validates
+- [x] The forward-compat fixture (a twin carrying unknown fields) validates
       successfully against the twin schema, proving the schema does not
       reject additive future fields.
 
@@ -103,4 +108,9 @@ Engine [13], and Router & Precedence [22]).
 
 ## Known Issues
 
-None recorded at plan time.
+- [deferred] `packages/spec` uses `node --test` plus `ajv` rather than the
+  CLAUDE.md-documented Vitest. Deliberate for this zero-runtime-dependency
+  data package (Vitest would add roughly 100 transitive dependencies to a
+  package whose stated architecture is "depends on nothing, it is data").
+  Reconsider once Wave 2 packages with real runtime code land; they should
+  very likely use Vitest per the documented stack.
