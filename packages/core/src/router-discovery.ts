@@ -23,10 +23,12 @@
 // @see .mdd/docs/22-router-precedence.md
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
-import { join } from 'node:path';
+import { isAbsolute, join, resolve } from 'node:path';
 
 import { readManifestFile } from './config.js';
 import type { ManifestReading } from './config.js';
+import { localCorpusMounts } from './config-consumer.js';
+import type { ConsumerConfig } from './config-consumer.js';
 import { createDocs, parsePackedCorpus } from './docs.js';
 import type { DocsOptions } from './docs.js';
 import type {
@@ -75,7 +77,16 @@ export interface DiscoveryOptions {
   readonly docs?: DocsOptions;
   /** Restrict discovery to these target packages, when the caller knows. */
   readonly only?: readonly string[];
+  /**
+   * The consuming project's own knobs (Config Loader [23]). Only `local` is
+   * read here, because only `local` changes what EXISTS; the other four are
+   * routing decisions and are handed to `createRouter` instead.
+   */
+  readonly config?: ConsumerConfig;
 }
+
+/** How a private corpus's package is named: not a registry package, and never published. */
+export const LOCAL_CORPUS_PREFIX = 'local:';
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -127,6 +138,42 @@ interface LoadedCorpus {
   readonly fingerprints: readonly unknown[];
 }
 
+/**
+ * One corpus, loaded off a directory. Installed under `node_modules` or
+ * mounted from the consuming project's own tree (`local`, Config Loader [23]),
+ * it is the same three artifacts read the same way: Corpus Generator [17]
+ * serves a private corpus with no second code path, so there is none here
+ * either. `whenEmpty` is the defect to report when nothing routable was found,
+ * or `undefined` when a directory carrying no artifacts is simply not a corpus.
+ */
+function loadCorpusFrom(
+  root: string,
+  corpusPackage: string,
+  target: string,
+  version: string | undefined,
+  whenEmpty: string | undefined,
+  options: DiscoveryOptions,
+  defects: EnvironmentDefect[],
+): LoadedCorpus | undefined {
+  const fingerprints = artifact(root, corpusPackage, 'fingerprints', fingerprintsIn, defects) ?? [];
+  const catalog = artifact(root, corpusPackage, 'twins', catalogIn, defects);
+  const docs = docsSurface(root, corpusPackage, options, defects);
+  if (fingerprints.length === 0 && catalog === undefined && docs === undefined) {
+    if (whenEmpty !== undefined) defects.push({ at: corpusPackage, detail: whenEmpty });
+    return undefined;
+  }
+  return {
+    corpus: {
+      package: target,
+      corpusPackage,
+      ...(catalog === undefined ? {} : { catalog }),
+      ...(docs === undefined ? {} : { docs }),
+      ...(version === undefined ? {} : { version }),
+    },
+    fingerprints,
+  };
+}
+
 /** One installed corpus package, loaded. Anything unreadable becomes a defect. */
 function loadCorpus(
   scope: string,
@@ -148,34 +195,51 @@ function loadCorpus(
   const target = targetOf(corpusPackage, host);
   if (options.only !== undefined && !options.only.includes(target)) return undefined;
 
-  const fingerprints = artifact(root, corpusPackage, 'fingerprints', fingerprintsIn, defects) ?? [];
-  const catalog = artifact(root, corpusPackage, 'twins', catalogIn, defects);
-  const docs = docsSurface(root, corpusPackage, options, defects);
+  // A package that CLAIMS to be a corpus (it declares `comprehendoCorpus`) and
+  // carries no artifacts is a broken install and is reported; anything else in
+  // this scope is simply not a corpus (the registry tooling itself installs
+  // here too), and reporting that every time would be crying wolf.
+  const whenEmpty = isRecord(host['comprehendoCorpus'])
+    ? 'declares comprehendoCorpus but carries none of the three corpus artifacts'
+    : undefined;
   const version = typeof host['version'] === 'string' ? host['version'] : undefined;
-  if (fingerprints.length === 0 && catalog === undefined && docs === undefined) {
-    // Nothing routable. A package that CLAIMS to be a corpus (it declares
-    // `comprehendoCorpus`) and carries no artifacts is a broken install and
-    // is reported; anything else in this scope is simply not a corpus (the
-    // registry tooling itself installs here too), and reporting that as a
-    // defect every time would be crying wolf.
-    if (isRecord(host['comprehendoCorpus'])) {
-      defects.push({
-        at: corpusPackage,
-        detail: 'declares comprehendoCorpus but carries none of the three corpus artifacts',
-      });
-    }
+  return loadCorpusFrom(root, corpusPackage, target, version, whenEmpty, options, defects);
+}
+
+/**
+ * One private corpus the consumer mounted for an internal package. Nothing
+ * about it is published: it is not in `node_modules`, it carries no registry
+ * scope, and the only thing that knows it exists is the consumer's own
+ * `local` knob. The path is theirs, so an empty or missing one is always a
+ * defect: they named it, and a silent skip would read as "no corpus written".
+ */
+function loadLocalCorpus(
+  target: string,
+  path: string,
+  options: DiscoveryOptions,
+  defects: EnvironmentDefect[],
+): LoadedCorpus | undefined {
+  const corpusPackage = `${LOCAL_CORPUS_PREFIX}${target}`;
+  const root = isAbsolute(path) ? path : resolve(options.root, path);
+  if (!existsSync(root)) {
+    defects.push({
+      at: corpusPackage,
+      detail: `is mounted at ${path}, and there is no directory there`,
+    });
     return undefined;
   }
-  return {
-    corpus: {
-      package: target,
-      corpusPackage,
-      ...(catalog === undefined ? {} : { catalog }),
-      ...(docs === undefined ? {} : { docs }),
-      ...(version === undefined ? {} : { version }),
-    },
-    fingerprints,
-  };
+  const manifest = readJson(join(root, 'package.json'));
+  const host = isRecord(manifest.value) ? manifest.value : {};
+  const version = typeof host['version'] === 'string' ? host['version'] : undefined;
+  return loadCorpusFrom(
+    root,
+    corpusPackage,
+    target,
+    version,
+    `is mounted at ${path}, which carries none of the three corpus artifacts`,
+    options,
+    defects,
+  );
 }
 
 /** One named artifact, read and shaped, or a recorded defect and `undefined`. */
@@ -263,13 +327,25 @@ export function discoverInstalledCorpora(options: DiscoveryOptions): Environment
         .sort()
     : [];
 
-  for (const directory of installed) {
-    const loaded = loadCorpus(scope, directory, options, defects);
-    if (loaded === undefined) continue;
-    corpora.push(loaded.corpus);
-    fingerprints.push(...loaded.fingerprints);
-    const evidence = nativeEvidence(options.root, loaded.corpus.package);
-    if (evidence !== undefined) native[loaded.corpus.package] = evidence;
+  const mounted = localCorpusMounts(options.config ?? {}).filter(
+    ([target]) => options.only === undefined || options.only.includes(target),
+  );
+
+  const loaded = [
+    ...installed.map((directory) => loadCorpus(scope, directory, options, defects)),
+    // Private corpora go into the SAME list, and their fingerprints into the
+    // same index below: a failure text a private corpus and a published one
+    // both claim has to surface as an ambiguity (CC10 [20]), not be resolved
+    // by which of the two happened to load first.
+    ...mounted.map(([target, path]) => loadLocalCorpus(target, path, options, defects)),
+  ];
+
+  for (const found of loaded) {
+    if (found === undefined) continue;
+    corpora.push(found.corpus);
+    fingerprints.push(...found.fingerprints);
+    const evidence = nativeEvidence(options.root, found.corpus.package);
+    if (evidence !== undefined) native[found.corpus.package] = evidence;
   }
 
   return Object.freeze({
