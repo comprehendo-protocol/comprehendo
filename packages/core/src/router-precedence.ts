@@ -19,6 +19,14 @@
 
 import { resolveDiscovery } from './config.js';
 import type { Discovery, ManifestReading } from './config.js';
+import {
+  demandedTrust,
+  isDisabled,
+  localCorpusPath,
+  meetsTrust,
+  pinnedVersion,
+} from './config-consumer.js';
+import type { ConfigKnob, ConsumerConfig, TrustLevel } from './config-consumer.js';
 import type { DocsSurface } from './docs.js';
 import type { ComprehendoEntry } from './marker.js';
 import type { ProviderCatalog, Twin } from './twin.js';
@@ -81,6 +89,13 @@ export interface InstalledCorpus {
   /** Docs Engine [13]'s surface over this corpus's packed artifact. */
   readonly docs?: DocsSurface;
   readonly version?: string;
+  /**
+   * Where this corpus sits on the trust ladder. Absent means `community`,
+   * which is what every registry corpus is until Owner Endorsement [30]
+   * (Wave 5) marks a release endorsed. Nothing populates it today, and the
+   * `require` knob reads it rather than assuming a rung.
+   */
+  readonly trust?: TrustLevel;
 }
 
 /**
@@ -112,17 +127,34 @@ export interface Environment {
 }
 
 /**
- * The consumer's knobs, as this router reads them. `prefer` is the only one
- * CC8 [19] gives a runtime meaning; the other four (`pin`, `disable`,
- * `require`, `local`) belong to Config Loader [23] and widen this type there.
+ * The consumer's knobs, as this router reads them: all five of them, exactly
+ * Config Loader [23]'s {@link ConsumerConfig}. `prefer` is the one CC8 [19]
+ * names; the other four are read here too, and each one changes routing.
+ * Nothing a PROVIDER declares can reach this type, which is CC8's structural
+ * half restated as a signature.
  */
-export interface RouterConfig {
-  readonly prefer?: Readonly<Record<string, string>>;
+export type RouterConfig = ConsumerConfig;
+
+/** What the environment knows about the SIDECAR corpus installed for a package. */
+export interface CorpusEvidence {
+  readonly installed: boolean;
+  /** The corpus package it came from, e.g. `@comprehendo/ffmpeg`. */
+  readonly corpusPackage?: string;
+  /** The installed corpus's own version, when it declares one. */
+  readonly version?: string;
+  /** Its rung on the trust ladder. Absent means `community`. */
+  readonly trust?: TrustLevel;
 }
 
 // --- the decision -----------------------------------------------------------
 
-export type RouteSource = 'native' | 'sidecar';
+/**
+ * Which tier answers. `none` is not an error: it is the consumer having said,
+ * through `disable`, `require` or `pin`, that they would rather have nothing
+ * than this. The caller answers the honest UNSTRUCTURED / UNDOCUMENTED, never
+ * the corpus that was ruled out.
+ */
+export type RouteSource = 'native' | 'sidecar' | 'none';
 
 /** Which tier answers for a package, and why. Computed per call, never stored. */
 export interface RouterDecision {
@@ -131,6 +163,8 @@ export interface RouterDecision {
   readonly reason: string;
   /** Which discovery channel found the native implementation, when one was found. */
   readonly discovery?: Discovery;
+  /** Which consumer knob decided this route. Absent means default precedence. */
+  readonly knob?: ConfigKnob;
 }
 
 const decision = (
@@ -138,12 +172,14 @@ const decision = (
   source: RouteSource,
   reason: string,
   discovery?: Discovery,
+  knob?: ConfigKnob,
 ): RouterDecision =>
   Object.freeze({
     package: pkg,
     source,
     reason,
     ...(discovery === undefined ? {} : { discovery }),
+    ...(knob === undefined ? {} : { knob }),
   });
 
 /**
@@ -173,35 +209,110 @@ const channel = (discovery: Discovery): string =>
  * the consumer preferred the sidecar for this package: the sidecar handles it
  * anyway. No native present: the sidecar handles it unconditionally. Nothing a
  * provider declares appears anywhere in this function, by construction.
+ *
+ * On top of that rule sit the consumer's other four knobs (Config Loader
+ * [23]), read in a stated order so two of them set at once is not a coin toss:
+ * `disable` first (routing off for this package at all, whatever else is
+ * true), then `prefer` (which tier), then `require` (is that tier's corpus
+ * trusted enough), then `pin` (is it the exact corpus version), and finally
+ * `local` (this package's corpus is one the consumer mounted themselves).
+ * Three of them can answer that NO tier routes, which is a decision, not a
+ * failure: the consumer asked for nothing rather than this.
  */
 export function decideRoute(
   pkg: string,
   evidence?: NativeEvidence,
   config: RouterConfig = {},
+  corpus?: CorpusEvidence,
 ): RouterDecision {
   const discovery = nativeDiscovery(evidence);
-  if (config.prefer?.[pkg] === PREFER_SIDECAR) {
+  if (isDisabled(config, pkg)) {
     return decision(
       pkg,
-      'sidecar',
-      discovery === undefined
-        ? `the consumer prefers the sidecar corpus for ${pkg}`
-        : `the consumer prefers the sidecar corpus for ${pkg}, which reverses native precedence`,
+      'none',
+      `the consumer turned Comprehendo routing off for ${pkg}, so neither tier answers`,
       discovery,
+      'disable',
     );
   }
-  if (discovery !== undefined) {
+  const preferred = config.prefer?.[pkg] === PREFER_SIDECAR;
+  const native = !preferred && discovery !== undefined;
+  const demanded = demandedTrust(config, pkg);
+  let knob: ConfigKnob | undefined = preferred ? 'prefer' : undefined;
+  // What the knobs that were SATISFIED add to the reason. A route that stands
+  // because a demand was met reads nothing like one nobody configured.
+  const met: string[] = [];
+
+  if (demanded !== undefined) {
+    const held: TrustLevel = native ? 'native' : (corpus?.trust ?? 'community');
+    if (!meetsTrust(held, demanded)) {
+      return decision(
+        pkg,
+        'none',
+        `the consumer requires a "${demanded}" corpus for ${pkg}, and the one available is ${held}`,
+        discovery,
+        'require',
+      );
+    }
+    met.push(`meeting the "${demanded}" trust level the consumer requires`);
+    knob = 'require';
+  }
+
+  if (native && discovery !== undefined) {
     return decision(
       pkg,
       'native',
       `${pkg} speaks Comprehendo natively, reported by ${channel(discovery)}; ` +
         'native wins by default and only the consumer can reverse it',
       discovery,
+      knob,
+    );
+  }
+
+  const pinned = pinnedVersion(config, pkg, corpus?.corpusPackage);
+  if (pinned !== undefined) {
+    const installed = corpus?.version;
+    if (installed !== pinned) {
+      return decision(
+        pkg,
+        'none',
+        `the consumer pinned the ${pkg} corpus to ${pinned}, and what is installed is ` +
+          `${installed ?? 'a corpus that reports no version'}`,
+        discovery,
+        'pin',
+      );
+    }
+    met.push(`at ${pinned}, the corpus version the consumer pinned`);
+    knob = 'pin';
+  }
+
+  const suffix = met.length === 0 ? '' : `, ${met.join(', ')}`;
+  const mounted = localCorpusPath(config, pkg);
+  if (mounted !== undefined) {
+    return decision(
+      pkg,
+      'sidecar',
+      `${pkg} answers from the private corpus the consumer mounted at ${mounted}${suffix}`,
+      discovery,
+      'local',
+    );
+  }
+  if (preferred) {
+    return decision(
+      pkg,
+      'sidecar',
+      discovery === undefined
+        ? `the consumer prefers the sidecar corpus for ${pkg}${suffix}`
+        : `the consumer prefers the sidecar corpus for ${pkg}, which reverses native precedence${suffix}`,
+      discovery,
+      knob ?? 'prefer',
     );
   }
   return decision(
     pkg,
     'sidecar',
-    `no native implementation is present for ${pkg}, so an installed sidecar corpus answers`,
+    `no native implementation is present for ${pkg}, so an installed sidecar corpus answers${suffix}`,
+    discovery,
+    knob,
   );
 }
