@@ -11,7 +11,12 @@ import { describe, expect, it } from 'vitest';
 
 import { COMPREHENDO_MARKER, attachMarker, hasMarker, probe } from '../src/marker.js';
 import { hostileValues, makeSampleEntry, snapshot, watch } from './helpers/marker-fixtures.js';
-import { FORBIDDEN_MODULES, findForbiddenImports, readCoreSources } from './helpers/source-scan.js';
+import {
+  FORBIDDEN_MODULES,
+  findForbiddenImports,
+  readCoreSources,
+  transitiveImportClosure,
+} from './helpers/source-scan.js';
 
 const ITERATIONS = 10_000;
 const MARKER_GET = `get:${String(COMPREHENDO_MARKER)}`;
@@ -24,13 +29,22 @@ describe('CC1: the probe does no I/O', () => {
     expect(sources.map((source) => source.path)).toContain('marker.ts');
   });
 
-  it.each([...FORBIDDEN_MODULES])('imports %s nowhere in the core package', (moduleName) => {
-    const offenders = readCoreSources()
-      .filter((source) => findForbiddenImports(source.text).includes(moduleName))
-      .map((source) => source.path);
+  // CC1's scan is scoped to marker.ts and whatever IT imports, transitively,
+  // per the doc's own Architecture section, not indiscriminately every file
+  // the core package happens to contain. A file unrelated to the probe path
+  // (docs.ts loading a packed corpus with node:fs, for instance) is
+  // explicitly out of this scan's scope; the doc says so out loud.
+  it.each([...FORBIDDEN_MODULES])(
+    "imports %s nowhere in the marker module's transitive closure",
+    (moduleName) => {
+      const closure = transitiveImportClosure('marker.ts');
+      const offenders = closure
+        .filter((source) => findForbiddenImports(source.text).includes(moduleName))
+        .map((source) => source.path);
 
-    expect(offenders).toEqual([]);
-  });
+      expect(offenders).toEqual([]);
+    },
+  );
 
   it('leaves the marker module importing nothing, so there is no transitive path to hide I/O in', () => {
     const marker = readCoreSources().find((source) => source.path === 'marker.ts');
@@ -40,6 +54,15 @@ describe('CC1: the probe does no I/O', () => {
     );
 
     expect(imports).toEqual([]);
+  });
+
+  it("the marker's transitive closure is exactly itself, today", () => {
+    // Documents the current, trivial closure (marker.ts imports nothing) so
+    // the day marker.ts DOES import something, this test names the new
+    // member instead of the forbidden-import test silently widening scope.
+    const closure = transitiveImportClosure('marker.ts');
+
+    expect(closure.map((source) => source.path)).toEqual(['marker.ts']);
   });
 });
 

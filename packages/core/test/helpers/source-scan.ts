@@ -31,6 +31,44 @@ export interface SourceFile {
   readonly code: string;
 }
 
+/**
+ * The transitive import closure reachable from `entryPath` (relative to
+ * `src/`, e.g. `marker.ts`), following only relative specifiers
+ * (`./foo.js`, `../bar.js`). This is CC1's actual scope, per the doc's
+ * Architecture section: "the scan runs over marker.ts (and any module it
+ * imports)", not indiscriminately every file the package happens to
+ * contain. A file unrelated to the probe path (docs.ts loading a packed
+ * corpus, for instance) is explicitly out of scope, the doc says so:
+ * "loading a packed corpus is a Docs Engine [13] concern, not the marker
+ * probe's".
+ */
+export function transitiveImportClosure(entryPath: string): SourceFile[] {
+  const all = new Map(readCoreSources().map((source) => [source.path, source]));
+  const visited = new Set<string>();
+  const queue = [entryPath];
+
+  while (queue.length > 0) {
+    const path = queue.shift();
+    if (path === undefined || visited.has(path)) continue;
+    visited.add(path);
+    const source = all.get(path);
+    if (source === undefined) continue;
+
+    for (const match of source.code.matchAll(/from\s*['"](\.[^'"]+)['"]/g)) {
+      const specifier = match[1] ?? '';
+      if (!specifier.startsWith('.')) continue;
+      // Import specifiers are ESM-style ('./foo.js'); source files are .ts.
+      const resolved = specifier.replace(/\.js$/, '.ts').replace(/^\.\//, '');
+      if (!visited.has(resolved)) queue.push(resolved);
+    }
+  }
+
+  return [...visited]
+    .map((path) => all.get(path))
+    .filter((source): source is SourceFile => source !== undefined)
+    .sort((a, b) => a.path.localeCompare(b.path));
+}
+
 /** Every `.ts` file under `src/`, recursively, sorted by path. */
 export function readCoreSources(): SourceFile[] {
   return walk(SRC_ROOT)
