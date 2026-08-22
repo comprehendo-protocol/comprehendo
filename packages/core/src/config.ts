@@ -224,15 +224,138 @@ function indentOf(text: string): number | string {
   return whitespace.startsWith('\t') ? '\t' : whitespace.length;
 }
 
-export function readPyproject(text: string): ManifestReading {
-  void text;
-  throw new Error('MDD skeleton: readPyproject is not implemented');
+/**
+ * The pyproject half is deliberately NOT a TOML parser. `[tool.comprehendo]`
+ * is one table of two flat fields, one string and one integer, which is a
+ * line-oriented job; a general parser would be a dependency (and zero runtime
+ * dependencies is a hard constraint) or several hundred lines of one.
+ *
+ * What a minimal reader owes its caller is honesty about the spellings it does
+ * not handle. TOML can write the same table inline (`[tool]` plus
+ * `comprehendo = {...}`) or as a dotted assignment; those come back
+ * `unreadable` with the limitation named, never `absent`, because "this
+ * package does not speak Comprehendo" is the one wrong answer available here.
+ */
+interface TomlTable {
+  /** Index of the `[tool.comprehendo]` header line, or -1. */
+  readonly header: number;
+  /** Index one past the table's last body line. */
+  readonly end: number;
+  /** Set when the table is written in a form this minimal reader cannot handle. */
+  readonly inline?: string;
 }
 
+const TABLE_HEADER = new RegExp(`^\\s*\\[${PYPROJECT_TABLE.replace('.', '\\.')}\\]\\s*(#.*)?$`);
+const ANY_HEADER = /^\s*\[/;
+
+function locateTable(lines: readonly string[]): TomlTable {
+  let current = '';
+  for (const [index, line] of lines.entries()) {
+    if (TABLE_HEADER.test(line)) {
+      let end = index + 1;
+      while (end < lines.length && !ANY_HEADER.test(lines[end] ?? '')) end += 1;
+      return { header: index, end };
+    }
+    const header = /^\s*\[([^\]]+)\]/.exec(line);
+    if (header !== null) {
+      current = (header[1] ?? '').trim();
+      continue;
+    }
+    const key = /^\s*([A-Za-z0-9_.-]+)\s*=/.exec(line);
+    const name = key?.[1] ?? '';
+    if (name === PYPROJECT_TABLE || (current === 'tool' && name === MANIFEST_KEY)) {
+      return {
+        header: -1,
+        end: -1,
+        inline: `[${PYPROJECT_TABLE}] is written as an inline table at line ${String(index + 1)}; ` +
+          'this build reads and writes only the table-header form',
+      };
+    }
+  }
+  return { header: -1, end: -1 };
+}
+
+/** A TOML line's value, with any trailing comment (outside quotes) removed. */
+function tomlValue(line: string): string {
+  const equals = line.indexOf('=');
+  if (equals === -1) return '';
+  let quote = '';
+  let end = line.length;
+  for (let i = equals + 1; i < line.length; i += 1) {
+    const char = line[i] ?? '';
+    if (quote !== '') {
+      if (char === quote) quote = '';
+    } else if (char === '"' || char === "'") {
+      quote = char;
+    } else if (char === '#') {
+      end = i;
+      break;
+    }
+  }
+  return line.slice(equals + 1, end).trim();
+}
+
+const tomlKey = (line: string): string => (/^\s*([A-Za-z0-9_.-]+)\s*=/.exec(line)?.[1] ?? '');
+
+/** Basic strings and integers, the only two value kinds this table can hold. */
+function tomlScalar(raw: string): string | number | undefined {
+  if (raw.length >= 2 && (raw.startsWith('"') || raw.startsWith("'")) && raw.endsWith(raw[0] ?? '')) {
+    return raw.slice(1, -1);
+  }
+  return /^[+-]?\d+$/.test(raw) ? Number(raw) : undefined;
+}
+
+/** Read `[tool.comprehendo]` out of pyproject.toml text. Never throws. */
+export function readPyproject(text: string): ManifestReading {
+  const lines = text.split(/\r?\n/);
+  const table = locateTable(lines);
+  if (table.inline !== undefined) return { status: 'unreadable', reason: table.inline };
+  if (table.header === -1) return { status: 'absent' };
+
+  const found: Record<string, unknown> = {};
+  for (const line of lines.slice(table.header + 1, table.end)) {
+    const key = tomlKey(line);
+    if (key === '') continue;
+    const value = tomlScalar(tomlValue(line));
+    if (value !== undefined) found[key] = value;
+  }
+  return parseDeclaration(found);
+}
+
+/**
+ * Write the declaration into pyproject.toml text: the table's own `version`
+ * and `level` lines are edited in place, everything else in the document
+ * (other tables, other keys in this table, comments, spacing) is preserved
+ * character for character.
+ */
 export function stampPyproject(text: string, declaration: ManifestDeclaration): string {
-  void text;
-  void declaration;
-  throw new Error('MDD skeleton: stampPyproject is not implemented');
+  const stamped = assertDeclaration(declaration);
+  const newline = text.includes('\r\n') ? '\r\n' : '\n';
+  const lines = text.split(/\r?\n/);
+  const table = locateTable(lines);
+  if (table.inline !== undefined) {
+    throw new ManifestError(
+      `comprehendo: refusing to stamp this pyproject.toml, ${table.inline}. ` +
+        'Rewrite it as a table header, or set the two fields by hand.',
+    );
+  }
+  const written: Record<string, string> = {
+    version: `version = ${JSON.stringify(stamped.version)}`,
+    level: `level = ${String(stamped.level)}`,
+  };
+  if (table.header === -1) {
+    const head = text.replace(/\s*$/, '');
+    const table_ = [`[${PYPROJECT_TABLE}]`, written['version'], written['level'], ''].join(newline);
+    return head === '' ? table_ : `${head}${newline}${newline}${table_}`;
+  }
+
+  const body = lines.slice(table.header + 1, table.end);
+  const missing = Object.keys(written).filter((key) => !body.some((line) => tomlKey(line) === key));
+  const edited = body.map((line) => written[tomlKey(line)] ?? line);
+  let insertAt = edited.length;
+  while (insertAt > 0 && (edited[insertAt - 1] ?? '').trim() === '') insertAt -= 1;
+  edited.splice(insertAt, 0, ...missing.map((key) => written[key] ?? ''));
+  return [...lines.slice(0, table.header + 1), ...edited, ...lines.slice(table.end)].join(newline);
 }
 
 export function readManifestFile(path: string): ManifestReading {
