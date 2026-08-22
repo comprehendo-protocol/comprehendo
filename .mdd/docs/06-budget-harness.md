@@ -174,3 +174,21 @@ numbers from that baseline.
 - This also unblocks the same `[gap]` recorded on
   [02-cc5-context-budget](02-cc5-context-budget.md), which is now
   CI-enforceable with real numbers.
+
+### Tokenizer crashed on literal special-token strings (fixed 2026-08-22)
+
+Found by review: `tokenizer.js`'s `encode()` call used js-tiktoken's default
+special-token handling, which throws when measured text contains a literal
+string like `<|endoftext|>`. The harness's top-level try/catch swallowed
+that into the generic usage-error exit path, so such content could never be
+measured or failed-on-budget at all, indistinguishable from a CLI mistake.
+Matters concretely for Wave 5's Submission Gate, which points this harness
+at community-submitted corpus text.
+
+- Fixed by passing `allowedSpecial: [], disallowedSpecial: []` to
+  `encode()`, so a special-token-looking substring always counts as
+  ordinary literal text (per the project's data-not-instructions rule)
+  instead of throwing.
+- Held by two new tests in `tokenizer.test.js`: no special string throws
+  across either declared encoding, and the string is counted as its real
+  BPE cost, not collapsed to a single control token.

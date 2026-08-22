@@ -16,7 +16,7 @@ started: 2026-08-22
 - [x] 01-cc2-shape-identity (SPEC)
 - [x] 02-cc5-context-budget (SPEC)
 - [x] 03-shape-schemas (COMPONENT), 167/167 green, merged
-- [x] 06-budget-harness (COMPONENT), 40/40 green, merged (207/207 combined with 03)
+- [x] 06-budget-harness (COMPONENT), 40/40 green, merged (207/207 combined with 03); review found a tokenizer crash on literal special-token strings, fixed, 209/209
 - [ ] 04-conformance-fixtures (COMPONENT)
 - [ ] 05-negative-fixtures (COMPONENT)
 
