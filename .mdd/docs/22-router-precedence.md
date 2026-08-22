@@ -4,8 +4,8 @@ title: Router & Precedence
 type: COMPONENT
 path: Core / Router
 source_files: [packages/core/src/router.ts, packages/core/src/router-precedence.ts, packages/core/src/router-discovery.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-4

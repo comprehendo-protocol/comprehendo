@@ -16,7 +16,7 @@ started: 2026-08-22
 - [x] 19-cc8-native-precedence (SPEC)
 - [x] 20-cc10-honest-miss (SPEC)
 - [x] 21-fingerprint-index-matcher (COMPONENT), 39/39 green, merged; scaffolded packages/registry-tools; review found a same-id-different-facets silent drop, fixed and mutation-verified, 41/41
-- [ ] 22-router-precedence (COMPONENT)
+- [x] 22-router-precedence (COMPONENT), 57/57 green, merged (443/443 core combined); precedence flip proven live against real files, no reconfiguration
 - [ ] 23-config-loader (COMPONENT)
 - [ ] 24-wrap-proxy (COMPONENT)
 
@@ -69,3 +69,61 @@ started: 2026-08-22
     the same input in any order; `parse` re-runs `build`'s own
     refusals so a hand-edited artifact can't smuggle a defective entry
     past the gate.
+
+### 22-router-precedence (11 calls, unattended, no blockers)
+
+1. **Installed-corpus discovery, the load-bearing call: split at the
+   I/O boundary, neither half faked.** `router.ts` is PURE (takes an
+   `Environment` as data, imports no `node:` module, asserted by a
+   source scan), `router-discovery.ts` is the REAL adapter (reads an
+   actual `node_modules/@comprehendo/*` tree). Forced by the doc's own
+   "side-effect free" rule, not invented for testability. The
+   precedence flip is proven TWICE over against real files:
+   `router-installed.test.ts` builds a real corpus package, comprehends
+   a real caught error, then writes+imports+runs a real natively
+   -adopted toy package and hands the error it really throws to the
+   SAME router instance, which now answers native, with nothing
+   reconfigured (the marker on the caught value is the authoritative
+   channel, read per call, for free). The on-disk corpus-package shape
+   (comprehendo.{packed,fingerprints,twins}.json) is this adapter's
+   OWN provisional convention, `[deferred]` to 28/31 (Wave 5)'s
+   authoritative format.
+2. Core cannot import registry-tools (one-way dependency, `tsc`
+   rejects the cross-package path with TS6059, verified live); 21's
+   matcher arrives as a structural port (`CorpusMatcher`) that 21's
+   real `FingerprintIndex` satisfies with zero adaptation. Tests load
+   21's REAL module via a computed dynamic import, never a double.
+3. `comprehend(raw)` returns a Twin (kit-shaped, matches the doc's own
+   usage example); the `{package, source, reason}` decision record is
+   a separate, pure `decideFor(pkg, raw?)` call. `RouterDecision`
+   carries one additive field past the doc (`discovery`, from 15's
+   `resolveDiscovery`).
+4. "Native handles the call" means: return the twin the value already
+   carries (`err.twin`), or `unstructuredTwin()` if none, NEVER fall
+   back to the sidecar twin (would be a silent CC8 violation dressed
+   as helpfulness).
+5. `docs(pkg, query)` answers from the sidecar even for a native
+   package (no handle to forward to; refusing would be a false
+   UNDOCUMENTED, exactly the CC10 dishonesty forbidden); `decideFor`
+   still correctly reports `source: 'native'`, so the narrowing is
+   visible not implied.
+6. `docs(pkg)` with no query returns the menu (mirrors 13's `docs(query?)`
+   index-not-the-meal shape).
+7. Only `prefer` implemented; `pin`/`disable`/`require`/`local` are
+   23's (scope discipline, not omission, `RouterConfig` widens without
+   reshaping this surface).
+8. Twin builders/docs surfaces constructed EAGERLY at router creation
+   (CC7's whole-catalog gate runs once, at construction; a corpus
+   violating it fails router construction, same "exists whole or not
+   at all" rule `makeProvider` follows), not lazily per call.
+9. The "native toy, now installed" test fixture is a real ESM package
+   in a real temp dir attaching `Symbol.for('comprehendo')` itself
+   (can't import core's TS source outside vitest's transform); a test
+   pins that symbol identical to core's `COMPREHENDO_MARKER` so the
+   fixture can't quietly stop being real.
+10. Package barrel (`index.ts`) not touched, same deferral pattern as
+    15/16/17's CLI bin entry.
+11. Two files (`router.ts` pure, `router-discovery.ts` adapter), split
+    on the I/O boundary that also makes the no-node:-import scan
+    possible; `source_files` corrected to three files total
+    (router.ts, router-precedence.ts, router-discovery.ts).
