@@ -4,19 +4,15 @@ title: Docs Engine
 type: COMPONENT
 path: Core / Docs Engine
 source_files: [packages/core/src/docs.ts, packages/core/src/docs-vocabulary.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
 depends_on: [03-shape-schemas, 04-conformance-fixtures]
 tags: [docs-engine, three-vocabulary, did-you-mean, undocumented, packed-corpus, miss-log]
 test_files: [packages/core/test/docs.test.ts, packages/core/test/docs-miss-log.test.ts]
-known_issues:
-  - type: gap
-    note: "This doc's Data Model spells UNDOCUMENTED as {query, did_you_mean, source_pass_permitted} and the topic response as {topic, vocabularies_served, see_also, body}. kit/shapes/undocumented.schema.json and topic.schema.json (and every 04 fixture) say {comprehendo, code, query, nearest, source_permitted} and {topic, summary, signatures?, examples?, see_also?}. The spec wins per CLAUDE.md, and the code implements the spec shapes; this Data Model section still needs reconciling."
-  - type: gap
-    note: "The doc names Corpus Format [28] (Wave 5) as the packed artifact's producer, but the real Wave-2 producer is Corpus Generator [17], which depends_on this feature. The artifact format is therefore defined HERE (see Implementation Notes, Packed-corpus artifact) and [28]'s pack() must emit it or bump the packed version."
+known_issues: []
 primitives:
   - name: "docs(query?)"
     kind: function
@@ -40,10 +36,15 @@ guess a topic when the match is ambiguous.
 
 ## Architecture
 
-`packages/core/src/docs.ts`. Consumes the packed-corpus artifact produced
-by Corpus Format [28] and the topic/index shapes from Shape Schemas [03].
-Used directly by SDK Entry [14] and by Router & Precedence [22] for the
-sidecar `docs(pkg, query)` path.
+`packages/core/src/docs.ts` (plus `docs-vocabulary.ts`, the matcher,
+extracted at the 300-line size gate). Consumes the packed-corpus artifact
+(format defined by this feature, see Implementation Notes; produced in
+this wave by Corpus Generator [17], which `depends_on` this feature) and
+the topic/index shapes from Shape Schemas [03]. Used directly by SDK
+Entry [14] and by Router & Precedence [22] for the sidecar
+`docs(pkg, query)` path. Corpus Format [28] (Wave 5) is a later,
+registry-scale formalization of the same artifact, gated behind the
+`packed` version number; it is not this wave's producer.
 
 ## Implementation Notes
 
@@ -131,9 +132,19 @@ Rules the loader enforces, each with a test:
 
 ## Data Model
 
+Corrected to match `packages/spec/kit/shapes/*.schema.json` (the RFC wins
+over an earlier draft of this section, per CLAUDE.md's own tiebreak; see
+Fixed Issues).
+
 - **Index response**: topic names only, no bodies.
-- **Topic response**: one topic-sized answer, `{topic, vocabularies_served, see_also, body}`.
-- **UNDOCUMENTED**: `{query, did_you_mean: string[], source_pass_permitted: true}`.
+- **Topic response** (`topic.schema.json`): `{topic, summary,
+  signatures?, examples?, see_also?}`. `vocabularies_served` is
+  corpus-side authoring/matching data (see the packed-corpus format
+  below), never echoed in this response, which is part of how a topic
+  answer stays inside its CC5 budget.
+- **UNDOCUMENTED** (`undocumented.schema.json`): `{comprehendo, code:
+  "UNDOCUMENTED", query, nearest: string[], source_permitted: true}`.
+  `nearest` is required and MAY be empty.
 - **Miss-log entry**: `{query, timestamp, result: 'index' | 'hit' | 'miss',
   topic?}`, local file only. `index` records a no-argument browse, which is
   a lookup with no query and no topic; forcing it into `hit` or `miss`
@@ -166,14 +177,14 @@ re-implementing any of this:
 
 ## Acceptance Criteria
 
-- [ ] `docs()` with no argument returns names-only index content.
-- [ ] `docs(query)` resolves correctly across all three vocabulary tiers
+- [x] `docs()` with no argument returns names-only index content.
+- [x] `docs(query)` resolves correctly across all three vocabulary tiers
       in the kit's fixtures.
-- [ ] An unmatched query returns UNDOCUMENTED with did-you-mean, never an
+- [x] An unmatched query returns UNDOCUMENTED with did-you-mean, never an
       empty result.
-- [ ] The local miss log records every lookup and is never written to
+- [x] The local miss log records every lookup and is never written to
       anywhere network-reachable (CC6 [27] scan passes).
-- [ ] Topic and index responses measure under their CC5 [02] budgets.
+- [x] Topic and index responses measure under their CC5 [02] budgets.
 
 ## Dependencies
 
@@ -182,7 +193,32 @@ re-implementing any of this:
 
 ## Known Issues
 
-None recorded at plan time.
+None open.
+
+## Fixed Issues
+
+### Data Model section did not match the shipped shapes (fixed 2026-08-22)
+
+Was: this section spelled UNDOCUMENTED as `{query, did_you_mean,
+source_pass_permitted}` and the topic response as `{topic,
+vocabularies_served, see_also, body}`, neither matching
+`kit/shapes/{undocumented,topic}.schema.json` or any 04 kit fixture.
+
+- Fixed by correcting this section to the real, shipped shapes (see Data
+  Model above), which is what `docs.ts` actually implements and what the
+  test suite validates against the kit's schemas directly.
+
+### Doc named the wrong wave-2 packed-corpus producer (fixed 2026-08-22)
+
+Was: Architecture named Corpus Format [28] (Wave 5, unbuilt) as this
+engine's artifact producer. The real Wave-2 relationship is the reverse:
+[17-corpus-generator](17-corpus-generator.md) `depends_on` THIS feature,
+so this component owns the runtime contract 17 must emit.
+
+- Fixed by defining a versioned packed-corpus format here (`packed: 1`,
+  see Implementation Notes) and correcting Architecture to name 17 as
+  the wave-2 producer, with [28] noted as a later, registry-scale
+  formalization of the same artifact, gated by the version field.
 
 ## Interface Overview
 

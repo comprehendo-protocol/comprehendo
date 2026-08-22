@@ -20,7 +20,7 @@ started: 2026-08-22
 - [x] 10-cc9-marker-freeze (SPEC)
 - [x] 11-marker-probe (COMPONENT), 58/58 green, merged, all 4 gates (typecheck/lint/test/build) clean; review found attachMarker() didn't validate its entry on write (a malformed attach silently became invisible to probe()/hasMarker()), fixed and mutation-verified, 100/100
 - [x] 12-twin-builder (COMPONENT), 40/40 green, merged; resolved the apply-grammar gap to LITERAL against the wave-1 kit fixtures
-- [ ] 13-docs-engine (COMPONENT)
+- [x] 13-docs-engine (COMPONENT), 46/46 green, merged; defined the wave-2 packed-corpus format (17's contract); found+fixed an 11-marker-probe CC1 scan over-scope bug on integration
 - [ ] 14-sdk-entry (COMPONENT)
 - [ ] 17-corpus-generator (COMPONENT)
 - [ ] 15-manifest-wiring (COMPONENT)
@@ -119,6 +119,62 @@ started: 2026-08-22
 10. A cataloged twin built from a raw error with no catalog-authored
     `received` keeps the raw text in `received` anyway (CC3 forbids raw
     text as the PRIMARY message only, never says to drop it).
+
+### 13-docs-engine (11 calls, unattended, no blockers)
+
+1. **Packed-corpus format v1 defined here (design decision):** the doc
+   pointed at Corpus Format [28] (wave 5, unbuilt) as producer, but the
+   real wave-2 relationship is 17-corpus-generator depends_on 13. Defined
+   a versioned JSON format (index + topic-name-keyed body map,
+   `packed: 1` for future refusal-on-mismatch); full shape moved into the
+   doc's Fixed Issues.
+2. Doc's Data Model (UNDOCUMENTED, topic response) diverged from
+   `kit/shapes/*.schema.json`; implemented the schema shapes per
+   CLAUDE.md's tiebreak, doc corrected in Fixed Issues.
+   `vocabularies_served` deliberately not echoed in the topic response
+   (authoring/matching data only), keeping payloads inside CC5 budget.
+3. Miss-log `result` union widened to `'index' | 'hit' | 'miss'` (a
+   no-arg browse is a real lookup type, forcing it into hit/miss would
+   make the log lie); strict superset, narrows nothing.
+4. `node:fs`/`node:path` in docs.ts are correct per CC1's own doc
+   ("loading a packed corpus is a Docs Engine concern, not the marker
+   probe's"); this exposed an over-scoped test in 11, fixed separately
+   (see the dedicated commit above).
+5. Real Red Gate assertions against a throws-not-implemented skeleton,
+   not `expect.fail` placeholders (the flow doc's Phase 5 test-freeze
+   would have made post-freeze placeholder fills illegal).
+6. No shared `test/helpers/` module created; 4 sibling wave-2 lanes
+   building concurrently, kept this feature's 2 private helpers local to
+   its own test file.
+7. Ambiguity rule: a tie between two DIFFERENT topics -> UNDOCUMENTED
+   naming both; two aliases of the SAME topic tying is not ambiguity.
+8. `nearest` may legitimately be empty (a zero-signal query gets `[]`,
+   not padded with plausible-looking wrong topics, which the project
+   forbids as a confident wrong answer).
+9. `docs.ts` split at the 300-line gate into `docs.ts` (252) and the new
+   `docs-vocabulary.ts` (153, the matcher); checked no sibling lane
+   claimed that filename first.
+10. Two post-freeze test edits, neither weakening an assertion: the CC6
+    scan widened from docs.ts to both new files (transitive-import
+    guarantee), and one type-assertion-only lint fix.
+11. Test-fixture packed corpus built in `packages/core/test/fixtures/`
+    (not `packages/spec/kit/`, that's the language-neutral kit's
+    territory); 3 of 9 topic bodies lifted verbatim from 04's kit
+    fixtures so the engine is tested against the spec's own golden text.
+
+### Orchestrator: found and fixed during 13's integration
+
+`packages/core/test/marker-purity.test.ts` (11-marker-probe's own CC1
+test) scanned the WHOLE core package for forbidden imports, not just
+marker.ts's transitive closure as the doc's Architecture section actually
+specifies. This tripped on 13's legitimate, documented `node:fs` usage in
+docs.ts. Fixed by adding a real transitive-import-closure walker
+(`transitiveImportClosure()`) and rescoping the test to it; today the
+closure is exactly `{marker.ts}` (pinned by a new test), so the day
+marker.ts imports something for real, that addition is named instead of
+silently widening scope. Mutation-verified both directions (a real fs
+import injected into marker.ts still fails; docs.ts's real fs import no
+longer does). See the dedicated commit for detail.
 
 ### Orchestrator: 12-twin-builder marker integration and negative-kit flip
 
