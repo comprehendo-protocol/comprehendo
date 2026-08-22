@@ -197,6 +197,25 @@ None open.
 
 ## Fixed Issues
 
+### Two review findings (fixed 2026-08-22)
+
+Found by review, both mutation-verified after fixing:
+
+1. The ambiguous-tie branch of `lookup()` returned `nearest` uncapped,
+   unlike the fuzzy `suggest()` path (capped at `NEAREST_LIMIT`, 3),
+   contradicting this doc's own "capped at three" claim. Real risk for a
+   larger registry corpus, not just the 9-topic test fixture. Fixed: the
+   tie branch now slices to `NEAREST_LIMIT` too.
+2. `parsePackedCorpus()` didn't validate `vocabularies_served`'s own
+   shape (`translations[].known_tool`/`.terms`, `own_terms`, `task`
+   element types), so a malformed entry passed the parse cleanly and
+   only crashed later inside the matcher with an unrelated-looking
+   error, undercutting "refuses a malformed artifact, never guesses."
+   Fixed: validated at parse time, rejected with a clear `TypeError`
+   naming the field. Also added the missing loader-rule test coverage
+   the review flagged (non-string `comprehendo`/`provider`, malformed
+   `index`, a topic whose own `topic` field doesn't match its key).
+
 ### Data Model section did not match the shipped shapes (fixed 2026-08-22)
 
 Was: this section spelled UNDOCUMENTED as `{query, did_you_mean,
