@@ -18,7 +18,7 @@ started: 2026-08-22
 - [x] 03-shape-schemas (COMPONENT), 167/167 green, merged
 - [x] 06-budget-harness (COMPONENT), 40/40 green, merged (207/207 combined with 03); review found a tokenizer crash on literal special-token strings, fixed, 209/209
 - [x] 04-conformance-fixtures (COMPONENT), 85 new tests green, merged (322/322 combined)
-- [x] 05-negative-fixtures (COMPONENT), 95 new tests green, merged (418/418 combined); only 1 of 6 fixtures runs against a real gate today (see doc known_issues)
+- [x] 05-negative-fixtures (COMPONENT), 95 new tests green, merged (418/418 combined); only 1 of 6 fixtures runs against a real gate today (see doc known_issues); review found 2 vacuous cross-check assertions, fixed and mutation-verified
 
 ## Judgment log
 

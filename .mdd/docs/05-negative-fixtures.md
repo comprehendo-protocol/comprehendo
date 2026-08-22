@@ -109,3 +109,28 @@ non-conforming in exactly the one dimension it claims. The suite asserts
 the specific violation in each case, and holds every fixture except the
 oversized topic UNDER the CC5 budget, so no fixture quietly breaks two
 rules at once.
+
+## Fixed Issues
+
+### Two cross-check assertions were vacuous for some fixtures (fixed 2026-08-22)
+
+Found by review. `negative-budget.test.mjs`'s "stays within every budget it
+touches" loop only mapped topic/index/priming shapes to a CC5 scope, so for
+`raw-error-leak` and `schema-escaping-fix` (twin-shaped) and
+`provider-side-corpus-veto` (manifest-shaped) the loop body ran zero
+assertions while still reporting green, contradicting the kit README's
+"run against every OTHER fixture too" claim. And
+`negative-violations.test.mjs`'s "no other fixture in either kit carries a
+network token" test only ever scanned the negative kit, never the positive
+one, despite its own name.
+
+- Fixed: the budget loop now asserts explicitly that no CC5 scope applies
+  to twin/manifest shapes (a checked fact, not a skipped branch), plus a
+  structural check that the shape-to-scope map and the assertion branches
+  can't silently drift apart. The network-token test now scans both kits.
+- Held by mutation testing: forcing the new else-branch assertion to fail
+  turns `raw-error-leak.json`'s test red (it did not exercise that branch
+  before); a network token sneaked into a positive fixture now fails the
+  isolation test (it passed silently before).
+- The negative kit README's over-broad claim was corrected to state the
+  narrower, real guarantee.
