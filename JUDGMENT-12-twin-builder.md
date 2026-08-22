@@ -97,7 +97,34 @@ explicit "this IS cataloged" call, so an unknown code there is a provider
 bug and raises `TwinCatalogError` with `unknown-code`. Two call sites, two
 different meanings, neither silently guessing.
 
-## 9. A cataloged failure keeps the raw text too
+## 9. The module was split in two, so the doc's `source_files` is now short by one
+
+The single-file implementation came to 451 lines against this project's
+300-line gate (`.claude/hooks/quality-gate.sh`, hard-enforced at verify). The
+skill's own answer applies literally here: the oversized bulk was the pure
+functions, so they were extracted BECAUSE they are the testable part.
+
+- `packages/core/src/twin.ts` (223 lines): the construction path, the shapes,
+  and the public surface. Still the module everything imports.
+- `packages/core/src/twin-validate.ts` (267 lines): the pure CC3/CC7 gate,
+  re-exported wholesale by `twin.ts`, so no consumer import changed.
+
+Checked before creating it: no other doc in `.mdd/docs/` claims
+`packages/core/src/twin-validate.ts` (`grep '^source_files:' .mdd/docs/*.md`),
+so no sibling lane can collide on it. FOR THE ORCHESTRATOR: this feature's
+`source_files` should read
+`[packages/core/src/twin.ts, packages/core/src/twin-validate.ts]`, and
+`test_files` `[packages/core/test/twin.test.ts,
+packages/core/test/twin-validate.test.ts,
+packages/core/test/twin-kit.test.ts]`. Not written here, doc bookkeeping is
+Phase 7's.
+
+The test files were split the same way, and the two CC7 describes moved into
+`test/twin-validate.test.ts` VERBATIM (assertions untouched, `sed`-extracted
+after the Red Gate, not retyped); the shared provider catalog moved into
+`test/helpers/catalog.ts` rather than being inlined twice.
+
+## 10. A cataloged failure keeps the raw text too
 
 CC3 only forbids raw text as the PRIMARY message. When a cataloged twin is
 built with a raw error and the catalog authored no `received`, the raw text
