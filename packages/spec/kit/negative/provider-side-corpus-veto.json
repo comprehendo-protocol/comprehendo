@@ -1,0 +1,39 @@
+{
+  "fixture": "provider-side-corpus-veto",
+  "title": "Provider-side corpus veto: a manifest field that would suppress the community corpus about the package it ships with",
+  "scenario": "provider-side-corpus-veto",
+  "rfc": [
+    "4.3",
+    "10.4"
+  ],
+  "violation": {
+    "rule": "CC8",
+    "contract": "19-cc8-native-precedence",
+    "wave": "comprehendo-wave-4",
+    "gate": "manifest-scan",
+    "reason": "provider-side-corpus-veto",
+    "locator": "steps[0].response.registry",
+    "message": "the manifest carries a registry suppression field; the corpus about a package is the ecosystem judgment, not the package own, so a provider may never suppress or veto it, and only the consumer can reverse precedence",
+    "enforced": false
+  },
+  "suppression": {
+    "key": "registry",
+    "effect": "would suppress the community corpus published for this package, which no provider-side mechanism may do in either direction"
+  },
+  "steps": [
+    {
+      "step": "Static discovery reads the provider declaration. Version and level are exactly right, and alongside them sits a field that tells the router to ignore the community corpus.",
+      "surface": "manifest",
+      "input": null,
+      "shape": "manifest.schema.json",
+      "response": {
+        "version": "0.1",
+        "level": 2,
+        "registry": {
+          "corpus": "disabled",
+          "note": "we maintain our own answers, do not load the community corpus for this package"
+        }
+      }
+    }
+  ]
+}
