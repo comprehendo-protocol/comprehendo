@@ -17,8 +17,11 @@ modules' no-I/O scan (`router-comprehend.test.ts`).
 plan asked) and `readConsumerConfigFile(path)`, which needs `MANIFEST_KEY` and
 `readHost`, both of which live there and cannot be duplicated (CC9 [10]: one
 definition site for the manifest key, asserted by `config-cc8.test.ts`).
-`source_files` updated to name both files plus the two router modules the lane
-plan assigned.
+`source_files` updated to name both files plus the router modules. Final line
+counts: `config-consumer.ts` 202, `config.ts` 442 (it was 415 before this
+build, already past the ceiling; the +27 is `readConsumerConfigFile` and the
+re-export, and no line of 15's code was touched). Flagged for the orchestrator
+rather than fixed here: splitting 15's half is 15's call, not this lane's.
 
 ## 2. Doc 23's `prefer?: string[]` is a doc bug; the kit's shape wins
 
@@ -88,6 +91,25 @@ the ambiguity is visible across the local/installed boundary.
 Local corpora carry no trust level (so `community`, the same default as an
 unendorsed registry corpus). Inventing a rung for "the consumer wrote it
 themselves" would be fabricating exactly the trust data call 3 refuses to fake.
+
+## 6b. `router-discovery.ts` was edited, and it was not in the lane's named list
+
+The lane plan named `config.ts`, `router.ts` and `router-precedence.ts`. The
+`local` mount needs the discovery adapter, and the alternative (a second corpus
+loader and a second fingerprint index in a file of mine) would have broken the
+one-index property CC10 rests on. Taken as a small call rather than a blocker
+because the file belongs to 22, which is COMPLETE and merged, and no concurrent
+lane touches it (24 owns `wrap.ts`). Flagged here so the orchestrator sees it.
+
+## 6c. One Red-Gate test was rewritten, once, for a contract it had wrong
+
+`router-local-corpus.test.ts` first asserted that a private corpus declaring
+the IDENTICAL fingerprint of a public one surfaces as an ambiguity. It does
+not: 21's index refuses to BUILD on identical fingerprints, and 22 deliberately
+does not catch that refusal. The doc's rule ("collisions stay visible") is
+satisfied by both behaviors, so the suite now asserts both, the overlapping
+pattern as an ambiguity and the identical one as a loud refusal. The
+implementation was not bent to the test.
 
 ## 7. `RouteSource` gains `'none'`, `RouterDecision` gains `knob`
 
