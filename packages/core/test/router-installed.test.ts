@@ -13,7 +13,7 @@
 // reconfigured, so the router object built in the first half is the one used
 // in the second.
 
-import { writeFileSync } from 'node:fs';
+import { mkdirSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
 import { afterAll, beforeAll, describe, expect, it } from 'vitest';
@@ -131,6 +131,28 @@ describe('discovering installed corpora from a real node_modules tree', () => {
       status: 'declared',
       declaration: { version: '0.1', level: 1 },
     });
+  });
+
+  it('reports an unreadable target manifest as a defect, never silently loses native evidence', async () => {
+    // Found by review: a target package.json that EXISTS but cannot be READ
+    // (here, a directory sitting where the file should be, the same failure
+    // shape as EACCES/EISDIR) used to come back as undefined native evidence
+    // with zero diagnostic trail, exactly the "silently skipped" outcome
+    // this file's own EnvironmentDefect convention forbids everywhere else
+    // (loadCorpus, artifact). A real natively-adopted package hitting a
+    // transient read error must not silently lose precedence to the
+    // sidecar.
+    const flaky = makeTree();
+    flaky.installCorpus(await toyCorpusFiles());
+    mkdirSync(flaky.path('node_modules', TOY, 'package.json'), { recursive: true });
+
+    const found = discoverInstalledCorpora(await discovery(flaky.root));
+
+    expect(found.native?.[TOY]).toBeUndefined();
+    const defects = found.defects ?? [];
+    expect(defects).toHaveLength(1);
+    expect(defects[0]?.at).toBe(TOY);
+    expect(defects[0]?.detail).toContain(TOY);
   });
 
   it('ignores a non-corpus package sitting in the same scope directory', async () => {
