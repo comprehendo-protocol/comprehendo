@@ -133,12 +133,16 @@ describe('every fixture names the specific rule it violates', () => {
     });
   }
 
-  test('exactly one gate can actually be run in Wave 1, and it is CC5 budget', () => {
+  test('exactly the gates built so far can actually be run, named here so the list cannot silently drift', () => {
     const enforced = [...readAllNegative().values()]
       .map(({ violation }) => violation)
       .filter((violation) => violation.enforced)
-      .map((violation) => violation.reason);
-    assert.deepEqual(enforced, ['oversized-topic']);
+      .map((violation) => violation.reason)
+      .sort();
+    assert.deepEqual(
+      enforced,
+      ['computed-marker', 'oversized-topic', 'raw-error-leak', 'schema-escaping-fix'].sort(),
+    );
   });
 
   test('every deferred gate names the later wave that will enforce it', () => {

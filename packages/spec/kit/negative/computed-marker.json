@@ -14,7 +14,7 @@
     "reason": "computed-marker",
     "locator": "marker.computed",
     "message": "the marker key is assembled at run time instead of being a frozen literal, so the grep-level lint finds no definition site and nothing ties the value the probe answers to one source of truth",
-    "enforced": false
+    "enforced": true
   },
   "marker": {
     "frozen": {
