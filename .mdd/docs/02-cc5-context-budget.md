@@ -4,8 +4,8 @@ title: CC5 Context Budget
 type: SPEC
 path: Spec / Cross-Cutting Contracts / Context Budget
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-1
