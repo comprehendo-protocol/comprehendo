@@ -101,6 +101,31 @@ None open.
 
 ## Fixed Issues
 
+### Three review findings (fixed 2026-08-22)
+
+Found by review, all mutation-verified after fixing:
+
+1. `auditTwin()` (CC3) was exported but never called from the actual build
+   path, so a catalog entry with `reason === received` (raw text pasted
+   into `reason`) built with zero violations. Fixed: `validateCatalog`
+   now checks each entry's `reason` against its own `received` at
+   catalog-construction time, so this fails the BUILD, not only a
+   hand-run audit.
+2. CC7's scan only checked outermost pipeline-stage keys, so a write
+   smuggled inside a stage's OWN nested pipeline (a `$facet` branch, a
+   `$lookup`/`$unionWith` `pipeline` field) was invisible. Fixed
+   generically, no MongoDB operator names hardcoded:
+   `DeclaredCallSchema.nestedPipelineOperations` lets a provider declare
+   which of its OWN operations may embed a nested pipeline; CC7 recurses
+   only under a key named there, so a plain operand object (`$match`'s
+   filter document) is never scanned for keys regardless of shape (a
+   `$or` array of condition objects, structurally identical to a real
+   nested pipeline, produces zero false positives since `$match` is not
+   a declared nesting key).
+3. `entry.reason: ''` built with zero violations; `validateFix` already
+   checked `fix.title` the same way. Fixed: added the symmetric
+   `empty-reason` CATALOG violation.
+
 ### The `apply` grammar was not yet ruled on (fixed 2026-08-22)
 
 Was: literal vs. `template` (with fingerprint capture-group placeholders)
