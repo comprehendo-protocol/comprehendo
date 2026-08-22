@@ -4,8 +4,8 @@ title: CC10 Honest Miss
 type: SPEC
 path: Core / Cross-Cutting Contracts / Honest Miss
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-4
@@ -61,13 +61,28 @@ N/A (a SPEC, no code exports).
 
 ## Acceptance Criteria
 
-- [ ] A property test mutating cataloged error messages asserts honest
-      UNSTRUCTURED degradation, never a wrong twin.
-- [ ] An ambiguous fingerprint match names its candidates in the
-      UNSTRUCTURED response.
+- [x] A property test mutating cataloged error messages asserts honest
+      UNSTRUCTURED degradation, never a wrong twin: Fingerprint Index &
+      Matcher [21]'s `cc10-honest-miss.property.test.ts`, a seeded
+      generator (mulberry32, 5 mutation kinds, ~600 mutations,
+      reproducible by printed seed), with vacuity guards so a silently
+      -stopped generator fails instead of passing green.
+- [x] An ambiguous fingerprint match names its candidates in the
+      UNSTRUCTURED response: `fingerprint-match.test.ts`, "an ambiguous
+      match degrades to UNSTRUCTURED with candidates named"; carried
+      through Router & Precedence [22]'s `comprehend(raw)` unchanged.
 - [ ] A registry-corpus update that would create a cross-package
       fingerprint collision fails the registry build (Submission Gate
-      [29]).
+      [29]). [deferred] Genuinely blocked on Submission Gate [29]
+      (Wave 5), which does not exist yet: there is no registry BUILD
+      step to fail. What exists today, one level down: Fingerprint
+      Index & Matcher [21]'s `buildFingerprintIndex` already refuses
+      to build an index carrying two entries with the same id and
+      different fingerprints (`identityDefects`), and a within- or
+      cross-package identical-fingerprint duplicate is deduped or
+      refused the same way (21's judgment log, calls 7 and 11). [29]
+      is the consumer of that refusal at submission time, not a
+      reimplementation of it.
 
 ## Dependencies
 

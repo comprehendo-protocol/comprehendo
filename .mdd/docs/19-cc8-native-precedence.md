@@ -4,8 +4,8 @@ title: CC8 Native Precedence
 type: SPEC
 path: Core / Cross-Cutting Contracts / Native Precedence
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-4
@@ -64,10 +64,20 @@ N/A (a SPEC, no code exports).
 
 ## Acceptance Criteria
 
-- [ ] A kit fixture proves native wins by default when both are present.
-- [ ] A kit fixture proves `prefer` reverses precedence per package.
-- [ ] A schema scan of the manifest (Manifest Wiring [15]) finds no
-      suppression-capable field.
+- [x] A kit fixture proves native wins by default when both are present:
+      Router & Precedence [22]'s `router-installed.test.ts`, "installing
+      the native toy flips precedence" (a real native package, no
+      config), and the negative kit fixture
+      `packages/spec/kit/negative/provider-side-corpus-veto.json`.
+- [x] A kit fixture proves `prefer` reverses precedence per package:
+      same suite, "prefer sidecar still routes the natively installed
+      toy to the sidecar" (Config Loader [23]'s `router-knobs.test.ts`
+      exercises every other package, unaffected, alongside it).
+- [x] A schema scan of the manifest (Manifest Wiring [15]) finds no
+      suppression-capable field: `config-cc8.test.ts`, "the
+      provider-side manifest schema has no suppression field" (scans a
+      real schema, asserts exactly the two written fields and no
+      third, shares no name with the five consumer-side knobs).
 
 ## Dependencies
 

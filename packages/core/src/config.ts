@@ -26,10 +26,17 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 import { basename } from 'node:path';
 
+import { EMPTY_CONFIG, parseConsumerConfig } from './config-consumer.js';
+import type { ConsumerConfigReading } from './config-consumer.js';
 import type { ComprehendoEntry, ComprehendoLevel, ComprehendoSurface } from './marker.js';
 import type { ManifestDeclaration } from './sdk.js';
 
 export type { ManifestDeclaration } from './sdk.js';
+
+// Config Loader [23]'s consumer-side half: the five knobs, pure, in their own
+// module (the size gate, and the routing modules import them with no I/O in
+// reach). Re-exported so the module surface stays one import.
+export * from './config-consumer.js';
 
 /** THE package.json key. Frozen literal, one definition site (CC9 [10]). */
 export const MANIFEST_KEY = 'comprehendo';
@@ -387,6 +394,26 @@ export function stampManifestFile(path: string, declaration: ManifestDeclaration
   if (unchanged) return false;
   writeFileSync(path, format.stamp(text, stamped), 'utf8');
   return true;
+}
+
+/**
+ * Read the CONSUMER's five knobs (Config Loader [23]) out of the consuming
+ * project's own package.json, from the same manifest key a provider declares
+ * under. A `pyproject.toml` consumer config needs nested tables
+ * (`[tool.comprehendo.prefer]`), which the line-oriented reader above does not
+ * do, so it is refused by name rather than reported as "no configuration".
+ */
+export function readConsumerConfigFile(path: string): ConsumerConfigReading {
+  const name = basename(path);
+  if (name !== 'package.json') {
+    throw new ManifestError(
+      `comprehendo: ${name} is not a manifest this build reads consumer configuration from ` +
+        `(package.json, at ${path})`,
+    );
+  }
+  const host = hostJson(readHost(path));
+  if (typeof host === 'string') return { config: EMPTY_CONFIG, problems: Object.freeze([host]) };
+  return parseConsumerConfig(host[MANIFEST_KEY]);
 }
 
 /**

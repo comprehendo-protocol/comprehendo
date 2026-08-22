@@ -2,7 +2,7 @@
 generated: 2026-08-22
 doc_count: 40
 connection_count: 63
-overlap_count: 3
+overlap_count: 6
 ---
 
 # MDD Connections
@@ -10,15 +10,15 @@ overlap_count: 3
 ## Path Tree
 
 **Core / Config Loader**
-  └── `23-config-loader` - Config Loader (planned)
+  └── `23-config-loader` - Config Loader (complete)
 **Core / Corpus Generator**
   └── `17-corpus-generator` - Corpus Generator (complete)
 **Core / Cross-Cutting Contracts / Honest Miss**
-  └── `20-cc10-honest-miss` - CC10 Honest Miss (planned)
+  └── `20-cc10-honest-miss` - CC10 Honest Miss (complete)
 **Core / Cross-Cutting Contracts / Marker Freeze**
   └── `10-cc9-marker-freeze` - CC9 Marker Freeze (complete)
 **Core / Cross-Cutting Contracts / Native Precedence**
-  └── `19-cc8-native-precedence` - CC8 Native Precedence (planned)
+  └── `19-cc8-native-precedence` - CC8 Native Precedence (complete)
 **Core / Cross-Cutting Contracts / No Raw Errors**
   └── `08-cc3-no-raw-errors` - CC3 No Raw Errors (complete)
 **Core / Cross-Cutting Contracts / Probe Purity**
@@ -34,13 +34,13 @@ overlap_count: 3
 **Core / Recorder**
   └── `16-recorder` - Recorder (complete)
 **Core / Router**
-  └── `22-router-precedence` - Router & Precedence (planned)
+  └── `22-router-precedence` - Router & Precedence (complete)
 **Core / SDK Entry**
   └── `14-sdk-entry` - SDK Entry (makeProvider) (complete)
 **Core / Twin Builder**
   └── `12-twin-builder` - Twin Builder (complete)
 **Core / Wrap Proxy**
-  └── `24-wrap-proxy` - Wrap Opt-In Proxy (planned)
+  └── `24-wrap-proxy` - Wrap Opt-In Proxy (complete)
 **Corpora / ffmpeg / Corpus**
   └── `32-ffmpeg-corpus` - ffmpeg Corpus (planned)
 **Corpora / ffmpeg / Fingerprints**
@@ -70,7 +70,7 @@ overlap_count: 3
 **Registry / Cross-Cutting Contracts / Registry Truth**
   └── `25-cc11-registry-truth` - CC11 Registry Truth (planned)
 **Registry / Fingerprint Index**
-  └── `21-fingerprint-index-matcher` - Fingerprint Index & Matcher (planned)
+  └── `21-fingerprint-index-matcher` - Fingerprint Index & Matcher (complete)
 **Registry / Owner Endorsement**
   └── `30-owner-endorsement` - Owner Endorsement (planned)
 **Registry / Scoped Publisher**
@@ -116,12 +116,12 @@ graph TD
   16_recorder["16-recorder"]:::done
   17_corpus_generator["17-corpus-generator"]:::done
   18_python_core["18-python-core"]:::done
-  19_cc8_native_precedence["19-cc8-native-precedence"]:::planned
-  20_cc10_honest_miss["20-cc10-honest-miss"]:::planned
-  21_fingerprint_index_matcher["21-fingerprint-index-matcher"]:::planned
-  22_router_precedence["22-router-precedence"]:::planned
-  23_config_loader["23-config-loader"]:::planned
-  24_wrap_proxy["24-wrap-proxy"]:::planned
+  19_cc8_native_precedence["19-cc8-native-precedence"]:::done
+  20_cc10_honest_miss["20-cc10-honest-miss"]:::done
+  21_fingerprint_index_matcher["21-fingerprint-index-matcher"]:::done
+  22_router_precedence["22-router-precedence"]:::done
+  23_config_loader["23-config-loader"]:::done
+  24_wrap_proxy["24-wrap-proxy"]:::done
   25_cc11_registry_truth["25-cc11-registry-truth"]:::planned
   26_cc4_folklore_gate["26-cc4-folklore-gate"]:::planned
   27_cc6_no_telemetry["27-cc6-no-telemetry"]:::planned
@@ -209,6 +209,9 @@ Files referenced by 2+ docs:
 
 - `corpora/ffmpeg/` - 32-ffmpeg-corpus, 33-ffmpeg-fingerprints
 - `packages/core/src/config.ts` - 15-manifest-wiring, 23-config-loader
+- `packages/core/src/router-discovery.ts` - 22-router-precedence, 23-config-loader
+- `packages/core/src/router-precedence.ts` - 22-router-precedence, 23-config-loader
+- `packages/core/src/router.ts` - 22-router-precedence, 23-config-loader
 - `packages/registry-tools/src/gate.ts` - 29-submission-gate, 30-owner-endorsement
 
 ## Warnings

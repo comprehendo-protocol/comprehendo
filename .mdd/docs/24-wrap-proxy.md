@@ -4,15 +4,15 @@ title: Wrap Opt-In Proxy
 type: COMPONENT
 path: Core / Wrap Proxy
 source_files: [packages/core/src/wrap.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-4
 depends_on: [22-router-precedence, 12-twin-builder]
 tags: [wrap, opt-in-proxy, monkey-patch-boundary, explicit-adoption]
-test_files: []
-known_issues: []
+test_files: [packages/core/test/wrap.test.ts, packages/core/test/wrap-transparency.test.ts]
+known_issues: [{type: deferred, note: "wrap ships as wrap(target, router); the doc's one-arg form needs a module-level comprehend that Wave 7 (Distribution) owns, the same call 22-router-precedence deferred."}, {type: deferred, note: "A rejection from a NON-native thenable (a lazy query builder) is not routed: installing a handler would require calling its then, which executes it, a behavior change on the non-error path. Native promises are routed."}]
 primitives:
   - name: "wrap(target)"
     kind: function
@@ -68,12 +68,15 @@ the same surface as its target, transparently forwarding calls.
 
 ## Acceptance Criteria
 
-- [ ] `wrap(target)` returns a proxy whose non-error calls are
-      indistinguishable from the unwrapped target.
-- [ ] A caught error through the wrapped target arrives twinned or
-      UNSTRUCTURED via `comprehend(raw)`, with no manual call needed at
-      the call site.
-- [ ] Importing the package without calling `wrap()` leaves the target
+- [x] `wrap(target, router)` returns a proxy whose non-error calls are
+      indistinguishable from the unwrapped target (property access,
+      sync/async methods, `this`/private-field binding via receiver
+      substitution, no deep wrapping of nested objects).
+- [x] A caught error through the wrapped target arrives twinned or
+      UNSTRUCTURED via the router's `comprehend(raw)`, with no manual
+      call needed at the call site. Verified live through the built
+      `dist/` against a real discovered corpus, sync and async both.
+- [x] Importing the package without calling `wrap()` leaves the target
       package completely unmodified (no global mutation).
 
 ## Dependencies
@@ -88,6 +91,27 @@ the same surface as its target, transparently forwarding calls.
 - [gap] Whether `wrap()` is one of the runners for `static-pattern`
   fingerprint matching is undecided (see Fingerprint Index & Matcher
   [21]'s Known Issues).
+
+## Fixed Issues
+
+### A method returning `this` broke routing for the rest of the chain (fixed 2026-08-22)
+
+Found by review. `invoke` substitutes `this` back to the real target
+when a call comes off the proxy, so a `#private`-field read resolves
+correctly. That substitution is one-directional in the return path
+too: a method of the fluent/chainable shape (`.where().sort()`, a
+query builder or HTTP client returning `this`) handed the caller back
+the raw, unwrapped target. The next call in the chain then ran
+unwrapped, and an error it threw escaped completely unrouted, not
+even UNSTRUCTURED, the exact silent failure the whole module exists
+to prevent.
+
+- Fixed by reversing the same substitution on the way out: a return
+  value (sync or resolved-async) equal to `state.target` comes back
+  as `state.proxy` instead. Mutation-verified: 4 new tests (sync and
+  async, in both `wrap.test.ts`'s routing half and
+  `wrap-transparency.test.ts`'s identity half), all 4 red without the
+  fix, green with it.
 
 ## Interface Overview
 
