@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://comprehendo.dev/schemas/0.1/fix.schema.json",
+  "title": "Fix",
+  "description": "One remedy attached to a twin (RFC §5.1.2). A fix MUST carry at least one of `apply` or `docs`: `apply` is the corrected invocation expressed in the provider's own already-shipped call schema, `docs` names a corpus topic and is inert by construction. Within a twin, `fixes` is ordered most-likely-first.",
+  "type": "object",
+  "required": ["title"],
+  "anyOf": [
+    {
+      "title": "apply-bearing fix",
+      "required": ["apply"],
+      "properties": { "apply": true }
+    },
+    {
+      "title": "docs-bearing fix",
+      "required": ["docs"],
+      "properties": { "docs": true }
+    }
+  ],
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "What this fix does, in one line."
+    },
+    "apply": {
+      "description": "The corrected invocation, in the provider's own call schema. Deliberately untyped: the shape belongs to the provider, not to this spec. A fix MUST NOT introduce shapes, commands, or operations the provider does not already define; that constraint is enforced by the schema-bound-fixes gate, not expressible here."
+    },
+    "docs": {
+      "type": "string",
+      "description": "A corpus topic (RFC §5.2) that explains the fix's territory. A topic name, nothing more."
+    },
+    "confidence": {
+      "type": "string",
+      "enum": ["high", "likely", "guess"],
+      "description": "How sure the provider is, in the RFC's three-value vocabulary."
+    }
+  }
+}
