@@ -1,0 +1,7 @@
+{
+  "name": "toy-encoder",
+  "version": "2.0.0",
+  "description": "The same toy target one major version later: a changed signature, a new export, a dropped export, and a moved throw site. This is what `comprehendo diff` is pointed at.",
+  "type": "module",
+  "private": true
+}
