@@ -4,8 +4,8 @@ title: CC1 Probe Purity
 type: SPEC
 path: Core / Cross-Cutting Contracts / Probe Purity
 source_files: []
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-2
