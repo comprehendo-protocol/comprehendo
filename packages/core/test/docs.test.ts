@@ -130,6 +130,75 @@ describe('the packed-corpus artifact', () => {
     };
     expect(() => parsePackedCorpus({ ...packed, topics })).toThrow(/sharding/);
   });
+
+  it('refuses a non-string "comprehendo" or "provider"', () => {
+    const packed = corpus();
+    expect(() => parsePackedCorpus({ ...packed, comprehendo: 1 })).toThrow(/comprehendo.*provider/i);
+    expect(() => parsePackedCorpus({ ...packed, provider: null })).toThrow(/comprehendo.*provider/i);
+  });
+
+  it('refuses a non-string-array "index"', () => {
+    const packed = corpus();
+    expect(() => parsePackedCorpus({ ...packed, index: [1, 2, 3] })).toThrow(/index/i);
+    expect(() => parsePackedCorpus({ ...packed, index: 'aggregation stages' })).toThrow(/index/i);
+  });
+
+  it('refuses a topic body whose own "topic" field does not match its key', () => {
+    const packed = corpus();
+    const topics = {
+      ...packed.topics,
+      '$group': { ...packed.topics['$group'], topic: '$grup' },
+    };
+    expect(() => parsePackedCorpus({ ...packed, topics })).toThrow(/does not name itself/);
+  });
+
+  it('refuses a translations entry with no known_tool, at parse time, not a downstream crash', () => {
+    const packed = corpus();
+    const topics = {
+      ...packed.topics,
+      '$group': {
+        ...packed.topics['$group'],
+        vocabularies_served: {
+          ...packed.topics['$group']?.vocabularies_served,
+          translations: [{ terms: ['group by'] }],
+        },
+      },
+    };
+    expect(() => parsePackedCorpus({ ...packed, topics })).toThrow(/known_tool/);
+  });
+
+  it('refuses a translations entry whose terms is not a string array, at parse time', () => {
+    const packed = corpus();
+    const topics = {
+      ...packed.topics,
+      '$group': {
+        ...packed.topics['$group'],
+        vocabularies_served: {
+          ...packed.topics['$group']?.vocabularies_served,
+          translations: [{ known_tool: 'SQL', terms: 'group by' }],
+        },
+      },
+    };
+    // The bug this guards: previously this passed parsePackedCorpus cleanly
+    // and only crashed later inside the matcher with an unrelated-looking
+    // TypeError, not a clean rejection at the load boundary.
+    expect(() => parsePackedCorpus({ ...packed, topics })).toThrow(/terms/);
+  });
+
+  it('refuses a non-array translations list', () => {
+    const packed = corpus();
+    const topics = {
+      ...packed.topics,
+      '$group': {
+        ...packed.topics['$group'],
+        vocabularies_served: {
+          ...packed.topics['$group']?.vocabularies_served,
+          translations: 'not an array',
+        },
+      },
+    };
+    expect(() => parsePackedCorpus({ ...packed, topics })).toThrow(/translations/);
+  });
 });
 
 describe('docs() with no argument, the index (RFC 5.2.1)', () => {
@@ -319,5 +388,43 @@ describe('UNDOCUMENTED, the honest miss (RFC 5.2.3)', () => {
   it('an UNDOCUMENTED response measures well under the topic budget', () => {
     const record = measureScope('topic', engine()(missed));
     expect(record.pass).toBe(true);
+  });
+});
+
+describe('an ambiguous tie is bounded, same as a fuzzy miss (RFC 5.2.3)', () => {
+  // A synthetic corpus where 4 different topics each carry a single-token
+  // own_term, so a query naming all 4 tokens ties all 4 candidates at the
+  // same best score, more than NEAREST_LIMIT (3). The real bug: the
+  // ambiguous-tie branch returned `candidates` uncapped, unlike the fuzzy
+  // suggest() path.
+  const topicNamed = (name: string, ownTerm: string): PackedCorpus['topics'][string] => ({
+    topic: name,
+    summary: `${name}, a topic.`,
+    vocabularies_served: { own_terms: [ownTerm], translations: [], task: [] },
+  });
+  const tieCorpus = (): PackedCorpus => ({
+    comprehendo: COMPREHENDO_VERSION,
+    packed: PACKED_CORPUS_FORMAT,
+    provider: 'toy',
+    index: ['a', 'b', 'c', 'd'],
+    topics: {
+      a: topicNamed('a', 'alpha'),
+      b: topicNamed('b', 'beta'),
+      c: topicNamed('c', 'gamma'),
+      d: topicNamed('d', 'delta'),
+    },
+  });
+  const tieEngine = (): ReturnType<typeof createDocs> =>
+    createDocs(tieCorpus(), { sink: () => undefined });
+
+  it('a 4-way tie is capped at NEAREST_LIMIT (3), not returned uncapped', () => {
+    const response = asMiss(tieEngine()('alpha beta gamma delta'));
+    expect(response.code).toBe('UNDOCUMENTED');
+    expect(response.nearest.length).toBeLessThanOrEqual(3);
+  });
+
+  it('a 2-way tie (at or under the cap) is returned in full, nothing hidden', () => {
+    const response = asMiss(tieEngine()('alpha beta'));
+    expect([...response.nearest].sort()).toEqual(['a', 'b']);
   });
 });
