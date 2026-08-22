@@ -17,7 +17,7 @@ started: 2026-08-22
 - [x] 02-cc5-context-budget (SPEC)
 - [x] 03-shape-schemas (COMPONENT), 167/167 green, merged
 - [x] 06-budget-harness (COMPONENT), 40/40 green, merged (207/207 combined with 03); review found a tokenizer crash on literal special-token strings, fixed, 209/209
-- [ ] 04-conformance-fixtures (COMPONENT)
+- [x] 04-conformance-fixtures (COMPONENT), 85 new tests green, merged (322/322 combined)
 - [ ] 05-negative-fixtures (COMPONENT)
 
 ## Judgment log
@@ -119,3 +119,38 @@ up a publish step and an accidental-publish guard costs nothing; flip it
 when Wave 7 (Distribution) actually wires publishing. Regenerated
 package-lock.json from scratch instead of hand-merging it. Full
 packages/spec suite re-verified green after resolution: 207/207.
+
+### 04-conformance-fixtures (9 calls, unattended, no blockers)
+
+1. Fixture envelope (`fixture`, `title`, `scenario`, `rfc`, `steps`) invented
+   as a thin scenario carrier since a transcript needs one; every `response`
+   inside it is an unmodified instance of a 03 shape, documented in
+   `kit/fixtures/README.md` so a port can read the kit without the JS tests.
+2. Three vocabularies live in one file (`docs-three-vocabularies.json`), not
+   three, because the load-bearing assertion is that they resolve to the
+   SAME topic, which only exists when they sit together.
+3. Language neutrality enforced as a test (`fixture-kit.test.mjs` fails any
+   fixture text carrying a single-ecosystem idiom); the priming entry's
+   marker idioms were generalized to "the Comprehendo marker" to pass it,
+   per RFC 5.5's "adapted per provider" note.
+4. Deliberate duplication (the same entry/topic across several transcripts,
+   since a fixture must be self-contained for a port reading one file),
+   held by cross-fixture consistency tests so a drifting copy goes red.
+5. The kit was not wired into 03's `rfc-examples.mjs` helper (owned by 03,
+   proves a different thing: schemas accept the RFC's examples, not the
+   kit's scenarios). No shared file touched.
+6. `packages/spec/package.json` left untouched, an `exports` entry for
+   fixtures would be a nicety, not needed since both ports read fixtures
+   from disk already.
+7. Budget cross-check borrowed read-only from 06 (`measure.js` import, no
+   edit): every topic/index/priming payload in the kit is verified inside
+   the CC5 budgets, so the golden example set can't itself teach an
+   over-budget payload.
+8. **`config.schema.json` and `fix.schema.json` deliberately not exercised**
+   by this positive kit (config knobs belong to 22/23, fix is covered only
+   transitively through `twin.fixes`); the shape-coverage test names both
+   as explicit absences, recorded as `[deferred]` on the doc.
+9. Disagreement fixture uses a second provider name (`mongodb-migrator`)
+   rather than the kit's shared `mongodb-operator`, since sharing the name
+   would make the cross-fixture consistency invariant contradict the
+   scenario's own point (a manifest that overclaims).

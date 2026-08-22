@@ -80,7 +80,7 @@ overlap_count: 3
 **Spec / Budget Harness**
   └── `06-budget-harness` - Budget Harness (complete)
 **Spec / Conformance Fixtures**
-  └── `04-conformance-fixtures` - Conformance Fixtures (planned)
+  └── `04-conformance-fixtures` - Conformance Fixtures (complete)
 **Spec / Cross-Cutting Contracts / Context Budget**
   └── `02-cc5-context-budget` - CC5 Context Budget (complete)
 **Spec / Cross-Cutting Contracts / Shape Identity**
@@ -101,7 +101,7 @@ graph TD
   01_cc2_shape_identity["01-cc2-shape-identity"]:::done
   02_cc5_context_budget["02-cc5-context-budget"]:::done
   03_shape_schemas["03-shape-schemas"]:::done
-  04_conformance_fixtures["04-conformance-fixtures"]:::planned
+  04_conformance_fixtures["04-conformance-fixtures"]:::done
   05_negative_fixtures["05-negative-fixtures"]:::planned
   06_budget_harness["06-budget-harness"]:::done
   07_cc1_probe_purity["07-cc1-probe-purity"]:::planned
