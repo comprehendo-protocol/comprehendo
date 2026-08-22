@@ -50,7 +50,15 @@ function assertText(text) {
  */
 export function countTokensWith(encoding, text) {
   assertText(text);
-  return encoderFor(encoding).encode(text).length;
+  // Measured text is corpus/agent data, never instructions (the project's own
+  // no-telemetry-and-data-not-instructions rule): a literal special-token
+  // string like "<|endoftext|>" inside submitted content must be counted as
+  // ordinary text, never interpreted as a real control token, and must never
+  // crash the gate. allowedSpecial: [] means no substring is treated as a
+  // special token; disallowedSpecial: [] means js-tiktoken's default
+  // "throw on any special-token-looking substring" check is turned off, so
+  // every measurement is a real BPE count of the literal bytes, unconditionally.
+  return encoderFor(encoding).encode(text, [], []).length;
 }
 
 /**
