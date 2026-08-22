@@ -58,6 +58,18 @@ export interface Twin {
 export interface DeclaredCallSchema {
   readonly surface: string;
   readonly operations: readonly string[];
+  /**
+   * Declared operations whose value may itself embed another pipeline (a
+   * MongoDB-shaped call surface's $facet/$lookup/$unionWith pattern: a
+   * declared operation containing a nested array of call-shaped operations,
+   * or an object of them). CC7's gate only recurses into a value when its
+   * OWNING key is named here; every other nested object is treated as
+   * operand data (a $match filter document, for instance) and never
+   * scanned for keys, so an operand key can never be mistaken for a second
+   * operation. Omit or leave empty when the provider's call surface has no
+   * such operations, most providers will.
+   */
+  readonly nestedPipelineOperations?: readonly string[];
 }
 
 /** One cataloged failure. `fixes` stays in the author's order, most-likely-first. */

@@ -122,3 +122,101 @@ describe('a dangling docs pointer fails the build (CC7 [09])', () => {
   });
 });
 
+describe('an empty reason fails the build (CATALOG)', () => {
+  test('a whitespace-only reason is rejected, symmetric with fix-without-title', () => {
+    const violations = validateCatalog(catalog({ ...sortEntry, reason: '   ' }));
+
+    expect(violations).toHaveLength(1);
+    expect(violations[0]?.rule).toBe('CATALOG');
+    expect(violations[0]?.reason).toBe('empty-reason');
+    expect(() => createTwinBuilder(catalog({ ...sortEntry, reason: '' }))).toThrow(
+      TwinCatalogError,
+    );
+  });
+});
+
+describe('a raw error pasted straight into reason fails the build (CC3 [08])', () => {
+  test('reason containing the entry-authored received text is rejected at catalog time', () => {
+    const raw = 'Sort exceeded memory limit of 33554432 bytes';
+    const violations = validateCatalog(
+      catalog({ ...sortEntry, reason: raw, received: raw }),
+    );
+
+    expect(violations.some((v) => v.rule === 'CC3' && v.reason === 'raw-error-leak')).toBe(true);
+    expect(() =>
+      createTwinBuilder(catalog({ ...sortEntry, reason: raw, received: raw })),
+    ).toThrow(TwinCatalogError);
+  });
+
+  test('reason that only PARAPHRASES received (does not contain it verbatim) passes', () => {
+    // The check is substring containment of the raw text, not "a reason
+    // exists alongside received"; an author-written explanation that
+    // merely describes the same failure must not be flagged.
+    const violations = validateCatalog(
+      catalog({
+        ...sortEntry,
+        reason: 'The sort has no supporting index.',
+        received: 'Sort exceeded memory limit of 33554432 bytes',
+      }),
+    );
+
+    expect(violations.filter((v) => v.reason === 'raw-error-leak')).toEqual([]);
+  });
+});
+
+describe('CC7 recurses into a declared nesting operation, never into operand data', () => {
+  const schemaWithFacet = {
+    surface: 'aggregate(pipeline)',
+    operations: ['$match', '$facet', '$lookup'],
+    nestedPipelineOperations: ['$facet', '$lookup'],
+  };
+
+  const nested = (apply: unknown): ProviderCatalog => ({
+    declaredSchema: schemaWithFacet,
+    topics: [],
+    entries: [
+      {
+        ...sortEntry,
+        fixes: [{ title: 'Nested', apply, confidence: 'guess' }],
+      },
+    ],
+  });
+
+  test('a write stage smuggled inside a $facet branch is caught', () => {
+    const violations = validateCatalog(
+      nested([{ $facet: { catA: [{ $match: {} }, { $merge: { into: 'x' } }] } }]),
+    );
+
+    expect(
+      violations.some((v) => v.reason === 'schema-escaping-fix' && v.message.includes('$merge')),
+    ).toBe(true);
+  });
+
+  test('a write stage smuggled inside a $lookup.pipeline is caught', () => {
+    const violations = validateCatalog(
+      nested([{ $lookup: { from: 'x', pipeline: [{ $merge: { into: 'y' } }] } }]),
+    );
+
+    expect(
+      violations.some((v) => v.reason === 'schema-escaping-fix' && v.message.includes('$merge')),
+    ).toBe(true);
+  });
+
+  test('a conforming nested pipeline passes', () => {
+    expect(
+      validateCatalog(nested([{ $facet: { catA: [{ $match: {} }] } }])),
+    ).toEqual([]);
+  });
+
+  test('operand keys inside a NON-nesting operator (e.g. a $match filter) are never scanned as operations', () => {
+    // $match's filter is a plain operand document, not declared as a
+    // nesting operation; its field names must never be checked against
+    // the declared operations list.
+    const violations = validateCatalog(
+      nested([{ $match: { $or: [{ region: 'eu' }, { region: 'us' }] } }]),
+    );
+
+    expect(violations).toEqual([]);
+  });
+});
+
