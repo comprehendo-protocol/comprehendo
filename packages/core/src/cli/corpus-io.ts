@@ -113,8 +113,21 @@ function writeBody(topic: TopicRecord): string {
 
 function readTopicFile(path: string, orphaned: boolean): TopicRecord {
   if (!existsSync(path)) throw new CliError(`corpus topic file missing: ${path}`);
-  const { header, body } = splitFrontMatter(readFileSync(path, 'utf8'));
-  const front = record(parseYaml(header));
+  let header: string;
+  let body: string;
+  let front: Record<string, unknown>;
+  try {
+    ({ header, body } = splitFrontMatter(readFileSync(path, 'utf8')));
+    front = record(parseYaml(header));
+  } catch (error) {
+    // A hand-corrupted topic file's YAML header is an ordinary, doc-invited
+    // user mistake, so it owes exit 2 ("a precondition the user can fix"),
+    // the same way readJson already wraps a malformed corpus JSON file for
+    // exactly that reason. Left unguarded, splitFrontMatter/parseMapping's
+    // bare SyntaxError reached exit 70 ("a bug in this tool") instead.
+    const reason = error instanceof Error ? error.message : String(error);
+    throw new CliError(`${path} has a malformed YAML front matter header: ${reason}`);
+  }
   const { summary, examples } = readBody(body);
   const partial = {
     topic: text(front['topic']),
@@ -249,7 +262,10 @@ function writeTopicFiles(paths: CorpusPaths, corpus: AuthoringCorpus): string[] 
   // A topic file whose index entry is gone would otherwise linger and be read
   // back on the next scan as a topic nobody advertises.
   for (const stale of readdirSync(paths.topics)) {
-    if (!kept.has(stale)) rmSync(join(paths.topics, stale));
+    // recursive: true so a stray subdirectory under topics/ (an unusual
+    // manual mistake, but a cleanup pass should never crash on one) is
+    // removed cleanly instead of throwing ERR_FS_EISDIR.
+    if (!kept.has(stale)) rmSync(join(paths.topics, stale), { recursive: true, force: true });
   }
   return written;
 }

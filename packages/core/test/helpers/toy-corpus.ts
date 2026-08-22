@@ -9,7 +9,7 @@
  */
 import { cpSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join, relative, sep } from 'node:path';
+import { dirname, join, relative, sep } from 'node:path';
 
 import { STUB, readCorpus, writeCorpus, corpusPaths, type VerbOptions } from '../../src/cli/index.js';
 
@@ -30,6 +30,8 @@ export interface Workspace {
   upgrade(fixture: ToyFixture): void;
   /** Read and rewrite one file inside the target. */
   edit(file: string, change: (text: string) => string): void;
+  /** Write a brand-new file inside the target (parent dirs created). */
+  addFile(file: string, content: string): void;
 }
 
 const workspaces: string[] = [];
@@ -58,6 +60,11 @@ export function makeWorkspace(fixture: ToyFixture = 'toy-target'): Workspace {
     edit(file, change) {
       const path = join(target, file);
       writeFileSync(path, change(readFileSync(path, 'utf8')), 'utf8');
+    },
+    addFile(file, content) {
+      const path = join(target, file);
+      mkdirSync(dirname(path), { recursive: true });
+      writeFileSync(path, content, 'utf8');
     },
   };
 }
