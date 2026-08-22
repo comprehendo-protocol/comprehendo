@@ -119,9 +119,12 @@ wrong about on its own, and that a future gate cannot check for itself:
   marker form really does assemble the exact frozen value, the network evidence
   really is in the corpus text and in no other fixture).
 
-The last one is enforced across the kit, not per file: the budget gate is run
-against every OTHER fixture too, and each must stay UNDER budget. A fixture
-that broke two rules at once could not tell you which gate caught it.
+The last one is enforced across the kit, not per file: every OTHER fixture's
+budget-scoped steps (topic, index, or entry-priming shapes) are run through
+the real gate and must stay UNDER budget; a step whose shape carries no CC5
+budget category (twin, manifest) is checked to have none, not silently
+skipped. A fixture that broke two rules at once could not tell you which
+gate caught it.
 
 ## Rules this kit lives by
 

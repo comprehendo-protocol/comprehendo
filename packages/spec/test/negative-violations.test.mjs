@@ -18,7 +18,7 @@ import assert from 'node:assert/strict';
 
 import { readSchema } from './helpers/shapes.mjs';
 import { check } from './helpers/validate.mjs';
-import { fixtureNamed } from './helpers/fixtures.mjs';
+import { fixtureNamed, listFixtureFiles, readFixtureText } from './helpers/fixtures.mjs';
 import {
   EXPECTED_NEGATIVE_FIXTURES,
   negativeFixture,
@@ -125,13 +125,25 @@ describe('telemetry-attempt: corpus text that crosses the wire (CC6 [27], Wave 5
 
   test('no other fixture in either kit carries a network token', () => {
     // Isolation is the point: if egress evidence were sprinkled around, a
-    // gate firing would not tell you WHICH fixture it caught.
+    // gate firing would not tell you WHICH fixture it caught. Checked
+    // against BOTH kits, not just this one: the positive kit [04] is
+    // exactly the set of fixtures that must NOT trip a CC6 scan either.
     const fixture = load();
-    const others = EXPECTED_NEGATIVE_FIXTURES.filter((file) => file !== 'telemetry-attempt.json');
-    for (const file of others) {
+    const otherNegatives = EXPECTED_NEGATIVE_FIXTURES.filter(
+      (file) => file !== 'telemetry-attempt.json',
+    );
+    const positives = listFixtureFiles();
+    assert.ok(positives.length > 0, 'the positive kit is empty, this check would be vacuous');
+    for (const file of otherNegatives) {
       const text = readNegativeText(file);
       for (const token of fixture.network_evidence) {
-        assert.ok(!text.includes(token), `${file} also carries the network token ${token}`);
+        assert.ok(!text.includes(token), `${file} (negative kit) also carries ${token}`);
+      }
+    }
+    for (const file of positives) {
+      const text = readFixtureText(file);
+      for (const token of fixture.network_evidence) {
+        assert.ok(!text.includes(token), `${file} (positive kit) also carries ${token}`);
       }
     }
   });
