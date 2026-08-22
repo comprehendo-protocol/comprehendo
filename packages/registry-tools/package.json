@@ -1,0 +1,43 @@
+{
+  "name": "@comprehendo/registry-tools",
+  "version": "0.0.1",
+  "description": "Comprehendo registry tooling: the corpus file format, the submission gate, the static fingerprint index builder and matcher, and the scoped corpus publisher. Internal workspace package name; how this assembles into a published artifact is a Wave 7 (Distribution) decision, not made here.",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "comprehendo",
+    "registry",
+    "fingerprint",
+    "corpus"
+  ],
+  "author": "TheDecipherist",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TheDecipherist/comprehendo.git",
+    "directory": "packages/registry-tools"
+  },
+  "homepage": "https://github.com/TheDecipherist/comprehendo#readme",
+  "bugs": {
+    "url": "https://github.com/TheDecipherist/comprehendo/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.0",
+    "@types/node": "^22.9.0",
+    "eslint": "^10.0.0",
+    "typescript-eslint": "^8.67.0",
+    "eslint-plugin-unused-imports": "^4.1.4"
+  }
+}
