@@ -160,6 +160,44 @@ data and never instructions is load-bearing here rather than decorative:
       gate has no executor for. In every case exactly one block fails and
       the other fourteen still pass.
 
+## Fixed Issues
+
+### The write target was never validated, letting a corpus write outside the sandbox (fixed 2026-08-23)
+
+Found by review: `docs-transcript-workspace.ts`'s `prepare()` validated
+every file a command READS against the declared `WORKSPACE` table
+(`fixtureFor`), but never validated the file a writing command's final
+operand names. The Security section claimed "an example cannot read or
+write anything in the repository," but a corpus example ending in an
+absolute path (`/tmp/x.mp4`) or a `../` traversal wrote there for real,
+outside the per-command temp workspace entirely. Every real target in
+the flagship corpus is a bare filename, so the bug had zero effect on
+any example that ships, but nothing in the code enforced that, and
+corpus text is data, never instructions, is exactly the invariant this
+falsified.
+
+- Fixed by adding `assertContainedWrite(site, name)`: refuses a write
+  target that is empty is fine (nothing written), but any operand
+  carrying a path separator, an absolute path, or that `resolve(site,
+  name)` places outside `resolve(site)` is refused naming the operand,
+  mirroring the read side's `fixtureFor` containment. Wired into
+  `prepare()` immediately after the write target is computed, before
+  any fixture is materialized.
+- Independently reproduced both PoCs (absolute-path write, relative
+  traversal write) against the real runner before the fix (both
+  succeeded, confirmed via `ls` on the escape target) and after (both
+  refused with "not a bare filename inside the sandboxed workspace",
+  target files confirmed absent).
+- Mutation-verified: two new permanent regression tests
+  (`docs-code-blocks.test.ts`, describe block "a write target is never
+  a path...") assert the block fails naming the reason and that the
+  target file never exists on disk. Reverting just the
+  `assertContainedWrite` call turns both red (`expected [] to have a
+  length of 1 but got +0`, i.e. both malicious blocks silently
+  "passed"); restored, green. Real corpus still 15/15 blocks passing
+  against ffmpeg 4.4.2-0ubuntu0.22.04.1 after the fix. registry-tools
+  375/375, core 548/548.
+
 ## Known Issues
 
 - [deferred] The `#` annotation lines are not asserted against the real

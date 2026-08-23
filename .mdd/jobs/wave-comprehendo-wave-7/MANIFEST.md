@@ -218,3 +218,15 @@ started: 2026-08-22
     3.11+, box has 3.10), zero Python touched, reported as not-
     runnable rather than folded into a green claim. registry-tools
     373/373, core 548/548, spec 436/436.
+
+**Post-merge review finding, fixed 2026-08-23**: independent adversarial
+review (isolated worktree) found `prepare()` validated read operands
+against the declared workspace table but never validated the write
+target, letting a corpus example write outside the sandboxed workspace
+via an absolute path or `../` traversal, falsifying the doc's own
+Security section claim. Fixed with `assertContainedWrite()`, mirroring
+the read side's containment check. Both PoCs independently reproduced
+pre-fix (succeeded) and post-fix (refused). Two new regression tests
+added, mutation-verified (revert -> both go red; restore -> green).
+registry-tools 375/375, core 548/548 after the fix. Full writeup in
+`37-docs-as-tests.md`'s Fixed Issues section.

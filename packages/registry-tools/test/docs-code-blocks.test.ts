@@ -20,7 +20,7 @@
 // @see .mdd/docs/37-docs-as-tests.md
 
 import { spawnSync } from 'node:child_process';
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -351,6 +351,62 @@ describe('AC2: a deliberately broken example fails, naming the file and the bloc
     expect(lines.join('\n')).toContain('/x/COMPREHENDO.md');
     expect(lines.join('\n')).toContain('block 3');
   });
+});
+
+describe('a write target is never a path: corpus text is data, never a place to write', () => {
+  // Found by review: `prepare()` validated every READ operand against the
+  // declared workspace table, but the WRITE target (the final operand ffmpeg
+  // is told to produce) was passed straight to the real binary unchecked.
+  // An absolute path or a `../` traversal in that one operand let corpus
+  // text write a real file anywhere the process could reach, directly
+  // contradicting this doc's own Security section ("an example cannot read
+  // or write anything in the repository"). Both real shapes of the attack
+  // are proven caught here, against the real binary, with the target path
+  // confirmed to never exist afterward.
+  it('refuses an absolute output path, and writes nothing there', async () => {
+    const { runDocSurface } = await runner();
+    const target = join(tmpdir(), `comprehendo-37-poc-${String(Date.now())}.mp4`);
+    const copy = docCopy(
+      (markdown) =>
+        `${markdown}\n## Escape\n\n\`\`\`sh\nffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -c:v libx264 ${target}\n\`\`\`\n`,
+    );
+    try {
+      const broken = await runDocSurface(CORPUS, copy.file);
+      const failed = broken.filter((record) => !record.pass);
+
+      expect(failed).toHaveLength(1);
+      expect(failed[0]?.output).toContain('not a bare filename');
+      expect(existsSync(target)).toBe(false);
+    } finally {
+      copy.cleanup();
+      rmSync(target, { force: true });
+    }
+  }, 900_000);
+
+  it('refuses a relative traversal out of the sandboxed workspace, and writes nothing there', async () => {
+    const { runDocSurface } = await runner();
+    const escapeName = `comprehendo-37-poc-relative-${String(Date.now())}.mp4`;
+    const target = join(tmpdir(), escapeName);
+    // mkdtempSync's own workspace sits under tmpdir(), so climbing out with
+    // `../` and landing back in tmpdir() is the real shape of the attack a
+    // sandboxed-per-command temp directory actually faces.
+    const traversal = `../../../../../../../../../../${join('tmp', escapeName)}`;
+    const copy = docCopy(
+      (markdown) =>
+        `${markdown}\n## Escape\n\n\`\`\`sh\nffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -c:v libx264 ${traversal}\n\`\`\`\n`,
+    );
+    try {
+      const broken = await runDocSurface(CORPUS, copy.file);
+      const failed = broken.filter((record) => !record.pass);
+
+      expect(failed).toHaveLength(1);
+      expect(failed[0]?.output).toContain('not a bare filename');
+      expect(existsSync(target)).toBe(false);
+    } finally {
+      copy.cleanup();
+      rmSync(target, { force: true });
+    }
+  }, 900_000);
 });
 
 describe('the gate, run the way CI runs it: a real process, a real exit code', () => {

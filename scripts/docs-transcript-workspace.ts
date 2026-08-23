@@ -23,7 +23,7 @@
 import { execFileSync, spawnSync } from 'node:child_process';
 import { copyFileSync, existsSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { isAbsolute, join, resolve, sep } from 'node:path';
 
 import { PreconditionError, WorkspaceError } from './docs-code-blocks.ts';
 
@@ -169,6 +169,25 @@ function readsOf(argv: readonly string[], program: Program): readonly string[] {
 }
 
 /**
+ * Refuse a write target that is not a bare filename inside `site`. Corpus
+ * text is data, never instructions: an absolute path (`/tmp/x.mp4`) or a
+ * traversal (`../../etc/x.mp4`) in the operand ffmpeg is told to WRITE would
+ * let a corpus escape the sandboxed workspace entirely, the same class of
+ * hole the read side already closes via `fixtureFor`. `resolve` is the
+ * belt-and-braces check behind the simpler `sep`/absolute check, so a
+ * platform-specific separator or a symlink trick is caught the same way.
+ */
+function assertContainedWrite(site: string, name: string): void {
+  if (name === '') return;
+  const contained = resolve(site, name).startsWith(resolve(site) + sep);
+  if (name.includes(sep) || name.includes('/') || isAbsolute(name) || !contained) {
+    throw new WorkspaceError(
+      `the transcript writes ${name}, which is not a bare filename inside the sandboxed workspace; a write target must never carry a path`,
+    );
+  }
+}
+
+/**
  * One command's own workspace, seeded from the declared table.
  *
  * A fixture is materialized when the command names it, EXCEPT an `input` this
@@ -186,6 +205,7 @@ function prepare(site: string, argv: readonly string[], program: Program, cache:
     }
   }
   const writeTarget = program.writesFinalOperand ? (argv[argv.length - 1] ?? '') : '';
+  if (program.writesFinalOperand) assertContainedWrite(site, writeTarget);
   for (const name of new Set(argv.slice(1))) {
     const fixture = fixtureFor(name);
     if (fixture?.make === undefined) continue;
