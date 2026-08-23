@@ -52,7 +52,7 @@ overlap_count: 5
 **Distribution / Cold-Agent Benchmark**
   └── `38-cold-agent-benchmark` - Cold-Agent Benchmark (planned)
 **Distribution / Docs As Tests**
-  └── `37-docs-as-tests` - Docs As Tests (planned)
+  └── `37-docs-as-tests` - Docs As Tests (complete)
 **Distribution / Priming Snippet**
   └── `36-priming-snippet` - Priming Snippet Finalized (complete)
 **Distribution / Registry Reservations**
@@ -134,7 +134,7 @@ graph TD
   34_upstream_watch["34-upstream-watch"]:::done
   35_comprehendo_md_generator["35-comprehendo-md-generator"]:::done
   36_priming_snippet["36-priming-snippet"]:::done
-  37_docs_as_tests["37-docs-as-tests"]:::planned
+  37_docs_as_tests["37-docs-as-tests"]:::done
   38_cold_agent_benchmark["38-cold-agent-benchmark"]:::planned
   39_registry_reservations["39-registry-reservations"]:::done
   40_registry_website["40-registry-website"]:::planned

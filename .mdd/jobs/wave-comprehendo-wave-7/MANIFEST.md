@@ -14,7 +14,7 @@ started: 2026-08-22
 - [x] 39-registry-reservations (task), already complete from prior ad hoc work outside the wave build chain; phase field corrected idle -> all, no builder dispatched
 - [x] 35-comprehendo-md-generator (COMPONENT), 19/19 new tests green, merged; found and fixed a real bug (exit 70 instead of 2 on an unpackable corpus), mutation-verified 10 ways against the real ffmpeg corpus
 - [x] 36-priming-snippet (COMPONENT), 18/18 new tests green, merged; 144/150 tokens on the real meter, iterated across 10 measured phrasings, both content and budget mutation-verified
-- [ ] 37-docs-as-tests (COMPONENT)
+- [x] 37-docs-as-tests (COMPONENT), 26/26 new tests green, merged; extended 35's renderer with real, executed fenced code blocks (35 deliberately deferred this, previously zero blocks existed); closed a real, currently-open hole (worked examples were never actually run in CI, only paralleled by a hand-maintained argv table)
 - [ ] 38-cold-agent-benchmark (COMPONENT)
 - [ ] 40-registry-website (COMPONENT)
 
@@ -144,3 +144,77 @@ started: 2026-08-22
 11. `node_modules` hardlinked from the main checkout after verifying
     `package.json` byte-identity (fresh worktree had none); nothing
     tracked modified.
+
+### 37-docs-as-tests (13 calls, unattended, no blockers)
+
+1. **Path 1 (render real blocks into COMPREHENDO.md) over path 2 (a
+   fixture), decided by trying it.** The doc's ACs were vacuous
+   against 35's output (39 lines, zero fenced blocks). Verified the
+   corpus's 15 worked examples (37 command lines) are real and run
+   against the real binary BEFORE writing a line of the runner, and
+   found the gap path 1 closes is real and currently open:
+   `ffmpeg-witnesses.ts` runs a hand-maintained argv table that only
+   PARALLELS the topic examples, nothing in CI ever ran the example
+   text itself. Path 2 would have proven the runner and left that
+   hole open. Cost accepted: COMPREHENDO.md grows 39 -> 167 lines,
+   weighed against "index is a menu" (which governs `docs()` answers,
+   untouched here, not the file-browsing channel) and recorded as a
+   known_issue rather than hidden.
+2. **"A block passes" defined without guessing at prose**: 8 of 15
+   blocks are cataloged-failure demonstrations, so literal "executes
+   successfully" is wrong for this corpus. Rejected inferring intent
+   from `#` annotation lines (empirically two different things, quoted
+   stderr and prose commentary, no mechanical separator, any heuristic
+   fails a correct corpus). Adopted instead: the example's own TITLE
+   names the disposition, the verdict for a non-zero exit comes from
+   the corpus's REAL fingerprint index routing to the twin the title
+   names. Real teeth: a renamed option, removed filter, or reworded
+   error text stops matching and fails naming the block.
+3. Each command in a block gets a FRESH workspace, not one shared
+   per-block workspace: found by running them, 3 blocks broke when
+   treated as a sequential script (the corpus deliberately omits `-y`,
+   so a second command hits `File already exists`). Read as the
+   faithful interpretation: each line is an independent illustration,
+   not a step.
+4. The declared workspace is a table this feature owns (same format
+   gap `ffmpeg-witnesses.ts` already records), with two materialized
+   roles read off the corpus, not guessed (`input`, `present-output`
+   for the one file `FFMPEG_OUTPUT_EXISTS` needs already there) plus
+   one declared-absent (`does-not-exist.mp4`). An undeclared `-i`
+   operand FAILS the run naming the file and block, never a skip.
+5. No shell, ever: tokenizes and spawns as an argv array, refuses
+   shell metacharacters outside quotes naming the block, and an
+   allowlisted program only (the corpus's own `declared_schema.
+   surface` plus `ffprobe`, declared in code with its reason, never
+   inferred from text). Same argument `ffmpeg-cli.ts` already makes.
+6. An unsupported fence language FAILS, never skips: a gate that
+   silently skips what it cannot run is the vacuous-green failure this
+   whole feature exists to prevent.
+7. The renderer emits `sh` as the fence info-string (the corpus's own
+   topic files use bare fences); judged a RENDERING convention, same
+   class as table-pipe escaping, not authored content, since it makes
+   no claim about the package and is what gives the language field a
+   real source instead of an assumption.
+8. Three files, not one (587 lines over the cap): pure extraction/
+   parsing (`docs-code-blocks.ts`), the declared workspace/allowlist/
+   one real spawn (`docs-transcript-workspace.ts`), verdict/argv/exit
+   code (`run-docs-code-blocks.ts`).
+9. Exit codes follow the established contract (0/1/2/70), same
+   vocabulary 17 and 35 use.
+10. Files touched outside this feature's own `source_files`, all
+    anticipated handoffs, no sibling lane overlap: `comprehendo-md.ts`
+    and `corpora/ffmpeg/COMPREHENDO.md` (35's, explicitly invited;
+    35's own suite re-run green after); `35-comprehendo-md-generator.md`
+    (known_issues re-tagged, the deferral it recorded now resolved);
+    new `.github/workflows/docs-as-tests.yml`.
+11. Doc left at `active`/`verify`, not flipped to `complete`: Phase 7
+    and bookkeeping reserved for the orchestrator.
+12. The frontmatter-validate hook's "phantom files" report on this doc
+    write was the known worktree-cwd artifact (resolves against
+    `$CLAUDE_PROJECT_DIR`, the main checkout, where an unmerged
+    branch's files legitimately don't exist yet), not a real doc
+    defect; verified present in the worktree.
+13. `packages/python`'s suite not runnable in this environment (needs
+    3.11+, box has 3.10), zero Python touched, reported as not-
+    runnable rather than folded into a green claim. registry-tools
+    373/373, core 548/548, spec 436/436.

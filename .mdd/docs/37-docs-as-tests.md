@@ -4,8 +4,8 @@ title: Docs As Tests
 type: COMPONENT
 path: Distribution / Docs As Tests
 source_files: [scripts/run-docs-code-blocks.ts, scripts/docs-code-blocks.ts, scripts/docs-transcript-workspace.ts]
-status: active
-phase: verify
+status: complete
+phase: all
 last_synced: 2026-08-23
 initiative: comprehendo
 wave: comprehendo-wave-7
