@@ -4,8 +4,8 @@ title: Owner Endorsement
 type: COMPONENT
 path: Registry / Owner Endorsement
 source_files: [packages/registry-tools/src/endorsement.ts, packages/registry-tools/src/endorsement-manifest.ts, packages/registry-tools/src/endorsement-digest.ts, packages/registry-tools/src/endorsement-owners.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-5

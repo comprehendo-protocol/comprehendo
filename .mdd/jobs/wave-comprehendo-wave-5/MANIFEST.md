@@ -17,6 +17,8 @@ started: 2026-08-22
 - [x] 27-cc6-no-telemetry (SPEC), status/phase flipped; ACs pending 29 (AC1's network scan is independently checkable once 29 builds a real scan tool)
 - [x] 28-corpus-format (COMPONENT), 65/65 new tests green, merged; found and fixed a real cross-lane bug in 17-corpus-generator (writeCorpus silently dropped a hand-added declared_schema on re-scan), mutation-verified
 - [x] 29-submission-gate (COMPONENT), 67/67 new tests green, merged; checked off 25's and 26's ACs (their enforcement now real); checked off 20's third AC too (fingerprint lint now runs a real cross-package collision check)
+- [x] 30-owner-endorsement (COMPONENT), 48/48 new tests green, merged; satisfies 29's mandatory verifyAgainstUpstream contract transitively, mutation-verified against a doctored gate result; resolved two of 23-config-loader's known_issues
+- [x] 31-scoped-publisher (COMPONENT), 21/21 new tests green, merged; satisfies_contracts flipped to done; measured (not just predicted) the router-discovery.ts producer/consumer gap with a real live payload
 - [ ] 30-owner-endorsement (COMPONENT)
 - [ ] 31-scoped-publisher (COMPONENT)
 
@@ -205,3 +207,114 @@ pending 29's enforcement, same pattern as 19/20 in wave 4.)
     they don't share fingerprints by accident; collision suites create
     the collision on purpose, by rewriting one corpus's pattern to
     match the other's.
+
+### 30-owner-endorsement (10 calls, unattended, no blockers)
+
+1. `gate.ts` (doc's original `source_files`) is untouched: 29's own doc
+   says endorsement is computed AFTER its gate passes, so this reads a
+   finished `GateResult`, no hook inside `runSubmissionGate` needed.
+   `source_files` rewritten to the 4 real files.
+2. The sha256 pin hashes the PACKED ARTIFACT (`serializeCorpus(pack(source))`),
+   not the 5-file authoring tree: the pin names a corpus RELEASE, the
+   artifact is the exact bytes a consumer's runtime loads and already
+   has a canonical byte form ("equal corpora, equal bytes"); the tree
+   has no canonical byte form and carries authoring-only state
+   (`status: draft`) that never ships.
+3. `node:crypto` is a Node builtin, not on CC6's `NETWORK_MODULES`
+   list, zero runtime deps preserved. Pinned to two independently
+   checkable digests (`sha256Hex('') === e3b0c442...b855`,
+   `sha256Hex('comprehendo')` confirmed against a real `sha256sum`).
+4. **The mandatory contract is satisfied TRANSITIVELY, the guard is
+   explicit not incidental.** Never calls `verifyAgainstUpstream`
+   itself (re-running it would be a second source of truth over an
+   answer 29 already has); refuses every rung above `community` unless
+   `gate.pass` AND `gate.checks.registryTruth === 'pass'` both hold,
+   the second condition deliberately redundant with the first so a
+   doctored ruling still buys nothing. Mutation-verified: neutering
+   the `registryTruth` condition turns 2 tests red.
+5. `native` is READ off the live manifest (15's `{version, level}`
+   declaration), never awarded to a sidecar corpus for its content or
+   approvals: the top rung is a fact about the package, not something
+   a corpus can be given.
+6. Every rung above `community`, including `native`, waits on the
+   gate: one rule ("nothing above community without a verified
+   corpus") over a per-rung exception table, fails closed.
+7. Identity comparison fails closed and needs a scheme on BOTH sides
+   (`github:octocat`, not bare `octocat`): reading a bare login
+   permissively would let `gitlab:octocat` stand in for
+   `github:octocat`. `githubApprovers` is the one adapter across the
+   registry-repo boundary, qualifying a login into the manifest's
+   scheme and guessing nothing else; where approvals actually come
+   from (a GitHub reviews API) is out of scope, recorded not faked.
+8. A pin that is not 64 hex characters is REPORTED, never interpreted
+   (the kit's forward-compat fixture shows the same manifest key
+   sometimes carrying a corpus PACKAGE NAME instead); reading a name
+   as a match would endorse whatever it resolves to today. Lands at
+   `community` with the reason attached instead.
+9. No per-corpus findings filter: unreachable in `runSubmissionGate`
+   as it stands (`pass` is true only when findings is empty already),
+   and an unreachable branch with no test is exactly what the
+   folklore rule deletes. 29's own PR-level-vs-per-corpus known issue
+   is the honest home for this, restated here.
+10. 3 of 48 new tests were green at the Red Gate by design (a
+    trust-ladder drift guard against core's frozen const, and two
+    feeding the literal `'community'` to 23's already-shipped
+    refusal), recorded as controls not coverage. The other 45 were red.
+
+### 31-scoped-publisher (19 calls, unattended, no blockers)
+
+1. Same repo boundary as 28/29: built the publish DECISION and
+   ARTIFACT ASSEMBLY as pure tested functions, no workflow file, no
+   `npm publish` call, no signing infrastructure.
+2. **The publish path re-reads the gate's CHECKS, never trusts
+   `publishable`.** `GateResult` is a plain interface, so a caller
+   could hand in `publishable: true` with `registryTruth: not-run`,
+   exactly CC11's threat model. `gateRefusals` checks
+   `UPSTREAM_CHECKS` directly AND `publishable`. Mutation-verified:
+   dropping the upstream check turns exactly 2 tests red.
+3. `unverified-against-upstream` is its own refusal reason, distinct
+   from `gate-not-publishable`, same reasoning 29 used for keeping
+   `drift`/`folklore` distinct.
+4. A refusal is data, never an exception, every reason returned at
+   once (same pattern as 28's violations, 29's findings).
+5. Provenance attestation is a RECORD with `signed: false` as an
+   explicit field, not a silence: real signing (sigstore, npm
+   `--provenance`) needs a CI OIDC identity and a real registry,
+   named in known_issues rather than faked.
+6. Trigger facts (`event`, `ref`, a 40-hex `commit`) are checked for
+   SHAPE, not proven true (that needs CI identity, out of scope,
+   named honestly); a commit that isn't a full sha refuses.
+7. A gate result licenses only the corpus it was run over, checked
+   through the compiled fingerprint index (the only corpus identity a
+   `GateResult` carries): catches a SWAPPED corpus (tested: a green
+   toy-encoder run does not publish toy-tagger), cannot catch a
+   REPLAYED one, recorded as a `[gap]` (the real fix is a `corpora`
+   field on `GateResult`, 29's file).
+8. **The router-discovery.ts migration gap is MEASURED, not just
+   predicted**: this feature's own real assembled payload, installed
+   into a real consumer tree, found 0 corpora against core's real
+   `discoverInstalledCorpora` (defect: declares comprehendoCorpus but
+   carries none of the three OLD artifact names). Out of lane (owned
+   by doc 22, outside `source_files`), flagged to the orchestrator
+   with live evidence rather than left implied.
+9. Scoped package version comes from CI (read off the corpus
+   package's own package.json), never derived from the corpus: a
+   corpus's fixes need patch releases independent of the target's
+   version.
+10. Scoped target flattening (`@acme/widgets` -> `@comprehendo/
+    acme__widgets`) is not injective (`@a/b__c`/`@a__b/c` collide),
+    recorded as a `[gap]`; nothing mis-routes today since the
+    descriptor's `target` field carries the real name and core reads
+    that first.
+11. Three files, not one (405-line single file over the 400 gate),
+    same split precedent as 28 (six files) and 29 (ten).
+12. Every passing `GateResult` under test is a REAL one (17's real
+    writers, real `npm pack`/`install --offline`, 29's real
+    `verifyAgainstUpstream`); the one hand-typed forged result is the
+    deliberate subject of the CC11 threat-model test, not a
+    convenience double.
+13. Mutation testing, 3 mutations: dropping the upstream-check
+    refusal (2 red), neutering the corpus-binding check (1 red),
+    replacing sha256 with a length placeholder (1 red, and exposed
+    that the "two corpora hash differently" test is what's load
+    -bearing, not a generic length check).

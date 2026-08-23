@@ -2,7 +2,7 @@
 generated: 2026-08-23
 doc_count: 40
 connection_count: 63
-overlap_count: 6
+overlap_count: 5
 ---
 
 # MDD Connections
@@ -72,9 +72,9 @@ overlap_count: 6
 **Registry / Fingerprint Index**
   └── `21-fingerprint-index-matcher` - Fingerprint Index & Matcher (complete)
 **Registry / Owner Endorsement**
-  └── `30-owner-endorsement` - Owner Endorsement (planned)
+  └── `30-owner-endorsement` - Owner Endorsement (complete)
 **Registry / Scoped Publisher**
-  └── `31-scoped-publisher` - Scoped Publisher (planned)
+  └── `31-scoped-publisher` - Scoped Publisher (complete)
 **Registry / Submission Gate**
   └── `29-submission-gate` - Submission Gate (complete)
 **Spec / Budget Harness**
@@ -127,8 +127,8 @@ graph TD
   27_cc6_no_telemetry["27-cc6-no-telemetry"]:::done
   28_corpus_format["28-corpus-format"]:::done
   29_submission_gate["29-submission-gate"]:::done
-  30_owner_endorsement["30-owner-endorsement"]:::planned
-  31_scoped_publisher["31-scoped-publisher"]:::planned
+  30_owner_endorsement["30-owner-endorsement"]:::done
+  31_scoped_publisher["31-scoped-publisher"]:::done
   32_ffmpeg_corpus["32-ffmpeg-corpus"]:::planned
   33_ffmpeg_fingerprints["33-ffmpeg-fingerprints"]:::planned
   34_upstream_watch["34-upstream-watch"]:::planned
@@ -212,7 +212,6 @@ Files referenced by 2+ docs:
 - `packages/core/src/router-discovery.ts` - 22-router-precedence, 23-config-loader
 - `packages/core/src/router-precedence.ts` - 22-router-precedence, 23-config-loader
 - `packages/core/src/router.ts` - 22-router-precedence, 23-config-loader
-- `packages/registry-tools/src/gate.ts` - 29-submission-gate, 30-owner-endorsement
 
 ## Warnings
 
