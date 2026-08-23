@@ -1,0 +1,63 @@
+name: Upstream watch (ffmpeg)
+
+# The flagship corpus wraps a tool this repository does not own, so an ffmpeg
+# release can make its cataloged fixes wrong without a single line of this
+# repository changing. Nothing in a pull request can notice that, which is why
+# this job is on a clock rather than on a diff.
+#
+# It re-probes every element in corpora/ffmpeg/upstream-watch.lock against the
+# ffmpeg the runner really installs, and fails naming the element that moved.
+
+on:
+  schedule:
+    # 05:17 UTC every Monday. Off the hour on purpose: the top of the hour is
+    # where every scheduled job on the platform queues at once.
+    - cron: "17 5 * * 1"
+  workflow_dispatch:
+  # A change to the corpus or to the watch itself re-runs it immediately, so a
+  # lock edited by hand cannot sit unverified until the next Monday.
+  push:
+    paths:
+      - "corpora/ffmpeg/**"
+      - "packages/registry-tools/src/upstream-*.ts"
+      - "packages/registry-tools/test/ffmpeg-upstream-watch.test.ts"
+      - "packages/registry-tools/test/helpers/ffmpeg-*.ts"
+      - ".github/workflows/upstream-watch.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  watch:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The tool being watched. Never pinned: the whole point of this job is to
+      # meet whatever ffmpeg the distribution is shipping now.
+      - name: Install ffmpeg
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+
+      - name: Record the version this run scanned
+        run: ffmpeg -version | head -1
+
+      - name: Install workspace dependencies
+        run: |
+          npm ci --prefix packages/spec
+          npm ci --prefix packages/registry-tools
+
+      # Fails with the drifted element named, never silently. The report itself
+      # is printed by the suite, so the job log carries the evidence.
+      - name: Re-probe the locked ffmpeg surface
+        working-directory: packages/registry-tools
+        run: npx vitest run ffmpeg-upstream-watch

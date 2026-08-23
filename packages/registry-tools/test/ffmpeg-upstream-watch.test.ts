@@ -146,7 +146,6 @@ describe('the watch re-observes every locked element against the real binary', (
     const report = watchReport(read, observed(read), scannedVersion());
 
     // The report is the CI job's evidence, so it is printed, not only asserted.
-    // eslint-disable-next-line no-console
     console.log(formatWatchReport(report).join('\n'));
 
     expect(report.drift).toEqual([]);
@@ -251,9 +250,10 @@ describe("a watch failure routes into CC4 [26]'s drift-failure handling", () => 
     const folklore = folkloreFindings(submission, verification);
     const truth = registryTruthFindings(submission, verification);
 
-    expect(folklore.map((found) => found.detail).join('\n')).toContain(drifted.code);
-    expect(folklore.map((found) => found.detail).join('\n')).toContain('drift');
-    expect(truth.map((found) => found.at)).toContain(drifted.code);
+    expect(folklore.map((found) => found.message).join('\n')).toContain(drifted.code);
+    expect(folklore.map((found) => found.message).join('\n')).toContain('drift');
+    expect(folklore.map((found) => found.check)).toContain('folklore');
+    expect(truth.map((found) => found.locator)).toContain(drifted.code);
   });
 
   it('leaves the gate exactly as it found it when nothing drifted', () => {
