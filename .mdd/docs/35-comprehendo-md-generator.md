@@ -15,7 +15,7 @@ test_files: [packages/registry-tools/test/comprehendo-md.test.ts]
 known_issues:
   - "[gap] The packed artifact carries no identity slot, so RFC 5.5's \"⟨name⟩ is ⟨one sentence: what the tool is and does⟩\" has nothing to derive from. The generated identity line states what the corpus documents (spec version, provider, authored-against version, topic/fix/failure counts, declared call surface) and never describes the tool: writing that sentence here would be exactly the hand-authored prose this feature's Business Rule forbids. Adding an identity field is Corpus Format [28]'s call."
   - "[deferred] The generator imports the BUILT modules of core and registry-tools, not their sources: node's type stripping does not remap a ./foo.js specifier onto foo.ts, so a standalone script cannot load either src/ tree at all. Consequence: dist/ is a precondition of the gate. A stale dist/ cannot pass quietly, the suite compares src and dist mtimes and fails loudly naming the build command."
-  - "[deferred] The rendered file carries no fenced code blocks, so Docs As Tests [37] (which depends on this feature) will find none in it. Emitting worked examples now would commit 37 to a runner shape before it exists, and the corpus's own examples are ffmpeg command lines needing real media. 37 decides what it can execute and asks for blocks if it wants them."
+  - "[deferred] The `## Examples` section renders EVERY worked example the corpus carries, which took the flagship file from 39 to 167 lines. Bounded rendering (one example per topic) was considered and rejected: no rule for choosing which one exists in the corpus, so it would be arbitrary where this generator is otherwise wholly derived. The file is a browse-time discovery channel, not a `docs()` answer, so the topic-sized-answer rule is not the one that governs here; the drift gate keeps the growth honest either way."
   - "[gap] The topic row's answer is the summary up to the first sentence terminator followed by whitespace, so a summary opening on an abbreviation would render a short row. No topic in the flagship corpus does, and the result would be deterministic and drift-gated either way."
 ---
 
@@ -69,9 +69,17 @@ in this tool.
 ## Data Model
 
 `COMPREHENDO.md` content: package identity, the completeness contract
-statement, the priming pointer, and a generated summary of the corpus's
-topic index, sourced entirely from the packed corpus and Docs Engine [13]
+statement, the priming pointer, a generated summary of the corpus's topic
+index, and the corpus's own worked examples quoted verbatim in `sh`-fenced
+blocks, sourced entirely from the packed corpus and Docs Engine [13]
 metadata, no separately-authored prose.
+
+The examples section was added by Docs As Tests [37], which this feature
+deferred the decision to: it executes every one of those blocks against the
+real program in CI, so a worked example that stopped working is a build
+failure. The fence info-string is a rendering convention (like the table
+escaping), not authored content; it is what gives [37] a real source for the
+block's language instead of an assumption.
 
 ## API/Interface
 
@@ -124,8 +132,9 @@ lines only one side carries. Module exports for the gate:
 - [deferred] The generator loads the BUILT modules of core and
   registry-tools; `dist/` is a precondition, and a stale one fails the
   suite loudly rather than passing.
-- [deferred] No fenced code blocks are rendered, which leaves Docs As
-  Tests [37] nothing to execute in this file by design.
+- [deferred] The `## Examples` section renders every worked example the
+  corpus carries rather than a bounded selection; no non-arbitrary rule for
+  choosing exists in the corpus. See frontmatter.
 - [gap] First-sentence extraction would truncate a summary opening on an
   abbreviation. None does; the result stays deterministic either way.
 
