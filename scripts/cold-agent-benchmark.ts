@@ -121,7 +121,16 @@ export async function runTask(
         });
         break;
       case 'apply-and-rerun': {
-        const corrected = applyToArgv(argv, action.fix.apply, harness.declaredOperations);
+        // A fix with no `apply` is an inert docs pointer; "applying" it changes
+        // nothing about the command, so the rerun is the SAME argv and fails
+        // identically. Recorded rather than refused, because an agent that
+        // treats a pointer as executable is making a real mistake and the rate
+        // has to see it. Found by the live tier's second real run, where the
+        // model did exactly that on a runbook entry.
+        const corrected =
+          action.fix.apply === undefined
+            ? argv
+            : applyToArgv(argv, action.fix.apply, harness.declaredOperations);
         const result = ffmpeg(corrected, cwd);
         attempts += 1;
         argv = corrected;

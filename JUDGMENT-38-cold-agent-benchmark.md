@@ -98,20 +98,28 @@ byte-identical to the main checkout's (`diff -q`, all three IDENTICAL), so
 alternative, `npm install`, would have resolved the same lockfile over the
 network for no difference.
 
-## Call 3: two source files, not one, and the doc's `source_files` widened to match
+## Call 3: six source files, not one, and the doc's `source_files` widened to match
 
-The doc listed `scripts/cold-agent-benchmark.ts` alone. The build needs a
-pure half (task suite, the agent policy, the argv applier, the rate
-arithmetic, zero `node:` imports so "the policy cannot read a file" is a
-property of the module rather than a promise) and an impure half (real
-spawns, real router, real meter, the CC9 subprocesses, publishing, the CLI).
-One file would have been roughly 540 lines, over this project's 400-line
-ceiling, and the pure/impure seam is exactly what makes Business Rule 2
-structurally assertable. Split as `scripts/cold-agent-suite.ts` (pure) and
-`scripts/cold-agent-benchmark.ts` (impure), the same split 35 already
-established with `comprehendo-md.ts` / `generate-comprehendo-md.ts`, and the
-doc's `source_files` updated to both. The doc is this feature's own, so this
-is a decide-and-log, not a blocker.
+The doc listed `scripts/cold-agent-benchmark.ts` alone. One file would have
+been roughly 1,700 lines, four times this project's 400-line ceiling, and the
+pure/impure seam is exactly what makes Business Rule 2 structurally
+assertable: an agent policy that imports no `node:` module cannot open a file
+behind the grant's back, and that is a property of the module rather than a
+promise in a comment. Split by responsibility, the same way [35] already
+split `comprehendo-md.ts` (pure) from `generate-comprehendo-md.ts` (impure):
+
+| file | lines | responsibility |
+|---|---|---|
+| `scripts/cold-agent-suite.ts` | 344 | pure: the session types, the faithful-agent policy, the scoring, the metered session text |
+| `scripts/cold-agent-tasks.ts` | 270 | pure: the fourteen tasks, as data |
+| `scripts/cold-agent-apply.ts` | 81 | pure: [28]'s `apply` grammar on a command line (see call 4) |
+| `scripts/cold-agent-harness.ts` | 218 | impure: the real consumer tree, the real binary |
+| `scripts/cold-agent-cc9.ts` | 154 | impure: re-running CC9's own scans (see call 6) |
+| `scripts/cold-agent-benchmark.ts` | ~385 | impure: the run, the publication, the CLI |
+| `scripts/cold-agent-live.ts` | 263 | impure: the live isolated model session (see call 1) |
+
+The doc is this feature's own, so widening its `source_files` is a
+decide-and-log, not a blocker.
 
 ## Call 4: the CLI argv applier is duplicated, and the duplicate is guarded by a test
 
@@ -121,7 +129,7 @@ Nothing in any `src/` ships it, and a `scripts/` file loads packages from
 `dist/`, so it is not importable from the benchmark. Editing that helper to
 export it from `src/` would mean touching a file this feature does not own.
 
-Duplicated into `scripts/cold-agent-suite.ts` and then GUARDED: a test in
+Duplicated into `scripts/cold-agent-apply.ts` and then GUARDED: a test in
 `packages/registry-tools/test/` (which can import the helper directly)
 asserts the benchmark's applier produces the byte-identical argv as the
 corpus's own helper for every fix in the real catalog on every task argv in
@@ -199,3 +207,58 @@ harness bills every other number in this project), over the exact text that
 crossed into the session: the priming snippet once, every task goal, and
 every observation payload as it would be rendered into context. Published on
 every run, passing or failing, because the doc says so in as many words.
+
+## Call 9: the live tier is not the gate, and the exit code says so
+
+Two numbers now exist for the same suite, and conflating them would be the
+whole failure mode this feature is supposed to guard against. So:
+
+- the deterministic simulator's number gates the run and drives the exit
+  code;
+- the live tier runs only when `--live-agent` is passed, prints under its own
+  banner with the model name and the sha256 of the system prompt beside it,
+  and never touches the exit code;
+- every published record carries an `agentLabel` naming which tier produced
+  it, and a test asserts the simulator's label says "measures the PROTOCOL".
+
+CC9 is deliberately NOT re-run inside the live tier: it is the gate's
+business, and running it twice in one invocation would say nothing new.
+
+## Call 10: an ungranted source read is counted and REFUSED, not counted and performed
+
+The harness's job at that branch is to measure the violation. Actually
+opening the file would add nothing to the measurement while making the
+benchmark do the very thing it exists to forbid. The refusal is recorded as
+an observation naming itself (`<refused: no UNDOCUMENTED grant preceded this
+read>`), so it is visible in the transcript rather than silent.
+
+## Call 11: two real harness gaps were found BY the live tier, and both were answered honestly rather than papered over
+
+The live tier is not decoration; it found two things the simulator, being
+faithful by construction, structurally could not.
+
+1. **A granted source pass spent on a CLI target.** The model answered
+   `read_source` after a genuine UNDOCUMENTED answer about ffmpeg, and the
+   harness crashed on `node_modules/ffmpeg/index.js`, which does not exist
+   because ffmpeg is a program. The grant was real, so the pass is really
+   taken; a target that ships no importable source now gets the honest
+   sentence saying so, which is what the permitted pass really finds.
+2. **An inert docs pointer applied as if it were executable.** The model
+   answered `apply_fix` on a runbook entry, whose `fixes[0]` carries no
+   `apply` at all, and the applier threw. The honest consequence of
+   "applying" a fix with nothing executable in it is a rerun of the SAME
+   command, which fails identically and correctly does not count as
+   first-corrected. Recorded rather than refused, because an agent that
+   treats a pointer as executable is making a real mistake and the rate has
+   to see it. A permanent test now pins that branch.
+
+Both are recorded here rather than smoothed away because they are exactly the
+kind of thing a simulator-only build would have shipped unnoticed.
+
+## Call 12: `sessionTokenCost` moves by a few tokens between runs, and that is real, not noise to suppress
+
+Two runs of the identical suite bill 15,150 and 15,210 tokens. The cause is
+real: ffmpeg's own stderr carries per-run timing and speed figures, so the
+text that really crossed into the session really was different. Rounding it,
+caching it, or stripping the variable lines would make the number tidier and
+less true. It is published as measured, and the doc says why.

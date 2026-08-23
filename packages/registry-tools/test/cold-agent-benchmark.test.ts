@@ -587,6 +587,40 @@ describe('the live tier is a real session, and its scaffolding carries no corpus
     expect(menu).not.toContain('libx264');
   });
 
+  it('measures an agent that treats an inert docs pointer as executable, never crashes on it', async () => {
+    // Found by the live tier's own second run: a model answered apply_fix on a
+    // runbook entry, whose fixes[0] carries no apply at all. The honest
+    // consequence is a rerun of the SAME command, which fails identically, and
+    // the task correctly does not count as first-corrected.
+    const eager: Agent = (state) => {
+      const last = state.observations[state.observations.length - 1];
+      if (last === undefined) return { kind: 'run', argv: state.task.argv };
+      if (last.kind === 'ran' && last.status !== 0 && state.attempts < 2) {
+        return { kind: 'comprehend' };
+      }
+      if (last.kind === 'comprehended') {
+        const fix = last.twin.fixes[0];
+        return fix === undefined
+          ? { kind: 'done', outcome: 'gave-up' }
+          : { kind: 'apply-and-rerun', fix };
+      }
+      return { kind: 'done', outcome: 'gave-up' };
+    };
+    const pointerTask = taskById('an-unsupported-codec-was-requested');
+    const eagerRun = await runBenchmark({
+      repoRoot: REPO_ROOT,
+      tasks: [pointerTask],
+      agent: eager,
+      scans: [],
+    });
+    const runs = eagerRun.transcripts[0]?.observations.filter((one) => one.kind === 'ran') ?? [];
+
+    expect(runs).toHaveLength(2);
+    expect(runs[1]?.status).not.toBe(0);
+    expect(eagerRun.record.tasksFirstCorrected).toBe(0);
+    expect(eagerRun.record.sourceReadsOutsideGrant).toBe(0);
+  }, 120_000);
+
   it('records an unparseable reply as a give-up rather than re-prompting it', () => {
     const state: SessionState = {
       task: taskById('crop-and-transcode-a-video-to-720p'),
