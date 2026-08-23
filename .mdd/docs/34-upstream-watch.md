@@ -4,8 +4,8 @@ title: Upstream Watch
 type: COMPONENT
 path: Corpora / ffmpeg / Upstream Watch
 source_files: [corpora/ffmpeg/upstream-watch.lock, packages/registry-tools/src/upstream-lock.ts, packages/registry-tools/src/upstream-watch.ts, .github/workflows/upstream-watch.yml]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-6
@@ -79,12 +79,39 @@ N/A directly; runs as a CI job, not called by agents or providers.
 
 ## Acceptance Criteria
 
-- [ ] The lock file enumerates every flag, behavior, and stderr pattern
-      the ffmpeg corpus's cataloged entries depend on.
-- [ ] A synthetic upstream change to a locked surface fails the watch job
-      with the specific element named.
-- [ ] The watch job runs on a schedule or version-bump trigger, not only
-      manually.
+- [x] The lock file enumerates every flag, behavior, and stderr pattern
+      the ffmpeg corpus's cataloged entries depend on. 38 entries, all
+      derived from the corpus's own `declared_schema`, fixes and
+      topics, none guessed: 17 flags (the 14 declared operations plus
+      `-nostdin`, `-encoders`, `-filters`, the latter two because two
+      runbook fixes tell the reader to run them), 9 behaviors (every
+      claim a fix or topic makes about corrected behavior, locked at
+      the value a real run produced), 12 stderr patterns (verbatim
+      from `twins.json`, with 32's own inducing argvs, self-contained
+      rather than pointing into a test helper).
+- [x] A synthetic upstream change to a locked surface fails the watch
+      job with the specific element named. Verified live, three
+      mutations of the SHIPPED lock file, each run through the
+      workflow's own command and reverted: a flag renamed to
+      `-vsync2` -> `flag-changed -vsync2` naming the real
+      `Unrecognized option 'vsync2'` error (4 tests red); a stderr
+      pattern tightened to a wrong digit -> `pattern-unmatched` naming
+      it, with the real current stderr shown alongside (7 red); a
+      locked behavior value changed -> `behavior-changed
+      scale-minus-two-derives-an-even-width / was: 721,720 / now:
+      722,720` (4 red). CC4's real routing proved with the gate's own
+      code: drift becomes a `TruthFailure`,
+      `folkloreFindings`/`registryTruthFindings` report it at the
+      traced twin, never a silent pass.
+- [x] The watch job runs on a schedule or version-bump trigger, not
+      only manually. A real `.github/workflows/upstream-watch.yml`
+      (this repo genuinely hosts `corpora/ffmpeg/`, unlike Submission
+      Gate [29]/Scoped Publisher [31]'s registry-repo boundary):
+      `schedule` (weekly cron), `workflow_dispatch`, and `push`
+      triggers. Parsed and verified step by step locally from a wiped
+      install (real `ffmpeg -version`, real `npm ci --prefix`, real
+      `npx vitest run ffmpeg-upstream-watch`, exit 0); never executed
+      on a real GitHub runner yet, recorded honestly in Known Issues.
 
 ## Dependencies
 
@@ -105,3 +132,35 @@ N/A directly; runs as a CI job, not called by agents or providers.
 - [deferred] Re-locking is a hand edit plus the check, not a generator verb.
 - [deferred] The workflow was verified step by step locally, never on a real
   GitHub runner.
+
+## Fixed Issues
+
+### The lock file was stale against 32's own review-driven fingerprint fix (fixed 2026-08-22)
+
+This build started before 32's independent review found and fixed
+two real fingerprint-precision defects (see 32-ffmpeg-corpus.md
+Fixed Issues), so the lock file's `FFMPEG_ODD_DIMENSION` entry
+carried the pre-fix pattern (`*width not divisible by 2 (*)*`)
+against a corpus whose `twins.json` had already moved to the widened
+`* not divisible by 2 (*)*`. The mismatch surfaced immediately at
+merge as 4 real test failures (the lock's own "enumerates what the
+corpus depends on" and "re-probes each cataloged failure" tests), not
+silently.
+
+- Fixed by updating the lock entry's `stderrPattern` to match the
+  current corpus. Verified: 23/23 in `ffmpeg-upstream-watch.test.ts`,
+  328/328 across `packages/registry-tools`.
+
+### `packages/registry-tools`'s 5s default test timeout was tight for real subprocess work (fixed 2026-08-22)
+
+Found while merging: `gate-folklore.test.ts`'s "reports the same
+defect the same way whichever tier carries it" (26/29's file, not
+this feature's) ran 5.24s under load, over vitest's 5s default. This
+is not one test's problem: the whole package now spawns real
+subprocesses throughout (npm pack, npm install --offline, the real
+ffmpeg binary), by design, so a tight default is latently flaky
+package-wide, not a defect in any one test.
+
+- Fixed by setting `testTimeout: 20_000` in `vitest.config.ts`
+  (orchestrator-level, package-wide, not owned by any single
+  feature). Verified: 328/328 green.

@@ -13,7 +13,7 @@ started: 2026-08-22
 
 - [x] 32-ffmpeg-corpus (COMPONENT), 37/37 new tests green, merged; 12 real induced entries (1 fence, 2 heals, 9 runbooks), all against a real ffmpeg 4.4.2 binary, none remembered
 - [x] 33-ffmpeg-fingerprints (COMPONENT), 24/24 new tests green, merged; 2038-trial property test over the real corpus's real patterns and real stderr, zero wrong twins; closed 32's uncovered comprehend(stderr) gap
-- [ ] 34-upstream-watch (COMPONENT)
+- [x] 34-upstream-watch (COMPONENT), 23/23 new tests green, merged; a real scheduled GitHub Actions workflow (this repo genuinely hosts corpora/ffmpeg/, unlike 29/31's registry-repo boundary); found the same test-timeout class of flakiness I later had to fix package-wide
 
 ## Judgment log
 
@@ -196,3 +196,100 @@ it to stop throwing on a collision turned 2 red.
 14. `packages/python`'s suite cannot run in this environment (needs
     3.11+, this box's default is 3.10), pre-existing, zero Python
     files touched.
+
+### 34-upstream-watch (19 calls, unattended, no blockers)
+
+Every value in `corpora/ffmpeg/upstream-watch.lock` was observed
+against the really-installed `ffmpeg 4.4.2-0ubuntu0.22.04.1` (and
+`ffprobe` for one entry); nothing remembered, nothing inferred from
+docs.
+
+**The scope tension resolved by trying it, honestly partial.**
+`comprehendo diff` [17]'s SCANNER (`scanTarget`) reads TypeScript
+exports/throw sites, ffmpeg has argv/stderr instead, the identical
+wall 32 hit with `verifyAgainstUpstream`. What DID generalize and was
+reused: the `{kind, subject, was?, now?}` drift record, the
+`{target, scanned_version}` envelope, the never-writes rule, the
+`drift.length > 0 ? 1 : 0` exit code, the `<noun>-<verb>` drift-kind
+spelling. Two honest departures (`corpus_version` -> `locked_version`
+since the lock IS the "was" side; no `stubs` list since nothing in a
+lock file can be a stub) rather than a fake field to preserve a shape.
+
+1. The check is a vitest suite plus a workflow, not a new CLI verb:
+   a `comprehendo upstream-watch` verb would need to spawn a child
+   process from `packages/core/src`, which CC6 forbids.
+2. The pure half (`upstream-lock.ts` format, `upstream-watch.ts`
+   comparison) imports only `node:fs`; the spawning half
+   (`ffmpeg-upstream-probe.ts`) lives in the test tree, checked
+   against `no-telemetry.test.ts` (src-only scope) before writing a
+   line.
+3. Two src files, not one: format (parse, refuse, name the element)
+   and comparison (drift, report, exit code, gate bridge) are
+   different responsibilities.
+4. **The lock format knows nothing about ffmpeg**: `program`,
+   `fixture`, `capture.read` are plain strings, the ffmpeg-specific
+   vocabulary lives only in the tool-specific probe runner. This is
+   the whole reason a future wrapped-tool corpus can reuse the two
+   src files unchanged, the doc's own "not an ffmpeg-only mechanism"
+   claim.
+5. What "the corpus actually depends on" was DERIVED from four real
+   sources (manifest.json's declared_schema operations, topic
+   signatures/examples, fix apply option keys, twins.json's message
+   patterns), never guessed: 38 entries (17 flags, 9 behaviors, 12
+   stderr patterns).
+6. `-hide_banner` deliberately NOT locked (every invocation carries
+   it, but no fingerprint/fix/topic depends on it; its disappearance
+   would still be caught as pattern drift on all 12 stderr entries).
+   `-encoders`/`-filters` ARE locked despite being absent from
+   `declared_schema`, because two runbook fixes tell the reader to
+   run them, a real dependency in exactly the rule's sense.
+7. Every `tracesTo` (four resolvable forms) is machine-checked
+   against the real parsed corpus by a test; an unresolvable trace
+   fails the suite.
+8. The 12 stderr entries carry 32's argvs verbatim (self-contained,
+   never pointing into a test helper), held equal to 32's own table
+   by a test so a divergence goes red, not silent.
+9. **A flag probe only proves the name still parses**
+   (`Unrecognized option` absence), never that its semantics are
+   unchanged; that's what the 9 locked behaviors are for, each
+   locking a claim a fix or topic actually makes, at the value a
+   real run really produced.
+10. The `now` side of a drift report is the last three MEANINGFUL
+    lines, not the first: ffmpeg opens with a banner/input dump, and
+    the load-bearing line is near the end. Found by reading a real
+    report whose first line was useless.
+11. Business rule 3 (routes into CC4, never silent) proved with the
+    gate's real code, not prose: `driftAsTruthFailures` produces
+    `TruthFailure`s at the traced twin codes, handed to the REAL
+    `folkloreFindings`/`registryTruthFindings`, which answer in CC4's
+    own wording. An element no twin depends on still produces a
+    named failure.
+12. AC3 built, not deferred by analogy to 29/31: checked first, and
+    unlike those two features, `.github/workflows/` and
+    `corpora/ffmpeg/` both genuinely live in THIS repo, so no
+    boundary applies. Weekly cron (off the hour on purpose) plus
+    `workflow_dispatch` plus corpus-touching pushes; ffmpeg installed
+    unpinned on purpose, since the job exists to meet whatever
+    release the distribution ships.
+13. Files this feature doesn't own left alone (32's README not
+    touched); the feature doc's fact fields updated to ground truth,
+    `status`/`phase` left for the orchestrator.
+14. **A flaky full-suite run was chased, not reran away.** One run
+    failed twice, passed on rerun; rather than accept that, the
+    hypothesis (real-spawn tests too close to vitest's 5s default)
+    was reproduced deliberately (timeout set back to 5s under 6 busy
+    loops, same tests failed at 6-10s), then fixed with an explicit
+    300s allowance on every test that spawns the real binary. The
+    same reproduction surfaced a test this feature does NOT own
+    (26/29's `gate-folklore.test.ts`, 5.24s) as latently flaky on any
+    slower runner; reported rather than touched (see the
+    orchestrator's own package-wide `testTimeout` fix, 34's doc Fixed
+    Issues).
+
+Mutation-verified (AC2), 3 mutations of the SHIPPED lock file, each
+reverted: a flag renamed to `-vsync2` (4 red, real "Unrecognized
+option" error named); a stderr pattern digit changed (7 red,
+`pattern-unmatched` naming it with the real current stderr shown); a
+locked behavior value changed (4 red, `behavior-changed ... was: ...
+now: ...`). Same three failure shapes held permanently by synthetic
+entries in the suite.

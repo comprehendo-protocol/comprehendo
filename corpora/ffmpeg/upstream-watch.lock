@@ -769,7 +769,7 @@
       "observedAt": "2026-08-22"
     },
     {
-      "stderrPattern": "*width not divisible by 2 (*)*",
+      "stderrPattern": "* not divisible by 2 (*)*",
       "tracesTo": [
         "twin:FFMPEG_ODD_DIMENSION",
         "fix:odd-dimension#0",
