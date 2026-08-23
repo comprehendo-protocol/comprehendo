@@ -76,7 +76,7 @@ overlap_count: 6
 **Registry / Scoped Publisher**
   └── `31-scoped-publisher` - Scoped Publisher (planned)
 **Registry / Submission Gate**
-  └── `29-submission-gate` - Submission Gate (planned)
+  └── `29-submission-gate` - Submission Gate (complete)
 **Spec / Budget Harness**
   └── `06-budget-harness` - Budget Harness (complete)
 **Spec / Conformance Fixtures**
@@ -126,7 +126,7 @@ graph TD
   26_cc4_folklore_gate["26-cc4-folklore-gate"]:::done
   27_cc6_no_telemetry["27-cc6-no-telemetry"]:::done
   28_corpus_format["28-corpus-format"]:::done
-  29_submission_gate["29-submission-gate"]:::planned
+  29_submission_gate["29-submission-gate"]:::done
   30_owner_endorsement["30-owner-endorsement"]:::planned
   31_scoped_publisher["31-scoped-publisher"]:::planned
   32_ffmpeg_corpus["32-ffmpeg-corpus"]:::planned

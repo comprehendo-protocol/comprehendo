@@ -4,8 +4,8 @@ title: Submission Gate
 type: COMPONENT
 path: Registry / Submission Gate
 source_files: [packages/registry-tools/src/gate.ts, packages/registry-tools/src/gate-result.ts, packages/registry-tools/src/gate-upstream.ts, packages/registry-tools/src/gate-induce.ts, packages/registry-tools/src/gate-folklore.ts, packages/registry-tools/src/gate-lints.ts, packages/registry-tools/src/gate-telemetry.ts, packages/registry-tools/src/gate-fingerprint.ts, packages/registry-tools/src/gate-budget.ts, packages/registry-tools/src/gate-policy.ts]
-status: active
-phase: verify
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-5

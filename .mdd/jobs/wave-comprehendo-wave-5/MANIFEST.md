@@ -16,7 +16,7 @@ started: 2026-08-22
 - [x] 26-cc4-folklore-gate (SPEC), status/phase flipped; ACs pending 29
 - [x] 27-cc6-no-telemetry (SPEC), status/phase flipped; ACs pending 29 (AC1's network scan is independently checkable once 29 builds a real scan tool)
 - [x] 28-corpus-format (COMPONENT), 65/65 new tests green, merged; found and fixed a real cross-lane bug in 17-corpus-generator (writeCorpus silently dropped a hand-added declared_schema on re-scan), mutation-verified
-- [ ] 29-submission-gate (COMPONENT)
+- [x] 29-submission-gate (COMPONENT), 67/67 new tests green, merged; checked off 25's and 26's ACs (their enforcement now real); checked off 20's third AC too (fingerprint lint now runs a real cross-package collision check)
 - [ ] 30-owner-endorsement (COMPONENT)
 - [ ] 31-scoped-publisher (COMPONENT)
 
@@ -104,3 +104,104 @@ pending 29's enforcement, same pattern as 19/20 in wave 4.)
     orchestrator: `python3 --version` is 3.10 on this machine, and the
     failure is `ImportError: cannot import name 'NotRequired' from
     'typing'` (added in 3.11), a pure environment gap, not a code bug.
+
+### 29-submission-gate (20 calls, unattended, no blockers)
+
+1. **This repo is not `comprehendo-protocol/registry`.** Built the
+   reusable check logic (`gate*.ts`), no workflow file, no CODEOWNERS,
+   no bot automation: a workflow committed here would never fire, and
+   the trust ladder is implemented as `mergePolicy`, a pure tested
+   function, so the registry repo's job is a thin caller.
+2. `verifyAgainstUpstream` does not install (CC6 forbids
+   `child_process`/network code in registry-tools); it takes
+   `installRoot`, a real node_modules tree, and really loads and calls
+   the package. The suite really runs `npm pack` + `npm install
+   --offline` (fine in TEST code). Install is CI's one workflow line.
+3. **The witness gap, named not faked.** Nothing in the authoring
+   corpus format carries the call that PROVOKES a failure (`apply` is
+   the call that avoids it; the inverse isn't derivable). Witnesses
+   arrive as a gate input (`UpstreamOptions.witnesses`) and are
+   trusted to nothing, they get RUN. The real fix (a corpus-format
+   `induce` slot) is Corpus Format [28]'s file, outside this lane,
+   recorded as a `[gap]`.
+4. Folklore diffs OBSERVED coverage (what `verifyAgainstUpstream`
+   itself witnessed), never a corpus field or author declaration: any
+   input a submitter writes is an assertion, and 26 requires an
+   actual test actually triggering the failure.
+5. A docs-pointer fix (no `apply`) is provoked only when its twin was
+   really induced and the pointer resolves; when the twin has no
+   witness, the pointer fix is folklore too. Mutation-verified via
+   `gate-folklore.test.ts`: losing the twin's witness turns the
+   pointer fix red.
+6. Drift (witnessed, no longer reproduces) and folklore (never
+   witnessed) are different findings, never the same sentence:
+   telling an author who broke nothing that they wrote folklore
+   teaches people to ignore the gate.
+7. **`not-run` is a third check outcome**, distinct from `pass`/`fail`,
+   which is what makes `verifyAgainstUpstream`'s mandatory
+   `integration_contracts` entry structural: skipping it can never
+   read as green. Narrowing stated: outcomes are PR-level, not
+   per-corpus (one unmeasurable corpus reads `not-run` for the whole
+   run; findings still carry their own corpus).
+8. Danger-lint justification is a fix's `docs` pointer, counted only
+   when the topic it resolves to actually names the destructive
+   operation; a justified destructive apply still raises
+   `elevatedReview`, never a bot-merge free pass. Dedicated
+   justification field recorded as a `[gap]` (format has no slot).
+9. Destructive-operand and injection phrase tables are explicit FLOORS
+   (stated in the file header): token-boundary matching (`purgeFrames`
+   destructive, `transform` not; `-y` flagged as the operand that
+   makes an ordinary call destructive).
+10. Injection lint rejects second-person prose ("you must") on purpose:
+    CC11's rule is "never addressed to the agent", and second-person
+    imperative IS addressed to the agent. Cost recorded as a `[gap]`;
+    ffmpeg Corpus [32] is the first feature that will feel it.
+11. Telemetry scan refuses network-module references/URLs in
+    EXECUTABLE content (examples, `apply` payloads) but only the
+    exfiltration builtins in prose, so a corpus documenting an HTTP
+    client can still say "http". Recorded as a `[gap]` (a legitimate
+    URL-streaming example isn't flagged unless it also calls a
+    network builtin).
+12. `fingerprintsOf` duplicates `pack`'s mapping (gating the collision
+    lint on a full `pack` would hide a real cross-corpus collision
+    behind an unrelated typo), held by an agreement test against
+    `pack(corpus).fingerprints`. Same load-bearing detail 28 flagged:
+    `corpusEntryId` is the twin's published CODE, not 17's authoring id.
+13. The CC5 budget meter is a caller-supplied port (registry-tools
+    can't import `packages/spec/kit/budget`'s `js-tiktoken` dependency
+    across the one-way boundary); tests wire in the REAL `measureScope`
+    by dynamic import. `budget: not-run` when none is supplied, never
+    approximated by a character-count proxy (wrong 3 to 5x on real
+    content).
+14. **28's open question, settled**: a stub-bearing corpus is
+    submittable (feedback loop stays on for drafts), never
+    merge-eligible or publishable (already structurally unrepresentable
+    since `pack` refuses one; this adds the middle rung).
+15. Result widens the doc's Data Model (adds `dangerLint`,
+    `injectionLint`, `telemetryScan`, `corpusFormat`, `publishable`,
+    `findings`, `index`), never narrows it; every doc-named check
+    exists under its exact name.
+16. Dynamic `import()` in `gate-upstream.ts` (to load the installed
+    package under test) is not a CC6 violation: it's a local file-URL
+    load in a build-time verifier, not network code, and is isolated
+    behind a `ModuleLoader` port in its own file. Named explicitly
+    since core's docs-engine scan forbids `import(` in a DIFFERENT
+    context (a runtime engine), so the rule looks contradictory
+    without the distinction spelled out.
+17. `misrouted` (a witness that throws and matches a DIFFERENT
+    cataloged entry) is reported distinctly from `not-inducible`:
+    that's exactly 25's routing-hijack threat model, and folding it
+    into "cannot be induced" would hide which entry a real failure
+    actually belongs to.
+18. Reported (not edited, outside this lane): 20-cc10-honest-miss's
+    third AC is now satisfiable by `fingerprintFindings`'s real
+    cross-package collision check. Checked off by the orchestrator,
+    see 20's doc.
+19. Ten files, not one (`gate.ts` named as the sole `source_files`
+    entry would have meant a ~1,500-line file); doc's `source_files`
+    updated to all ten. Every file under 250 lines, every function
+    under 50.
+20. Two toy fixture targets carry package-templated throw-site text so
+    they don't share fingerprints by accident; collision suites create
+    the collision on purpose, by rewriting one corpus's pattern to
+    match the other's.
