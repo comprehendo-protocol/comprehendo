@@ -1,9 +1,9 @@
 ---
 id: comprehendo
 title: Comprehendo Protocol and Reference Implementation
-status: active
+status: complete
 version: 1
-content_hash: 9ed17ef23975cedb
+content_hash: e65b1841b0804dc6
 ---
 
 # Comprehendo Protocol and Reference Implementation
@@ -92,7 +92,7 @@ gate as community submissions.
 | comprehendo-wave-4 | The Sidecar Router | complete | `comprehend(raw)` on an un-adopted toy returns the right twin or an honest UNSTRUCTURED; each config knob demonstrably changes routing; native adoption flips precedence automatically. |
 | comprehendo-wave-5 | Registry and the Submission Gate | complete | An untestable-fix submission is rejected naming the folklore rule; a passing submission publishes as `@comprehendo/<pkg>` with its fingerprint index built. |
 | comprehendo-wave-6 | The Flagship: ffmpeg | complete | On camera: priming snippet in, wrong flag, `comprehend(stderr)` returns a twin whose `fixes[0]` works, session lands within budget. |
-| comprehendo-wave-7 | Distribution | planned | `COMPREHENDO.md` generates and drift-gates; the priming snippet is measured; the cold-agent benchmark passes at the target rate. |
+| comprehendo-wave-7 | Distribution | complete | `COMPREHENDO.md` generates and drift-gates (verified live). The priming snippet is published and measured (144/150). The deterministic cold-agent benchmark passes at the target rate: 14/14, 100%, matching the Operator's 18/18 baseline. A non-gating live-model corroboration (real llama3:8b) scores 1/14 (7.1%), published as an open gap rather than hidden. |
 
 ## Open Questions
 

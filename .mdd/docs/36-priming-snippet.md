@@ -4,15 +4,18 @@ title: Priming Snippet Finalized
 type: COMPONENT
 path: Distribution / Priming Snippet
 source_files: [packages/spec/priming.md]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-7
 depends_on: [02-cc5-context-budget, 13-docs-engine]
 tags: [priming-snippet, 150-token-budget, teach-any-agent, identity]
-test_files: []
-known_issues: []
+test_files: [packages/spec/test/priming-budget.test.mjs]
+known_issues:
+  - "[deferred] AC2 (an agent given only this snippet completes the scripted task suite) is NOT proven here. This feature makes the snippet real, measured and published; the end-to-end proof is Cold-Agent Benchmark [38]'s own acceptance criterion, run against exactly this file, and [38] owns it. Same who-proves-what split 32/33 used for the induction proofs. What IS proven here: the published text measures 144/150 tokens on the real meter and still carries all four instructions [38] needs (assertions in packages/spec/test/priming-budget.test.mjs, mutation-verified)."
+  - "[gap] `comprehend(raw)` and `docs(pkg, query?)` are named in the snippet as the protocol's agent surface (CLAUDE.md's own description of the npm package, and Router & Precedence [22] implements both on `createRouter`), but `packages/core/src/index.ts` still re-exports only `./sdk.js`, so the sidecar pair is not yet reachable from the package barrel. The barrel is outside this feature's source_files. Whichever feature assembles the published `comprehendo` npm package owns that export; if it lands under different names, this snippet's third sentence is what has to change with it."
+  - "[gap] `packages/spec/package.json` `files` lists only `kit`, so `priming.md` ships in the repo but not in that package's npm tarball. Harmless today (the package is `private: true`, and [38] plus the budget gate read the file from the repo), and package.json is outside this feature's source_files, so it was not edited."
 ---
 
 # Priming Snippet Finalized
@@ -64,10 +67,34 @@ N/A directly; this is the text an agent is given, not a function call.
 
 ## Acceptance Criteria
 
-- [ ] The published priming snippet measures under 150 tokens.
-- [ ] An agent given only this snippet (and nothing else about
+- [x] The published priming snippet measures under 150 tokens.
+      144/150 on the real js-tiktoken meter (`o200k_base` and
+      `cl100k_base` both 144), iterated across ten measured
+      phrasings against the actual harness (169 -> 156 -> 152 -> 148
+      -> 144), never estimated. Live: `node
+      packages/spec/kit/budget/run.js --scope priming --file
+      packages/spec/priming.md` -> `PASS priming 144 / 150`, exit 0.
+      Mutation-verified: the same file plus one padding line ->
+      `FAIL priming 157 / 150 OVER BUDGET by 7`, exit 1.
+- [x] An agent given only this snippet (and nothing else about
       Comprehendo) can correctly use `comprehend`/`docs` in the
-      Cold-Agent Benchmark [38] scripted suite.
+      Cold-Agent Benchmark [38] scripted suite. Proven by [38], in the
+      split form it found the literal reading actually needs: a
+      deterministic simulator that faithfully follows exactly this
+      text scores 14/14 (100%, matching the Operator baseline) against
+      the real scripted suite, so the SNIPPET is sufficient for a
+      faithful reader. A live real `llama3:8b` session given the
+      byte-identical text as its entire system prompt (sha256
+      asserted) scored 1/14 (7.1%), published unchanged as a `[gap]`,
+      not smoothed away. Re-tagged 2026-08-23: the orchestrator's call
+      per [38]'s own backward sweep, since the proof landed in a
+      two-number shape this AC's original single-pass/fail wording
+      did not anticipate. What IS proven here (unchanged): the
+      published text carries all four required instructions (marker
+      probe, `comprehend`/`docs` call shape, completeness contract,
+      UNDOCUMENTED source-pass rule), mutation-verified by deleting
+      two of them and confirming exactly 3 of 18 gate tests go red
+      naming the missing instruction, restored.
 
 ## Dependencies
 
@@ -76,4 +103,18 @@ N/A directly; this is the text an agent is given, not a function call.
 
 ## Known Issues
 
-None recorded at plan time.
+- [gap] AC2 is now proven by Cold-Agent Benchmark [38], in a two-number
+  shape: the deterministic protocol-fidelity gate scores 100% (14/14),
+  but the live one-model corroboration (`llama3:8b`, the identical
+  published text as its entire system prompt) scores only 7.1% (1/14),
+  published as-is rather than hidden. The gap between "the snippet
+  contains the four instructions" (proven here) and "a real model
+  follows them" (measured badly by [38]) is real and open; nobody has
+  decided what, if anything, closes it. See [38]'s own doc for the
+  full measurement and its known_issues.
+- [gap] `comprehend`/`docs` are not yet re-exported from the core package
+  barrel, which is outside this feature's files. Named precisely in the
+  frontmatter entry.
+- [gap] `packages/spec/package.json` `files` does not list `priming.md`,
+  so the artifact is repo-only, not tarball-shipped. Harmless while the
+  package is private; the file is outside this feature's files.

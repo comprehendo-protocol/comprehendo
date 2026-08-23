@@ -1,0 +1,4 @@
+# The generated site. Build output, never committed: the most-wanted list is
+# read live from a public issue tracker at build time, so two runs of this
+# generator legitimately differ and a committed copy would be drift by design.
+dist/

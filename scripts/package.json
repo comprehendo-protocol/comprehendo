@@ -1,0 +1,6 @@
+{
+  "name": "@comprehendo/scripts",
+  "private": true,
+  "type": "module",
+  "description": "Repository build-time tooling. Not a workspace package and never published: this file exists so node reads scripts/*.ts as ES modules rather than sniffing each one, and so the scripts type-check against a config of their own."
+}

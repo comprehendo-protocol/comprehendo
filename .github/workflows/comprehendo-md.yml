@@ -1,0 +1,76 @@
+name: COMPREHENDO.md drift gate
+
+# `COMPREHENDO.md` is generated from the packed corpus and is never
+# hand-maintained (RFC 4.3, and Principle 10: generated, never hand-rotted).
+# Nothing in a diff makes a stale one visible, and a hand edit to it reads as a
+# perfectly ordinary documentation commit, so the file is regenerated here and
+# compared byte for byte against what is committed.
+#
+# It fails naming the line that differs, and the fix is the command it prints.
+
+on:
+  push:
+    paths:
+      - "corpora/**"
+      - "scripts/generate-comprehendo-md.ts"
+      - "packages/core/src/docs.ts"
+      - "packages/core/src/marker.ts"
+      - "packages/registry-tools/src/corpus-*.ts"
+      - "packages/registry-tools/test/comprehendo-md.test.ts"
+      - ".github/workflows/comprehendo-md.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      - name: Install
+        run: |
+          npm ci --prefix packages/core
+          npm ci --prefix packages/registry-tools
+
+      # The generator runs under plain node and imports the BUILT modules of
+      # both packages, so the build is a precondition of the gate, not an
+      # optimization. The suite refuses to run against a stale dist/.
+      - name: Build the packages the generator reads
+        run: |
+          npm run build --prefix packages/core
+          npm run build --prefix packages/registry-tools
+
+      - name: Type-check the generator
+        run: ./packages/registry-tools/node_modules/.bin/tsc -p scripts/tsconfig.json
+
+      # The gate itself, run exactly as a maintainer runs it locally. Every
+      # corpus in the tree, not a named one: a corpus added later without a
+      # generated COMPREHENDO.md is drift ("there is no COMPREHENDO.md, and
+      # the corpus generates one"), which is the report it should get, rather
+      # than a silent pass because nobody edited this file.
+      - name: Regenerate and compare every corpus
+        run: |
+          status=0
+          for corpus in corpora/*/; do
+            [ -f "${corpus}manifest.json" ] || continue
+            echo "== ${corpus}"
+            node scripts/generate-comprehendo-md.ts "${corpus}" --check || status=$?
+          done
+          exit $status
+
+      # The gate's own suite: the byte-identity case, the mutated-corpus case,
+      # the hand-edit case, and the exit-code contract.
+      - name: The drift gate's suite
+        working-directory: packages/registry-tools
+        run: npx vitest run comprehendo-md
