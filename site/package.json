@@ -1,0 +1,11 @@
+{
+  "name": "@comprehendo/site",
+  "private": true,
+  "type": "module",
+  "description": "The comprehendo.dev static site generator: it reads the registry corpora, the spec document and the priming snippet, and writes a read-only site. Not a workspace package and never published. This file exists so node reads site/*.ts as ES modules, and so `node --test` runs this directory's suites the way packages/spec's already run.",
+  "scripts": {
+    "build": "node build.ts",
+    "test": "node --test",
+    "typecheck": "tsc --noEmit -p tsconfig.json"
+  }
+}
