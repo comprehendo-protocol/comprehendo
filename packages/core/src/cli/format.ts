@@ -120,10 +120,24 @@ export interface TargetRecord {
   readonly source: string;
 }
 
+/**
+ * The provider's declared call surface, the slot Corpus Format [28] added so
+ * CC7 [09] can be enforced at the registry tier. Entirely human-owned: a
+ * scan can never know a provider's `apply` grammar, so it is written once by
+ * hand and, like `manifest_hint`, carried through every re-scan unchanged.
+ */
+export interface DeclaredSchemaHint {
+  readonly surface: string;
+  readonly operations: readonly string[];
+  readonly nested_pipeline_operations?: readonly string[];
+}
+
 export interface AuthoringCorpus {
   readonly provider: string;
   readonly target: TargetRecord;
   readonly manifest_hint: { readonly comprehendo: { readonly version: string; readonly level: number } };
+  /** Human-owned; absent means no `apply` in this corpus needs checking yet. */
+  readonly declared_schema?: DeclaredSchemaHint;
   /** Menu order. Order is human-curated; membership is machine-derived. */
   readonly topics: readonly TopicRecord[];
   readonly twins: readonly TwinRecord[];

@@ -305,6 +305,28 @@ describe('comprehendo scan, field ownership on a re-scan', () => {
     expect(topic(after, 'encode').see_also).toEqual(['decode']);
   });
 
+  it('never drops a hand-added declared_schema (Corpus Format [28]) on a re-scan', () => {
+    // Found by 28-corpus-format's review: writeCorpus rewrote manifest.json
+    // wholesale from {header, target, manifest_hint}, so a declared_schema a
+    // human added by hand had no field to survive in, and vanished on the
+    // very next scan. Human-owned, same treatment as manifest_hint.
+    const workspace = makeWorkspace();
+    const paths = corpusPaths(workspace.corpus);
+    const corpus = scanned(workspace);
+    writeCorpus(paths, {
+      ...corpus,
+      declared_schema: { surface: 'toy-target', operations: ['encode', 'decode'] },
+    });
+
+    workspace.upgrade('toy-target-next');
+    runScan(workspace.options());
+
+    expect(readCorpus(paths).declared_schema).toEqual({
+      surface: 'toy-target',
+      operations: ['encode', 'decode'],
+    });
+  });
+
   it('regenerates machine-owned signatures when the target code changed', () => {
     const workspace = makeWorkspace();
     const paths = corpusPaths(workspace.corpus);

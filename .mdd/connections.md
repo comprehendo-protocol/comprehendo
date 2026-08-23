@@ -1,5 +1,5 @@
 ---
-generated: 2026-08-22
+generated: 2026-08-23
 doc_count: 40
 connection_count: 63
 overlap_count: 6
@@ -62,7 +62,7 @@ overlap_count: 6
 **Python / Python Core**
   └── `18-python-core` - Python Core (complete)
 **Registry / Corpus Format**
-  └── `28-corpus-format` - Corpus Format (planned)
+  └── `28-corpus-format` - Corpus Format (complete)
 **Registry / Cross-Cutting Contracts / Folklore Gate**
   └── `26-cc4-folklore-gate` - CC4 Folklore Gate (complete)
 **Registry / Cross-Cutting Contracts / No Telemetry**
@@ -125,7 +125,7 @@ graph TD
   25_cc11_registry_truth["25-cc11-registry-truth"]:::done
   26_cc4_folklore_gate["26-cc4-folklore-gate"]:::done
   27_cc6_no_telemetry["27-cc6-no-telemetry"]:::done
-  28_corpus_format["28-corpus-format"]:::planned
+  28_corpus_format["28-corpus-format"]:::done
   29_submission_gate["29-submission-gate"]:::planned
   30_owner_endorsement["30-owner-endorsement"]:::planned
   31_scoped_publisher["31-scoped-publisher"]:::planned
