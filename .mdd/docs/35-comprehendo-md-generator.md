@@ -128,3 +128,32 @@ lines only one side carries. Module exports for the gate:
   Tests [37] nothing to execute in this file by design.
 - [gap] First-sentence extraction would truncate a summary opening on an
   abbreviation. None does; the result stays deterministic either way.
+
+## Fixed Issues
+
+### The "invents nothing" test's mutation was incomplete, and its claim overclaimed what it proved (fixed 2026-08-22)
+
+Found by review. `comprehendo-md.test.ts`'s "a differently-identified
+corpus leaks no word of the ffmpeg one" test swapped
+`manifest.provider`/`manifest.target` but left
+`declared_schema.surface` (`"ffmpeg"`) untouched, so the rendered
+identity paragraph still legitimately said "...over the `ffmpeg`
+call surface" next to the swapped `sox`/`14.6.0` values. The
+generator's own derivation was correct throughout (every field it
+actually renders comes from the corpus it was handed); the test's
+mutation simply didn't simulate a REAL different corpus, which would
+declare its own call surface too, and its comment's "no word ...
+survives" claim was broader than the two specific strings it
+actually asserted.
+
+- Fixed by swapping `declared_schema.surface` too (a realistic full
+  identity mutation) and scoping the assertion to the identity
+  section specifically (everything before `## Priming`), not the
+  whole file: this corpus's real topic prose legitimately says
+  "ffmpeg" throughout (the topics are ABOUT ffmpeg), so a whole-file
+  `not.toContain('ffmpeg')` would fail on honest, corpus-derived
+  content. The precise claim, now actually asserted: the part of the
+  file that states what package this corpus is FOR must not still
+  say ffmpeg. Mutation-verified: reverting just the `declared_schema`
+  swap turns the test red, quoting the real leaked sentence; restored,
+  green, 19/19.

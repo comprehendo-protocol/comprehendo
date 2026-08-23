@@ -208,22 +208,43 @@ describe('the rendered file is derived from the real corpus, never authored besi
     }
   });
 
-  it('invents nothing: a differently-identified corpus leaks no word of the ffmpeg one', async () => {
+  it('invents nothing: a differently-identified corpus leaks no word of the ffmpeg one, in the identity section it owns', async () => {
+    // Found by review: the original mutation swapped provider/target only,
+    // leaving declared_schema.surface ("ffmpeg") untouched, so the rendered
+    // identity paragraph still legitimately said "...over the `ffmpeg` call
+    // surface", and the assertion's own "leaks no word" comment overclaimed
+    // what it proved (it only checked two specific strings). A real
+    // different corpus would declare its own call surface too, so the
+    // mutation now swaps every identity-bearing field a real corpus for a
+    // different package would carry.
+    //
+    // The assertion is scoped to the IDENTITY section (everything before
+    // "## Priming"), not the whole file: topic rows correctly quote each
+    // topic's own corpus summary verbatim, and this corpus's real topics
+    // legitimately say "ffmpeg" throughout their prose (they are ABOUT
+    // ffmpeg), so a whole-file not.toContain('ffmpeg') would fail on
+    // honest, corpus-derived content, not on an invented word. The claim
+    // this test makes is narrower and precise: the part of the file that
+    // states what package this corpus is FOR must not still say ffmpeg.
     const { renderFromCorpus } = await generator();
     const copy = corpusCopy();
     try {
       const manifest = JSON.parse(readFileSync(join(copy.dir, 'manifest.json'), 'utf8')) as {
         provider: string;
         target: { package: string; version: string };
+        declared_schema: { surface: string; operations: string[] };
       };
       manifest.provider = '@comprehendo/sox';
       manifest.target = { ...manifest.target, package: 'sox', version: '14.6.0' };
+      manifest.declared_schema = { ...manifest.declared_schema, surface: 'sox' };
       writeFileSync(join(copy.dir, 'manifest.json'), `${JSON.stringify(manifest, null, 2)}\n`);
       const other = await renderFromCorpus(copy.dir);
-      expect(other).toContain('sox');
-      expect(other).toContain('14.6.0');
-      expect(other).not.toContain('@comprehendo/ffmpeg');
-      expect(other).not.toContain('4.4.2');
+      const identitySection = other.slice(0, other.indexOf('## Priming'));
+
+      expect(identitySection).toContain('sox');
+      expect(identitySection).toContain('14.6.0');
+      expect(identitySection).not.toContain('ffmpeg');
+      expect(identitySection).not.toContain('4.4.2');
     } finally {
       copy.cleanup();
     }
