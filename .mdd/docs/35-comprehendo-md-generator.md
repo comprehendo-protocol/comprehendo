@@ -4,8 +4,8 @@ title: COMPREHENDO.md Generator
 type: COMPONENT
 path: Distribution / COMPREHENDO.md Generator
 source_files: [scripts/generate-comprehendo-md.ts, scripts/comprehendo-md.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-7

@@ -54,6 +54,12 @@ twins/fixes as JSON). Built and validated through the same Submission
 Gate [29] path as any community corpus, proving one discipline for both
 tiers even though this is the project's own flagship.
 
+`corpora/ffmpeg/COMPREHENDO.md` also lives in this directory as of Wave
+7: it is COMPREHENDO.md Generator [35]'s own generated output (this
+corpus is its real, non-mocked proof case), not authored by this
+feature and not part of this doc's `source_files`. Nothing this feature
+wrote was touched to produce it.
+
 ## Implementation Notes
 
 - Fences and heals outrank runbooks: before writing a runbook twin for a

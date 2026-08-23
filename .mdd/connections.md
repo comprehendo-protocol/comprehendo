@@ -48,7 +48,7 @@ overlap_count: 5
 **Corpora / ffmpeg / Upstream Watch**
   └── `34-upstream-watch` - Upstream Watch (complete)
 **Distribution / COMPREHENDO.md Generator**
-  └── `35-comprehendo-md-generator` - COMPREHENDO.md Generator (planned)
+  └── `35-comprehendo-md-generator` - COMPREHENDO.md Generator (complete)
 **Distribution / Cold-Agent Benchmark**
   └── `38-cold-agent-benchmark` - Cold-Agent Benchmark (planned)
 **Distribution / Docs As Tests**
@@ -132,7 +132,7 @@ graph TD
   32_ffmpeg_corpus["32-ffmpeg-corpus"]:::done
   33_ffmpeg_fingerprints["33-ffmpeg-fingerprints"]:::done
   34_upstream_watch["34-upstream-watch"]:::done
-  35_comprehendo_md_generator["35-comprehendo-md-generator"]:::planned
+  35_comprehendo_md_generator["35-comprehendo-md-generator"]:::done
   36_priming_snippet["36-priming-snippet"]:::done
   37_docs_as_tests["37-docs-as-tests"]:::planned
   38_cold_agent_benchmark["38-cold-agent-benchmark"]:::planned
