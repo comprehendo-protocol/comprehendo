@@ -1,4 +1,4 @@
-# Judgment log: 34-upstream-watch (18 calls, unattended, no blockers)
+# Judgment log: 34-upstream-watch (19 calls, unattended, no blockers)
 
 Every value in `corpora/ffmpeg/upstream-watch.lock` was observed by running
 the really-installed `ffmpeg version 4.4.2-0ubuntu0.22.04.1` (and, for one
@@ -146,6 +146,21 @@ that says what it means.
     WERE updated to the ground truth (the build landed two src modules, a
     workflow and two test files beyond the single path the doc predicted);
     `status` and `phase` were left untouched for the orchestrator's Phase 7.
+
+19. **One full-suite run failed twice and passed on every rerun, and that was
+    chased rather than reran away.** The failure was not read (the run was
+    tailed), so the hypothesis was formed from the timings already in hand:
+    the whole-lock probe pass makes 38 real invocations and the gate round
+    trip runs the full induction, 2.9s and 4.0s idle, against vitest's 5s
+    default. Reproduced deliberately, by setting the timeout back to 5s and
+    running the suite under six busy loops: the same tests failed, at 9.0s,
+    10.1s and 6.4s. Every test here that spawns the real binary now carries
+    32's own 300s allowance, and the suite ran green seven consecutive times
+    after. The same reproduction also surfaced a test this feature does not
+    own, `gate-folklore.test.ts`'s "reports the same defect the same way
+    whichever tier carries it" at 5.24s, which is latently flaky on any runner
+    slower than this box. Not touched (it belongs to 26/29), reported to the
+    orchestrator instead.
 
 ## Mutation verification (AC2, teeth on the shipped artifact)
 
