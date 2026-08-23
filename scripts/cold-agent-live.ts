@@ -197,6 +197,23 @@ export interface LiveAgent {
   readonly report: () => LiveSessionReport;
 }
 
+/** One real turn: the whole conversation out, the model's own words back. */
+export async function askModel(
+  endpoint: string,
+  body: Readonly<Record<string, unknown>>,
+): Promise<string> {
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+  if (!response.ok) {
+    throw new Error(`the live session endpoint ${endpoint} answered ${String(response.status)}`);
+  }
+  const answered = (await response.json()) as { message?: { content?: string } };
+  return answered.message?.content ?? '';
+}
+
 /**
  * Drive a real model session. One HTTP call per turn, temperature 0, a fixed
  * seed, and the whole conversation resent each turn so the session state is
@@ -220,21 +237,12 @@ export function createLiveAgent(priming: string, options: LiveOptions = {}): Liv
       replies = [];
     }
     const messages = messagesFor(priming, state, replies);
-    const response = await fetch(endpoint, {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({
-        model,
-        stream: false,
-        options: { temperature: 0, seed, num_predict: maxTokens },
-        messages,
-      }),
+    const reply = await askModel(endpoint, {
+      model,
+      stream: false,
+      options: { temperature: 0, seed, num_predict: maxTokens },
+      messages,
     });
-    if (!response.ok) {
-      throw new Error(`the live session endpoint ${endpoint} answered ${String(response.status)}`);
-    }
-    const body = (await response.json()) as { message?: { content?: string } };
-    const reply = body.message?.content ?? '';
     turns += 1;
     replies.push(reply);
     // The system prompt is billed once for the whole benchmark, the way a
