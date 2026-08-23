@@ -11,8 +11,11 @@ initiative: comprehendo
 wave: comprehendo-wave-7
 depends_on: [02-cc5-context-budget, 13-docs-engine]
 tags: [priming-snippet, 150-token-budget, teach-any-agent, identity]
-test_files: []
-known_issues: []
+test_files: [packages/spec/test/priming-budget.test.mjs]
+known_issues:
+  - "[deferred] AC2 (an agent given only this snippet completes the scripted task suite) is NOT proven here. This feature makes the snippet real, measured and published; the end-to-end proof is Cold-Agent Benchmark [38]'s own acceptance criterion, run against exactly this file, and [38] owns it. Same who-proves-what split 32/33 used for the induction proofs. What IS proven here: the published text measures 144/150 tokens on the real meter and still carries all four instructions [38] needs (assertions in packages/spec/test/priming-budget.test.mjs, mutation-verified)."
+  - "[gap] `comprehend(raw)` and `docs(pkg, query?)` are named in the snippet as the protocol's agent surface (CLAUDE.md's own description of the npm package, and Router & Precedence [22] implements both on `createRouter`), but `packages/core/src/index.ts` still re-exports only `./sdk.js`, so the sidecar pair is not yet reachable from the package barrel. The barrel is outside this feature's source_files. Whichever feature assembles the published `comprehendo` npm package owns that export; if it lands under different names, this snippet's third sentence is what has to change with it."
+  - "[gap] `packages/spec/package.json` `files` lists only `kit`, so `priming.md` ships in the repo but not in that package's npm tarball. Harmless today (the package is `private: true`, and [38] plus the budget gate read the file from the repo), and package.json is outside this feature's source_files, so it was not edited."
 ---
 
 # Priming Snippet Finalized
@@ -76,4 +79,12 @@ N/A directly; this is the text an agent is given, not a function call.
 
 ## Known Issues
 
-None recorded at plan time.
+- [deferred] AC2 is proven by Cold-Agent Benchmark [38], not here. This
+  feature publishes and measures the snippet; [38] runs an agent against
+  exactly this file and owns the first-correction-rate proof.
+- [gap] `comprehend`/`docs` are not yet re-exported from the core package
+  barrel, which is outside this feature's files. Named precisely in the
+  frontmatter entry.
+- [gap] `packages/spec/package.json` `files` does not list `priming.md`,
+  so the artifact is repo-only, not tarball-shipped. Harmless while the
+  package is private; the file is outside this feature's files.
