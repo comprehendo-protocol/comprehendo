@@ -13,6 +13,14 @@ name: Docs as tests
 # The binary is a precondition, never a skip: a green run that executed nothing
 # is exactly the folklore CC4 [26] exists to catch, so the runner exits 2 when
 # ffmpeg is absent and this job fails.
+#
+# ONE MATRIX LEG PER SUPPORTED MAJOR, same reason and same mechanism as
+# .github/workflows/upstream-watch.yml: a doc's worked examples are executed
+# against the real binary, and ffmpeg's wording (and even its exit status,
+# see corpora/ffmpeg's Fixed Issues) is not stable across a major. A single
+# runner only ever proves one range; GitHub's Ubuntu-version runner labels
+# give each leg a real, different apt-installed ffmpeg with no container
+# (22.04 ships 4.4.2, 24.04 ships 6.1.1, the two ranges this corpus declares).
 
 on:
   push:
@@ -36,7 +44,16 @@ permissions:
 
 jobs:
   blocks:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - range: ">=4.4 <5"
+            runner: ubuntu-22.04
+          - range: ">=6 <8"
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
+    name: blocks (${{ matrix.range }} on ${{ matrix.runner }})
 
     steps:
       - uses: actions/checkout@v5

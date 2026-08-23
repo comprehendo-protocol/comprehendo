@@ -1,9 +1,12 @@
-// The comprehendo npm package's own real public surface: the provider SDK
-// built in packages/core, re-exported unchanged. makeProvider() is the
-// entry a consumer building native Comprehendo support actually calls; the
-// sidecar reading surface (comprehend(raw), docs(pkg, query)) for an
-// un-adopted package is Router & Precedence [22], not yet wired to this
-// re-export (see the known gap in README.md).
+// The comprehendo npm package's own real public surface: packages/core's
+// full built barrel, re-exported unchanged. makeProvider() is the entry a
+// package building native Comprehendo support calls; createRouter(environment,
+// config) plus discoverInstalledCorpora is the sidecar reading surface an
+// agent-side consumer calls for a package that never adopted Comprehendo
+// (createRouter returns the bound comprehend(raw)/docs(pkg, query) methods);
+// createDocs(corpus, options) answers docs() over one already-loaded packed
+// corpus directly; the five consumer config knobs (prefer/pin/disable/
+// require/local) come from config.ts. Nothing here re-implements any of it.
 //
 // Requires packages/core to be built first (`npm run build`, which this
 // package's own build script runs): the real published tarball bundles

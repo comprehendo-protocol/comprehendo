@@ -18,7 +18,7 @@ npm install comprehendo
 
 ## Usage
 
-The provider SDK, for a package adding native Comprehendo support:
+**Provider SDK**, for a package adding native Comprehendo support:
 
 ```js
 import { makeProvider } from 'comprehendo';
@@ -26,18 +26,42 @@ import { makeProvider } from 'comprehendo';
 const provider = makeProvider(packedCorpus, hooks);
 ```
 
-`makeProvider` is `@comprehendo/core`'s real, built `makeProvider()`
+**Sidecar router**, for an agent-side consumer reading a package that
+never adopted Comprehendo at all:
+
+```js
+import { createRouter, discoverInstalledCorpora } from 'comprehendo';
+
+const environment = discoverInstalledCorpora({
+  root: process.cwd(),
+  buildIndex, // Fingerprint Index & Matcher [21]'s buildFingerprintIndex; see Known gap
+});
+const router = createRouter(environment);
+
+router.comprehend(caughtError); // a structured twin, or an honest UNSTRUCTURED
+router.docs('some-package', 'how do I do X'); // a topic-sized answer, or UNDOCUMENTED
+```
+
+**Docs over one already-loaded corpus**, and the **five consumer config
+knobs** (`prefer`/`pin`/`disable`/`require`/`local`), are exported the
+same way: `createDocs`, `CONFIG_KNOBS`, `TRUST_LEVELS`,
+`parseConsumerConfig`, and the rest of `packages/core`'s built barrel.
+Every export here is `@comprehendo/core`'s real, built code
 (`packages/core`, this monorepo's internal SDK workspace), re-exported
-here unchanged; nothing in this package re-implements it.
+unchanged; nothing in this package re-implements any of it.
 
 ## Known gap
 
-The sidecar reading surface for an un-adopted package (`comprehend(raw)`,
-`docs(pkg, query)`, Router and Precedence) is not yet re-exported from
-this root package; today it is reached through `@comprehendo/core`
-directly. Wiring it here is a real, undecided design question (a
-default-installed router has a cost profile a provider-only SDK does
-not), not an oversight papered over.
+`discoverInstalledCorpora`'s `buildIndex` parameter needs Fingerprint
+Index & Matcher [21]'s real `buildFingerprintIndex`, which lives in
+`@comprehendo/registry-tools`, not yet a standalone published package
+(the dependency direction is one-way, registry-tools depends on core, so
+core cannot import it back, and `createRouter`/`discoverInstalledCorpora`
+take it as an injected port rather than reimplementing it). Until
+registry-tools' fingerprint matcher is published on its own, an
+agent-side consumer wiring the sidecar router for real needs to vendor
+or reimplement that one function, or wait for it. Recorded here rather
+than papered over with a silent stub.
 
 ## Developing this monorepo
 
