@@ -5,7 +5,7 @@ type: task
 path: Distribution / Registry Reservations
 source_files: [index.js, index.d.ts, package.json, py/pyproject.toml, ruby/comprehendo.gemspec, ruby/lib/comprehendo.rb, dotnet/Comprehendo/Comprehendo.csproj, dotnet/Comprehendo/Class1.cs]
 status: complete
-phase: idle
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-7
