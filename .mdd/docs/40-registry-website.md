@@ -212,6 +212,41 @@ nothing, live and in the suite.
 - [29-submission-gate](29-submission-gate.md)
 - [36-priming-snippet](36-priming-snippet.md)
 
+## Fixed Issues
+
+### The read-only audit's pattern table had two real bypasses (fixed 2026-08-23)
+
+Found by review. Both are shapes an emitted page could take that the
+audit's own rule table failed to catch, which matters specifically
+because `build.ts` trusts `auditReadOnly` as the sole gate before
+writing anything: a bypassed rule is a silent hole in the "this site
+grows no write surface" guarantee, not a cosmetic miss.
+
+- `inline-handler` required a quote character immediately after `=`
+  (`/\son[a-z]+\s*=\s*["']/i`), but HTML permits an unquoted attribute
+  value, so `<a onclick=alert(1)>` matched nothing. Fixed to accept
+  either a quoted value or a bare unquoted one
+  (`(["'][^"']*["']|[^\s>]+)`), verified against both forms and against
+  a plain-text false-positive control (`"turn on = good"` still does
+  not match).
+- `remote-subresource` checked `\bsrc=`, `link href=`, and `@import`
+  only. `\bsrc` never matches `srcset` (no word boundary between `src`
+  and `set`), and a CSS `url()` outside `@import` (an inline
+  `style="background:url(...)"`) was not checked at all, so an
+  `<img srcset="https://...">` or a styled element pointed at a third
+  party told it who was reading, uncaught. Fixed by adding `srcset`
+  and `poster` to the attribute alternation and generalizing the
+  `url()` check beyond `@import`'s context.
+- Both independently reproduced against the real pattern before the
+  fix (both bypassed) and after (both caught), then two permanent
+  regression tests added to `read-only.test.ts`. Mutation-verified:
+  reverting just the two pattern edits turns both new tests red with
+  the exact bypass the review named; restored, 57/57 green, typecheck
+  clean.
+- No page this generator emits today uses either shape (confirmed:
+  the full site suite was green before and after), so this closed a
+  dormant soundness gap in the safety net rather than an active leak.
+
 ## Known Issues
 
 Recorded in the frontmatter; every entry is a decision with its why, or a

@@ -75,7 +75,7 @@ const RULES: readonly Rule[] = Object.freeze([
   }),
   Object.freeze({
     name: 'inline-handler',
-    pattern: /\son[a-z]+\s*=\s*["']/i,
+    pattern: /\son[a-z]+\s*=\s*(["'][^"']*["']|[^\s>]+)/i,
     why: 'an inline event handler is a script',
   }),
   Object.freeze({
@@ -86,7 +86,7 @@ const RULES: readonly Rule[] = Object.freeze([
   Object.freeze({
     name: 'remote-subresource',
     pattern:
-      /\bsrc\s*=\s*["']?(https?:)?\/\/|<\s*link\b[^>]*\bhref\s*=\s*["']?(https?:)?\/\/|@import[^;]*\(\s*["']?(https?:)?\/\//i,
+      /\b(src|srcset|poster)\s*=\s*["']?(https?:)?\/\/|<\s*link\b[^>]*\bhref\s*=\s*["']?(https?:)?\/\/|url\(\s*["']?(https?:)?\/\//i,
     why: 'a remote subresource tells a third party who is reading',
   }),
   Object.freeze({

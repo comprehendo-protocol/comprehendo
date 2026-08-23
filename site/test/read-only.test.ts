@@ -119,6 +119,29 @@ describe('the audit has teeth', () => {
     assert.deepEqual(caught('<a href="https://github.com/comprehendo-protocol">registry</a>'), []);
   });
 
+  it('catches an inline handler even when the value is unquoted', () => {
+    // HTML permits an unquoted attribute value, so `onclick=alert(1)` is a
+    // real event handler with no surrounding `"` or `'` for a naive pattern
+    // to anchor on. Found by review: the prior pattern required a quote
+    // character right after `=` and let this shape through undetected.
+    assert.ok(caught('<a onclick=alert(1)>x</a>').includes('inline-handler'));
+  });
+
+  it('catches a remote subresource named through srcset or a CSS url(), not only src', () => {
+    // `\bsrc` requires a word boundary, so it never matches `srcset` (the
+    // "c" and "s" of "src" and "set" are not a boundary). Found by review:
+    // an <img srcset> or a `style="background:url(...)"` pointed at a third
+    // party told it who was reading, uncaught.
+    assert.ok(
+      caught('<img srcset="https://tracker.invalid/p.png 1x">').includes('remote-subresource'),
+    );
+    assert.ok(
+      caught('<div style="background:url(https://tracker.invalid/p.png)">').includes(
+        'remote-subresource',
+      ),
+    );
+  });
+
   it('names where it found what it found', () => {
     const found = auditReadOnly([{ path: 'most-wanted.html', contents: 'ok\n<form></form>\n' }]);
 

@@ -287,3 +287,16 @@ registry-tools 375/375, core 548/548 after the fix. Full writeup in
    confirmed byte-identical via `diff`), full site suite (55/55) and
    contract suite (6/6) re-run green, typecheck clean. Adversarial
    review dispatched (isolated worktree) before PE3 close-out.
+
+**Post-merge review finding, fixed 2026-08-23**: two real bypasses in
+the read-only audit's pattern table, the sole gate `build.ts` trusts
+before writing anything. `inline-handler` missed an unquoted attribute
+value (`onclick=alert(1)`, no surrounding quote for the pattern to
+anchor on); `remote-subresource` missed `srcset` (no word boundary
+against `src`) and any CSS `url()` outside `@import` (an inline
+`style="background:url(...)"`). Both independently reproduced pre-fix
+(bypassed) and post-fix (caught); no page this generator emits today
+uses either shape, so this closed a dormant hole, not an active leak.
+Two regression tests added, mutation-verified (revert -> both red;
+restore -> 57/57 green). Full writeup in `40-registry-website.md`'s
+Fixed Issues section.
