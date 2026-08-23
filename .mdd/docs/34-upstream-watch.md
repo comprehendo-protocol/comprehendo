@@ -19,6 +19,7 @@ known_issues:
   - "[deferred] `-hide_banner` is used by every inducing invocation but is NOT locked: no cataloged fingerprint, fix or topic depends on it, and the business rule is that the lock never grows past what the corpus actually depends on. Its disappearance would still surface, as pattern drift on all twelve stderr entries."
   - "[deferred] The lock is re-locked by editing it and re-running the check, not by a generator verb. The 38 entries were derived from the corpus and observed against the real binary once; there is no `comprehendo relock` because 17's scanner cannot produce one for a CLI target (see the first known issue), and a writer that regenerates what it verifies could not be run twice."
   - "[deferred] The workflow itself was never executed on GitHub, only parsed and run step by step locally (real `ffmpeg -version`, real `npm ci --prefix`, real `npx vitest run ffmpeg-upstream-watch` from a clean install, exit 0). Its first scheduled run is its first real one."
+  - "[gap] Found by review: `driftAsTruthFailures`/`withWatchDrift` are proven correct against the gate's REAL `folkloreFindings`/`registryTruthFindings` (src/gate-folklore.ts), but only inside this feature's own test suite; nothing in the shipped `.github/workflows/upstream-watch.yml` job actually invokes a submission-gate run with the watch's drift folded in. The scheduled job's own operational failure signal is the watch suite's own assertion (`report.drift.length > 0`, AC2, mutation-verified and loud on its own), so drift is never silently absorbed either way; what is not yet true is the ORIGINAL Architecture/Business-Rules phrasing (\"feeds\"/\"routes into\" CC4's path), which read as a live pipeline claim. Corrected to state the routing is a proven-compatible mechanism, not yet a wired one. Closing this needs either a `comprehendo upstream-watch check` step in the workflow that calls the real gate CLI with the drift folded in, or accepting the watch suite's own assertion as the operational contract permanently; neither decision was made here."
 ---
 
 # Upstream Watch
@@ -37,10 +38,16 @@ not an ffmpeg-only mechanism.
 
 `corpora/ffmpeg/upstream-watch.lock`, generated and checked by re-running
 Corpus Generator [17]'s `comprehendo diff` against the newest ffmpeg
-release in CI on a schedule (or on a new-version trigger). Feeds CC4
-[26]'s drift-failure path: a locked surface that changed makes the
-corresponding fix un-inducible, and CC4 already treats that as a drift
-failure, not a silent pass.
+release in CI on a schedule (or on a new-version trigger). Speaks CC4
+[26]'s drift-failure vocabulary: a locked surface that changed maps to
+a `TruthFailure`, handed to the real `folkloreFindings`/
+`registryTruthFindings` (`src/gate-folklore.ts`), which answer in CC4's
+own wording. Found by review: that path is proven correct in
+`ffmpeg-upstream-watch.test.ts`'s own suite, but nothing in the shipped
+`.github/workflows/upstream-watch.yml` job actually calls the
+submission gate with the watch's drift folded in, so today the two are
+proven-compatible, not wired into one executed pipeline. See Business
+Rules and Known Issues.
 
 ## Implementation Notes
 
@@ -74,8 +81,15 @@ N/A directly; runs as a CI job, not called by agents or providers.
   beyond what the corpus actually depends on.
 - A new ffmpeg release that changes a locked surface fails the watch job
   loudly, naming the changed element, never silently passing.
-- A watch failure routes into CC4 [26]'s drift-failure handling, not a
-  separate silent-ignore path.
+- A watch failure produces the SAME finding shape CC4 [26]'s drift
+  -failure handling does, through the gate's own real functions
+  (`driftAsTruthFailures`/`withWatchDrift` -> `folkloreFindings`/
+  `registryTruthFindings`), never a separate silent-ignore path or a
+  hand-rolled simulation of what the gate would say. The scheduled
+  job's own failure signal today is the watch suite's own assertion
+  (`report.drift.length > 0`), which is loud and specific on its own
+  (AC2); the gate-routing half is proven correct, not yet invoked by
+  the scheduled job itself. See Known Issues.
 
 ## Acceptance Criteria
 
@@ -99,10 +113,11 @@ N/A directly; runs as a CI job, not called by agents or providers.
       it, with the real current stderr shown alongside (7 red); a
       locked behavior value changed -> `behavior-changed
       scale-minus-two-derives-an-even-width / was: 721,720 / now:
-      722,720` (4 red). CC4's real routing proved with the gate's own
-      code: drift becomes a `TruthFailure`,
-      `folkloreFindings`/`registryTruthFindings` report it at the
-      traced twin, never a silent pass.
+      722,720` (4 red). CC4's finding shape proved with the gate's own
+      real code (drift becomes a `TruthFailure`, `folkloreFindings`/
+      `registryTruthFindings` report it at the traced twin), though
+      only inside this feature's own suite today, not yet invoked by
+      the shipped workflow itself; see Known Issues.
 - [x] The watch job runs on a schedule or version-bump trigger, not
       only manually. A real `.github/workflows/upstream-watch.yml`
       (this repo genuinely hosts `corpora/ffmpeg/`, unlike Submission
@@ -132,6 +147,11 @@ N/A directly; runs as a CI job, not called by agents or providers.
 - [deferred] Re-locking is a hand edit plus the check, not a generator verb.
 - [deferred] The workflow was verified step by step locally, never on a real
   GitHub runner.
+- [gap] Found by review: the CC4 routing (`driftAsTruthFailures`/
+  `withWatchDrift` into the gate's real `folkloreFindings`/
+  `registryTruthFindings`) is proven correct only inside this feature's own
+  test suite; the shipped workflow never invokes a submission-gate run with
+  the drift folded in. See the frontmatter entry for the full detail.
 
 ## Fixed Issues
 
