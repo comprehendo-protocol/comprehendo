@@ -41,6 +41,14 @@ import {
   scannedVersion,
 } from './helpers/ffmpeg-upstream-probe.js';
 
+/**
+ * Every test that re-probes spawns the real binary, the whole-lock pass three
+ * dozen times, so vitest's five-second default would be a race against the
+ * machine rather than a bound on anything. 32 makes the same allowance, for
+ * the same reason, on its own induction pass.
+ */
+const SPAWNS_REAL_BINARY = 300_000;
+
 /** The lock, read fresh per test: a missing one is a failure, never a skip. */
 const lock = (): UpstreamLock => readLock(FFMPEG_LOCK_PATH);
 
@@ -139,7 +147,7 @@ describe('the watch re-observes every locked element against the real binary', (
     expect(version).toMatch(/^ffmpeg version /);
     expect(report.scanned_version).toBe(version);
     expect(report.target).toBe(read.target);
-  });
+  }, SPAWNS_REAL_BINARY);
 
   it('probes every locked element and finds no drift on this build', () => {
     const read = lock();
@@ -151,7 +159,7 @@ describe('the watch re-observes every locked element against the real binary', (
     expect(report.drift).toEqual([]);
     expect(report.locked).toBe(read.entries.length);
     expect(watchExitCode(report)).toBe(0);
-  });
+  }, SPAWNS_REAL_BINARY);
 });
 
 describe('a changed upstream surface fails the watch, naming the element', () => {
@@ -172,7 +180,7 @@ describe('a changed upstream surface fails the watch, naming the element', () =>
     ]);
     expect(formatWatchReport(report).join('\n')).toContain('-vfx');
     expect(watchExitCode(report)).toBe(1);
-  });
+  }, SPAWNS_REAL_BINARY);
 
   it('names a stderr pattern the binary no longer writes', () => {
     const read = lock();
@@ -185,7 +193,7 @@ describe('a changed upstream surface fails the watch, naming the element', () =>
     expect(report.drift[0]?.subject).toBe('*width not divisible by 3 (*)*');
     expect(report.drift[0]?.now ?? '').not.toBe('');
     expect(watchExitCode(report)).toBe(1);
-  });
+  }, SPAWNS_REAL_BINARY);
 
   it('names a behavior whose real result changed', () => {
     const read = lock();
@@ -201,7 +209,7 @@ describe('a changed upstream surface fails the watch, naming the element', () =>
     ]);
     expect(report.drift[0]?.was).toContain('999,999');
     expect(report.drift[0]?.now).toContain(real.expect.capture ?? '');
-  });
+  }, SPAWNS_REAL_BINARY);
 
   it('treats an element nobody probed as drift, never as a silent pass', () => {
     const read = lock();
@@ -237,7 +245,7 @@ describe("a watch failure routes into CC4 [26]'s drift-failure handling", () => 
     expect(failures.length).toBeGreaterThan(0);
     expect(failures.map((failure) => failure.at)).toContain(drifted.code);
     expect(failures.map((failure) => failure.kind)).toContain('not-inducible');
-  });
+  }, SPAWNS_REAL_BINARY);
 
   it('makes the REAL folklore and registry-truth checks report it, not ignore it', () => {
     const drifted = driftedTwinReport();
@@ -254,7 +262,7 @@ describe("a watch failure routes into CC4 [26]'s drift-failure handling", () => 
     expect(folklore.map((found) => found.message).join('\n')).toContain('drift');
     expect(folklore.map((found) => found.check)).toContain('folklore');
     expect(truth.map((found) => found.locator)).toContain(drifted.code);
-  });
+  }, SPAWNS_REAL_BINARY);
 
   it('leaves the gate exactly as it found it when nothing drifted', () => {
     const read = lock();
@@ -265,7 +273,7 @@ describe("a watch failure routes into CC4 [26]'s drift-failure handling", () => 
     expect(driftAsTruthFailures(read, report)).toEqual([]);
     expect(withWatchDrift(clean, [])).toEqual(clean);
     expect(folkloreFindings({ directory: FFMPEG_DIRECTORY, source }, clean)).toEqual([]);
-  });
+  }, SPAWNS_REAL_BINARY);
 });
 
 describe("the report reuses comprehendo diff [17]'s drift-report contract", () => {
@@ -291,7 +299,7 @@ describe("the report reuses comprehendo diff [17]'s drift-report contract", () =
     expect(clean.locked_version).toBe(read.lockedVersion);
     expect(watchExitCode(clean)).toBe(0);
     expect(watchExitCode(dirty)).toBe(1);
-  });
+  }, SPAWNS_REAL_BINARY);
 });
 
 describe('the watch job runs on a schedule, not only by hand', () => {

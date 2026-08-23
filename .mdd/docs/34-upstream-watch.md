@@ -3,7 +3,7 @@ id: 34-upstream-watch
 title: Upstream Watch
 type: COMPONENT
 path: Corpora / ffmpeg / Upstream Watch
-source_files: [corpora/ffmpeg/upstream-watch.lock]
+source_files: [corpora/ffmpeg/upstream-watch.lock, packages/registry-tools/src/upstream-lock.ts, packages/registry-tools/src/upstream-watch.ts, .github/workflows/upstream-watch.yml]
 status: planned
 phase: idle
 last_synced: 2026-08-22
@@ -11,8 +11,14 @@ initiative: comprehendo
 wave: comprehendo-wave-6
 depends_on: [32-ffmpeg-corpus]
 tags: [upstream-watch, lock-file, drift-detection, generalized-pattern, wrapper-over-tool-not-owned]
-test_files: []
-known_issues: []
+test_files: [packages/registry-tools/test/ffmpeg-upstream-watch.test.ts, packages/registry-tools/test/helpers/ffmpeg-upstream-probe.ts]
+known_issues:
+  - "[gap] Corpus Generator [17]'s `comprehendo diff` could not be reused as this doc's Architecture assumed. Its `computeDrift` diffs a corpus against `scanTarget`'s TypeScript exports and throw sites, and ffmpeg has argv and stderr instead, the same wall 32 hit with `verifyAgainstUpstream`. What was genuinely reused is everything downstream of the scan: the `{kind, subject, was?, now?}` drift record, the `target`/`scanned_version` report envelope, the never-writes rule, and the `drift.length > 0 ? 1 : 0` exit code. Two honest departures, both because the subject is a lock file rather than a corpus: `corpus_version` becomes `locked_version`, and there is no `stubs` list because nothing in a lock file can be a stub. A first-class `comprehendo diff --target cli` verb belongs to 17, not here."
+  - "[gap] A flag entry proves the parser still ACCEPTS the name (no `Unrecognized option '<name>'`), never that its semantics are unchanged. A silent semantic change to a flag is caught only where a behavior entry locks the specific claim a fix or topic makes about it, which is why nine behaviors are locked beside the seventeen flags."
+  - "[deferred] The lock's twelve stderr-pattern entries carry their inducing argv verbatim, duplicating 32's `WITNESSES` table, so the lock file is self-contained (a lock that points into a test helper is not a record of what was locked). The duplication is held by a test that compares them argv for argv and fixture for fixture, so a divergence goes red rather than silent."
+  - "[deferred] `-hide_banner` is used by every inducing invocation but is NOT locked: no cataloged fingerprint, fix or topic depends on it, and the business rule is that the lock never grows past what the corpus actually depends on. Its disappearance would still surface, as pattern drift on all twelve stderr entries."
+  - "[deferred] The lock is re-locked by editing it and re-running the check, not by a generator verb. The 38 entries were derived from the corpus and observed against the real binary once; there is no `comprehendo relock` because 17's scanner cannot produce one for a CLI target (see the first known issue), and a writer that regenerates what it verifies could not be run twice."
+  - "[deferred] The workflow itself was never executed on GitHub, only parsed and run step by step locally (real `ffmpeg -version`, real `npm ci --prefix`, real `npx vitest run ffmpeg-upstream-watch` from a clean install, exit 0). Its first scheduled run is its first real one."
 ---
 
 # Upstream Watch
@@ -86,4 +92,16 @@ N/A directly; runs as a CI job, not called by agents or providers.
 
 ## Known Issues
 
-None recorded at plan time.
+- [gap] `comprehendo diff` [17] could not be reused as the Architecture
+  section assumed: its scanner reads TypeScript exports and throw sites, and
+  ffmpeg has neither. Its drift-record shape, report envelope, never-writes
+  rule and exit code were reused; the scanner was replaced by a CLI probe.
+- [gap] A locked flag proves the name still parses, never that its meaning is
+  unchanged; the semantic half is covered only by the locked behaviors.
+- [deferred] The lock carries 32's inducing argvs verbatim so it is
+  self-contained, and a test holds the two copies equal.
+- [deferred] `-hide_banner` is used by the inductions but is not locked: no
+  cataloged entry depends on it.
+- [deferred] Re-locking is a hand edit plus the check, not a generator verb.
+- [deferred] The workflow was verified step by step locally, never on a real
+  GitHub runner.
