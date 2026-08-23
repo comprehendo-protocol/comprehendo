@@ -19,6 +19,7 @@ import {
   CORPUS_DESCRIPTOR_KEY,
   CORPUS_PACKED_FORMAT,
   CorpusFormatError,
+  PACKED_DOCS_FORMAT,
   corpusDescriptor,
   pack,
   parse,
@@ -74,7 +75,7 @@ describe('pack compiles a validated corpus into one versioned artifact', () => {
     const corpus = await packed();
 
     expect(corpus.docs.index).toEqual(['encode', 'decode']);
-    expect(corpus.docs.topics['encode']?.summary).toContain('encode');
+    expect(corpus.docs.topics['encode']?.summary).toContain('Encode a payload');
     expect(corpus.twins.entries.map((entry) => entry.code)).toEqual([
       'TOY_0_RANGEERROR',
       'TOY_1_TYPEERROR',
@@ -182,7 +183,7 @@ describe('the packed artifact is loaded by the runtime with no directory access'
 
     expect(surface()['topics']).toEqual(['encode', 'decode']);
     expect(surface('encode')['topic']).toBe('encode');
-    expect(surface('encode')['summary']).toContain('encode');
+    expect(surface('encode')['summary']).toContain('Encode a payload');
   });
 
   it('matches a real thrown error and hands back the cataloged twin', async () => {
@@ -237,10 +238,26 @@ describe('a loader that cannot read an artifact version fails clearly, never los
   });
 
   it('refuses an artifact that declares no version at all', async () => {
-    const corpus = await packed();
-    const { corpus_packed: _dropped, ...versionless } = corpus;
+    const versionless: Record<string, unknown> = { ...(await packed()) };
+    delete versionless['corpus_packed'];
 
     expect(() => readPackedCorpus(versionless)).toThrow(TypeError);
+  });
+
+  it('refuses a docs half at a packed version this build does not read', async () => {
+    // Found by mutation: disabling this gate left every test green, so the
+    // docs half could have shipped a version nobody could read and nothing
+    // would have said so. The artifact carries two versions, and both gate.
+    const corpus = await packed();
+
+    const read = (): unknown =>
+      readPackedCorpus({
+        ...corpus,
+        docs: { ...corpus.docs, packed: PACKED_DOCS_FORMAT + 1 },
+      });
+
+    expect(read).toThrow(RangeError);
+    expect(read).toThrow(new RegExp(`packed docs format version ${String(PACKED_DOCS_FORMAT + 1)}`));
   });
 
   it('refuses an artifact whose docs half its own runtime would reject', () => {

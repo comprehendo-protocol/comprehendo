@@ -51,11 +51,11 @@ describe('parse reads the five-file corpus shape Corpus Generator [17] produces'
 
     const encode = parse(tree.corpus).topics.find((topic) => topic.topic === 'encode');
 
+    // 17's scan fills a summary from the target's own docstring, so the
+    // summary this parse reads is the file's prose body, verbatim.
     const file = readFileSync(join(tree.corpus, 'topics', 'encode.md'), 'utf8');
-    expect(encode?.summary).toBe(
-      'What encode does, in one topic-sized answer.',
-    );
-    expect(file).toContain(encode?.summary ?? '<unset>');
+    expect(encode?.summary).toBe(file.split('---\n\n')[1]?.trim());
+    expect(encode?.summary).toContain('Encode a payload into the toy wire format');
     expect(encode?.signatures).toEqual(['function encode(input: string): string']);
     expect(encode?.vocabularies.own_terms).toEqual(['encode']);
     expect(encode?.orphaned).toBe(false);

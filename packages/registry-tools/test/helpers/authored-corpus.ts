@@ -169,7 +169,7 @@ export async function completeCorpus(tree: AuthoredTree): Promise<void> {
       task: [],
     },
   }));
-  const twins = corpus.twins.map((twin, at) => ({
+  const twins: Record<string, unknown>[] = corpus.twins.map((twin, at) => ({
     ...twin,
     status: 'draft',
     code: `TOY_${String(at)}_${String(
@@ -187,7 +187,7 @@ export async function completeCorpus(tree: AuthoredTree): Promise<void> {
       },
     ];
   }
-  writeCorpus(tree.paths, { ...corpus, topics, twins, fixes } as AuthoredCorpus);
+  writeCorpus(tree.paths, { ...corpus, topics, twins, fixes });
 
   // 17's writer has no slot for the provider's declared call schema (see the
   // feature doc's Known Issues), so the format's own key is added to the file
