@@ -33,9 +33,9 @@ import {
   TOY_CODE,
   TOY_RAW,
   cleanTrees,
+  corpusFormatModule,
   fingerprintModule,
   makeTree,
-  realMatcher,
   toyCorpusFiles,
   toyPacked,
 } from './helpers/sidecar.js';
@@ -56,16 +56,20 @@ const localFingerprint = (messagePattern = 'ledger sync rejected the write: *'):
   messagePattern,
 });
 
-/** The files a privately authored corpus carries: exactly an installed one's. */
+/** The file a privately authored corpus carries: exactly an installed one's. */
 async function localCorpusFiles(messagePattern?: string): Promise<Record<string, string>> {
-  const { serializeIndex } = await fingerprintModule();
-  return {
-    'comprehendo.fingerprints.json': serializeIndex(
-      await realMatcher([localFingerprint(messagePattern)]),
-    ),
-    'comprehendo.twins.json': `${JSON.stringify(catalog(sortEntry), null, 2)}\n`,
-    'comprehendo.packed.json': `${JSON.stringify(toyPacked(), null, 2)}\n`,
-  };
+  const { readPackedCorpus, serializeCorpus } = await corpusFormatModule();
+  const packed = readPackedCorpus({
+    comprehendo: '0.1',
+    corpus_packed: 1,
+    package: INTERNAL,
+    provider: INTERNAL,
+    version: '1.0.0',
+    docs: toyPacked(),
+    twins: catalog(sortEntry),
+    fingerprints: [localFingerprint(messagePattern)],
+  });
+  return { 'comprehendo.corpus.json': serializeCorpus(packed) };
 }
 
 /** Write those files into a directory of the consuming project, not node_modules. */

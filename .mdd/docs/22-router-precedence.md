@@ -13,7 +13,7 @@ depends_on: [19-cc8-native-precedence, 21-fingerprint-index-matcher, 12-twin-bui
 tags: [sidecar, comprehend, precedence, fingerprint-match, no-cooperation-required]
 test_files: [packages/core/test/router-decision.test.ts, packages/core/test/router-comprehend.test.ts, packages/core/test/router-docs.test.ts, packages/core/test/router-installed.test.ts]
 known_issues:
-  - "[deferred] The on-disk shape of an installed corpus package (comprehendo.fingerprints.json, comprehendo.twins.json, comprehendo.packed.json, plus an optional comprehendoCorpus.target key) is this adapter's provisional convention, not a ruling: Corpus Format [28] and Scoped Publisher [31] (Wave 5) own the published format, and this is the first consumer asking for one."
+  - "[resolved by 28-corpus-format] router-discovery.ts's on-disk shape was this adapter's provisional convention (three files), not a ruling. Corpus Format [28] (Wave 5) ruled the real one, comprehendo.corpus.json, corpus_packed: 1, and router-discovery.ts is migrated to read it: fingerprints/twins/docs all come out of the one artifact, version-gated, refusing an unknown corpus_packed by name rather than reading it lossily. Proven live: a real payload assembled with 28's own readPackedCorpus/serializeCorpus (the same functions Scoped Publisher [31] uses) is discovered with zero defects and routes correctly. See router-discovery.ts's own Fixed Issues on 28's doc, and 31's doc's known_issues, which measured this exact gap live before the fix landed."
   - "[deferred] The router is not re-exported from packages/core/src/index.ts: the barrel is outside this feature's source_files and sibling Wave-4 lanes build against the same package. The surface is imported from ./router.js (dist/router.js when built); wiring the barrel, and whether a module-level comprehend/docs singleton exists at all, is Wave 7 (Distribution)'s call, the same one core's package.json already defers."
   - "[resolved by 23-config-loader] Only the prefer knob was implemented here at build time. pin, disable, require and local now ship in Config Loader [23] (same wave), which widens RouterConfig to ConsumerConfig with no reshaping of this surface, exactly as anticipated."
   - "[gap] Core cannot import @comprehendo/registry-tools (the dependency direction is one-way and tsc rejects the cross-package path), so 21's matcher arrives as a structural port (CorpusMatcher) and the caller injects buildFingerprintIndex. Nothing in the shipped package wires a default matcher yet; that is Wave 7 (Distribution)'s assembly step. The suites load 21's real module at run time so no double is ever in the loop."
@@ -152,6 +152,44 @@ with every other unreadable-artifact path in `router-discovery.ts`
 - Fixed by having `nativeEvidence()` push a defect naming the target
   on a read failure, same shape as every sibling function in the
   file. Mutation-verified: 1 new test, red without the fix.
+
+### `router-discovery.ts` migrated to Corpus Format [28]'s authoritative artifact (fixed 2026-08-22)
+
+This adapter's own on-disk convention was always documented as
+provisional, deferred to Corpus Format [28] to rule on (Wave 5). Once
+28 shipped and Scoped Publisher [31] became the first real producer of
+the new format, the split was live and measured, not theoretical: 31's
+own build installed its real assembled payload into a real consumer
+tree and got `corpora found: 0`, `declares comprehendoCorpus but
+carries none of the three corpus artifacts` (both 28's and 31's docs
+recorded this).
+
+- Fixed by migrating `router-discovery.ts` to the one artifact
+  (`comprehendo.corpus.json`, `corpus_packed: 1`): `CORPUS_ARTIFACTS`
+  (three filenames) replaced by `CORPUS_ARTIFACT` (one) and
+  `CORPUS_PACKED_FORMAT`; `loadCorpusFrom` reads the one file once,
+  version-gates it (refusing an unknown `corpus_packed` by name,
+  never lossily, matching 28's own `readPackedCorpus` contract), and
+  the fingerprints/twins/docs halves come out of the SAME parsed
+  object. `registry-tools` still takes no runtime import from core,
+  so the shape is read structurally (the same duplicate-plus-shape
+  -check pattern `catalogIn`/`fingerprintsIn` already used), not
+  through 28's real `readPackedCorpus`.
+- All router test helpers (`sidecar.ts`'s `toyCorpusFiles`,
+  `router-local-corpus.test.ts`'s `localCorpusFiles`) moved to build
+  the new single-artifact format through 28's REAL
+  `readPackedCorpus`/`serializeCorpus`, loaded the same
+  cross-package-dynamic-import way 21's real matcher already was, so
+  no fixture is typed to agree with the new reader under test.
+- Mutation-verified: a new test (`router-installed.test.ts`, "refuses
+  an unknown corpus_packed version by name, never reads it lossily")
+  is red without the version gate. Verified live end to end through
+  built `dist/` artifacts: a real payload assembled with 28's own
+  `readPackedCorpus`/`serializeCorpus` (the exact functions 31 uses)
+  is discovered with zero defects, and both `comprehend()` and
+  `docs()` answer correctly from it.
+- Full suite green throughout: core 540/540, registry-tools 242/242,
+  spec 418/418 unaffected.
 
 ## Interface Overview
 

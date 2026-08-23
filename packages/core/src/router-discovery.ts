@@ -14,13 +14,19 @@
 // code from doing that, and it is the wrong shape besides): it enumerates
 // installed packages, then loads named artifacts only.
 //
-// The three artifact names are provisional, and deliberately so: Corpus
-// Format [28] and Scoped Publisher [31] (Wave 5) own the published shape of a
-// corpus package. They follow the one convention that already exists here,
-// `comprehendo pack` writing `comprehendo.packed.json`. See
-// JUDGMENT-22-router-precedence.md, call 1.
+// The published artifact this file reads is Corpus Format [28]'s ruling
+// (`comprehendo.corpus.json`, `corpus_packed: 1`), not the three-file
+// provisional convention this module shipped with at Wave 4. `registry-tools`
+// takes no runtime import from core (the dependency direction is one-way), so
+// the shape is read structurally here rather than through 28's real
+// `readPackedCorpus`, the same duplicate-plus-shape-check pattern `catalogIn`
+// and `fingerprintsIn` already use below. `CORPUS_ARTIFACT` and
+// `CORPUS_PACKED_FORMAT` are pinned to 28's own literal values
+// (`corpus-format.ts`), which is what a drift test can check even without an
+// import.
 //
 // @see .mdd/docs/22-router-precedence.md
+// @see .mdd/docs/28-corpus-format.md
 
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
@@ -44,18 +50,14 @@ import type { ProviderCatalog } from './twin.js';
 export const CORPUS_SCOPE = '@comprehendo';
 
 /**
- * The runtime artifacts an installed corpus package carries beside its own
- * package.json. Each is optional: a corpus with fingerprints and twins but no
- * docs still routes errors, and one with docs alone still answers questions.
+ * The one runtime artifact an installed corpus package carries beside its own
+ * package.json, Corpus Format [28]'s ruling. Fingerprints, twins and docs are
+ * all inside it; none is a separate file any more.
  */
-export const CORPUS_ARTIFACTS = Object.freeze({
-  /** Fingerprint Index & Matcher [21]'s `serializeIndex` output. */
-  fingerprints: 'comprehendo.fingerprints.json',
-  /** The cataloged failures, as Twin Builder [12]'s `ProviderCatalog`. */
-  twins: 'comprehendo.twins.json',
-  /** Docs Engine [13]'s packed corpus, as `comprehendo pack` writes it. */
-  docs: 'comprehendo.packed.json',
-});
+export const CORPUS_ARTIFACT = 'comprehendo.corpus.json';
+
+/** The whole-artifact format version 28 versions independently of its docs half. */
+export const CORPUS_PACKED_FORMAT = 1;
 
 /** The corpus package's own declaration of what it is a corpus FOR. */
 export interface CorpusDescriptor {
@@ -125,6 +127,20 @@ function catalogIn(value: unknown): ProviderCatalog | string {
   return value as unknown as ProviderCatalog;
 }
 
+/**
+ * The `docs` half of a packed artifact, shaped through Docs Engine [13]'s own
+ * `parsePackedCorpus`: it is verbatim 13's `packed: 1` format (Corpus Format
+ * [28]'s ruling), so 13's own parser IS the acceptance test for it, no second
+ * shape check invented here.
+ */
+function docsHalfOf(value: unknown): ReturnType<typeof parsePackedCorpus> | string {
+  try {
+    return parsePackedCorpus(value);
+  } catch (error) {
+    return (error as Error).message;
+  }
+}
+
 /** The target package a corpus package is published for. */
 function targetOf(corpusPackage: string, manifest: unknown): string {
   const descriptor = isRecord(manifest) ? manifest['comprehendoCorpus'] : undefined;
@@ -139,12 +155,35 @@ interface LoadedCorpus {
 }
 
 /**
+ * The one artifact, read and version-gated. `undefined` with no defect means
+ * "no artifact here at all" (not every directory in scope is a corpus); a
+ * `problem` string means something was there and wrong, always reported.
+ */
+function readCorpusArtifact(root: string): { value?: Record<string, unknown>; problem?: string } {
+  const read = readJson(join(root, CORPUS_ARTIFACT));
+  if (read.problem !== undefined) return { problem: read.problem };
+  if (read.value === undefined) return {};
+  if (!isRecord(read.value)) return { problem: `${CORPUS_ARTIFACT} is not an object` };
+  const version = read.value['corpus_packed'];
+  if (typeof version !== 'number') {
+    return { problem: `${CORPUS_ARTIFACT} declares no "corpus_packed" format version` };
+  }
+  if (version !== CORPUS_PACKED_FORMAT) {
+    return {
+      problem: `${CORPUS_ARTIFACT} is corpus_packed version ${String(version)}; this build reads version ${String(CORPUS_PACKED_FORMAT)}`,
+    };
+  }
+  return { value: read.value };
+}
+
+/**
  * One corpus, loaded off a directory. Installed under `node_modules` or
  * mounted from the consuming project's own tree (`local`, Config Loader [23]),
- * it is the same three artifacts read the same way: Corpus Generator [17]
- * serves a private corpus with no second code path, so there is none here
- * either. `whenEmpty` is the defect to report when nothing routable was found,
- * or `undefined` when a directory carrying no artifacts is simply not a corpus.
+ * it is the same one artifact read the same way: Corpus Generator [17] and
+ * Corpus Format [28]'s `pack` serve a private corpus with no second code
+ * path, so there is none here either. `whenEmpty` is the defect to report
+ * when nothing routable was found, or `undefined` when a directory carrying
+ * no artifact is simply not a corpus.
  */
 function loadCorpusFrom(
   root: string,
@@ -155,23 +194,43 @@ function loadCorpusFrom(
   options: DiscoveryOptions,
   defects: EnvironmentDefect[],
 ): LoadedCorpus | undefined {
-  const fingerprints = artifact(root, corpusPackage, 'fingerprints', fingerprintsIn, defects) ?? [];
-  const catalog = artifact(root, corpusPackage, 'twins', catalogIn, defects);
-  const docs = docsSurface(root, corpusPackage, options, defects);
-  if (fingerprints.length === 0 && catalog === undefined && docs === undefined) {
+  const read = readCorpusArtifact(root);
+  if (read.problem !== undefined) {
+    defects.push({ at: `${corpusPackage}/${CORPUS_ARTIFACT}`, detail: read.problem });
+    return undefined;
+  }
+  if (read.value === undefined) {
     if (whenEmpty !== undefined) defects.push({ at: corpusPackage, detail: whenEmpty });
     return undefined;
   }
+  const packed = read.value;
+  const fingerprints = shapeOf(fingerprintsIn(packed), corpusPackage, defects) ?? [];
+  const catalog = 'twins' in packed ? shapeOf(catalogIn(packed['twins']), corpusPackage, defects) : undefined;
+  const docs =
+    'docs' in packed ? shapeOf(docsHalfOf(packed['docs']), corpusPackage, defects) : undefined;
   return {
     corpus: {
       package: target,
       corpusPackage,
       ...(catalog === undefined ? {} : { catalog }),
-      ...(docs === undefined ? {} : { docs }),
+      ...(docs === undefined ? {} : { docs: createDocs(docs, options.docs ?? {}) }),
       ...(version === undefined ? {} : { version }),
     },
     fingerprints,
   };
+}
+
+/** A structural read's result: the shaped value, or a reported defect. */
+function shapeOf<T>(
+  shaped: T | string,
+  corpusPackage: string,
+  defects: EnvironmentDefect[],
+): T | undefined {
+  if (typeof shaped === 'string') {
+    defects.push({ at: `${corpusPackage}/${CORPUS_ARTIFACT}`, detail: shaped });
+    return undefined;
+  }
+  return shaped;
 }
 
 /** One installed corpus package, loaded. Anything unreadable becomes a defect. */
@@ -200,7 +259,7 @@ function loadCorpus(
   // this scope is simply not a corpus (the registry tooling itself installs
   // here too), and reporting that every time would be crying wolf.
   const whenEmpty = isRecord(host['comprehendoCorpus'])
-    ? 'declares comprehendoCorpus but carries none of the three corpus artifacts'
+    ? `declares comprehendoCorpus but carries no ${CORPUS_ARTIFACT}`
     : undefined;
   const version = typeof host['version'] === 'string' ? host['version'] : undefined;
   return loadCorpusFrom(root, corpusPackage, target, version, whenEmpty, options, defects);
@@ -236,55 +295,10 @@ function loadLocalCorpus(
     corpusPackage,
     target,
     version,
-    `is mounted at ${path}, which carries none of the three corpus artifacts`,
+    `is mounted at ${path}, which carries no ${CORPUS_ARTIFACT}`,
     options,
     defects,
   );
-}
-
-/** One named artifact, read and shaped, or a recorded defect and `undefined`. */
-function artifact<T>(
-  root: string,
-  corpusPackage: string,
-  name: keyof typeof CORPUS_ARTIFACTS,
-  shape: (value: unknown) => T | string,
-  defects: EnvironmentDefect[],
-): T | undefined {
-  const file = CORPUS_ARTIFACTS[name];
-  const read = readJson(join(root, file));
-  if (read.problem !== undefined) {
-    defects.push({ at: `${corpusPackage}/${file}`, detail: read.problem });
-    return undefined;
-  }
-  if (read.value === undefined) return undefined;
-  const shaped = shape(read.value);
-  if (typeof shaped === 'string') {
-    defects.push({ at: `${corpusPackage}/${file}`, detail: shaped });
-    return undefined;
-  }
-  return shaped;
-}
-
-function docsSurface(
-  root: string,
-  corpusPackage: string,
-  options: DiscoveryOptions,
-  defects: EnvironmentDefect[],
-): InstalledCorpus['docs'] {
-  const packed = artifact(
-    root,
-    corpusPackage,
-    'docs',
-    (value) => {
-      try {
-        return parsePackedCorpus(value);
-      } catch (error) {
-        return (error as Error).message;
-      }
-    },
-    defects,
-  );
-  return packed === undefined ? undefined : createDocs(packed, options.docs ?? {});
 }
 
 /**

@@ -13,7 +13,7 @@ depends_on: [03-shape-schemas]
 tags: [corpus-format, packed-artifact, one-topic-per-file, yaml-header, parse-validate-pack]
 test_files: [packages/registry-tools/test/corpus-parse.test.ts, packages/registry-tools/test/corpus-validate.test.ts, packages/registry-tools/test/corpus-pack.test.ts, packages/registry-tools/test/corpus-format-drift.test.ts]
 known_issues:
-  - "[gap] packages/core/src/router-discovery.ts still reads Router & Precedence [22]'s three PROVISIONAL artifact names and does not know comprehendo.corpus.json, so a corpus published in the format ruled here is readable by this component's own loader and not yet by 22's discovery adapter. That file is outside this feature's source_files. The migration is small and named: CORPUS_ARTIFACTS becomes the one artifact, loadCorpusFrom reads it once, and the fingerprints/twins/docs halves come out of it. Nothing regresses today: 22's suites build their own corpora and Scoped Publisher [31] is the first real producer."
+  - "[resolved by 22-router-precedence] packages/core/src/router-discovery.ts is migrated to this feature's authoritative artifact (comprehendo.corpus.json, corpus_packed: 1). Fixed at the orchestrator level in 22's own file, mutation-verified, proven live against a real payload assembled with this feature's own readPackedCorpus/serializeCorpus. See 22-router-precedence.md Fixed Issues."
   - "[resolved by 17-corpus-generator] Corpus Generator [17]'s writeCorpus used to rewrite manifest.json wholesale from {header, target, manifest_hint}, silently dropping a hand-added declared_schema on the next comprehendo scan. Fixed at the orchestrator level in 17's own files (format.ts/corpus-io.ts/merge.ts, outside this feature's source_files), same treatment as manifest_hint, mutation-verified. See 17-corpus-generator.md Fixed Issues."
   - "[deferred] The CC7 [09] apply grammar is implemented twice, here and in core's validateCatalog, because registry-tools takes no runtime import from core (packages install independently; a ../../core/src import from src/ breaks rootDir). Held by an agreement test that runs core's REAL gate over the same corpus rather than by shared code. Same call 21 made for the UNSTRUCTURED literals; a real shared-constants package, if one is ever wanted, is a later decision."
   - "[deferred] pack emits JSON, not a binary encoding. Zero runtime dependencies means any binary format is hand-rolled twice (TypeScript and Python, identical conformance kit), and a published artifact a PR reviewer cannot read costs Submission Gate [29] its review property. corpus_packed is the answer to the open question: a binary encoding arrives as version 2 and readPackedCorpus already refuses an unknown version by name."
@@ -232,10 +232,10 @@ The package.json descriptor beside it:
 
 ## Known Issues
 
-- [gap] `packages/core/src/router-discovery.ts` still reads 22's three
-  provisional artifact names and does not know
-  `comprehendo.corpus.json`. Outside this feature's `source_files`; the
-  migration is named in the frontmatter entry.
+- [resolved by 22-router-precedence] `packages/core/src/router-discovery.ts`
+  is migrated to `comprehendo.corpus.json`. Fixed at the orchestrator
+  level, mutation-verified. See [22-router-precedence](22-router-precedence.md)
+  Fixed Issues.
 - [resolved by 17-corpus-generator] 17's `writeCorpus` used to silently
   drop a hand-added `declared_schema` on the next `scan`. Fixed at the
   orchestrator level in 17's own files, mutation-verified. See

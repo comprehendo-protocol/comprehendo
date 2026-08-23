@@ -26,18 +26,22 @@ import { discoverInstalledCorpora } from '../src/router-discovery.js';
 import type { DiscoveryOptions } from '../src/router-discovery.js';
 import { UNSTRUCTURED_CODE } from '../src/twin.js';
 import type { DocsIndex, DocsTopic } from '../src/docs.js';
+import { catalog, sortEntry } from './helpers/catalog.js';
 import {
   NATIVE_CODE,
   TOY,
   TOY_CODE,
   TOY_CORPUS_PACKAGE,
+  TOY_FINGERPRINT,
   TOY_RAW,
   TOY_RAW_NOVEL,
   cleanTrees,
+  corpusFormatModule,
   fingerprintModule,
   makeTree,
   nativeToySource,
   toyCorpusFiles,
+  toyPacked,
 } from './helpers/sidecar.js';
 import type { Tree } from './helpers/sidecar.js';
 
@@ -115,7 +119,46 @@ describe('discovering installed corpora from a real node_modules tree', () => {
     expect(found.defects).toEqual([
       {
         at: '@comprehendo/half-installed',
-        detail: 'declares comprehendoCorpus but carries none of the three corpus artifacts',
+        detail: 'declares comprehendoCorpus but carries no comprehendo.corpus.json',
+      },
+    ]);
+  });
+
+  it('refuses an unknown corpus_packed version by name, never reads it lossily', async () => {
+    // Corpus Format [28]'s ruling: the artifact declares its own format
+    // version, and a reader that does not understand it must refuse loudly
+    // rather than pick the fields it recognizes and ignore the rest. Proven
+    // against a real corpus package built with Corpus Format [28]'s own
+    // readPackedCorpus/serializeCorpus, then hand-bumped to a version this
+    // build has never shipped.
+    const future = makeTree();
+    const { readPackedCorpus, serializeCorpus } = await corpusFormatModule();
+    const packed = readPackedCorpus({
+      comprehendo: '0.1',
+      corpus_packed: 1,
+      package: TOY,
+      provider: TOY,
+      version: '1.0.0',
+      docs: toyPacked(),
+      twins: catalog(sortEntry),
+      fingerprints: [TOY_FINGERPRINT],
+    }) as Record<string, unknown>;
+    future.installCorpus({
+      'package.json': JSON.stringify({
+        name: TOY_CORPUS_PACKAGE,
+        version: '0.3.1',
+        comprehendoCorpus: { target: TOY, format: 7, artifact: 'comprehendo.corpus.json' },
+      }),
+      'comprehendo.corpus.json': serializeCorpus({ ...packed, corpus_packed: 7 }),
+    });
+
+    const found = discoverInstalledCorpora(await discovery(future.root));
+
+    expect(found.corpora).toEqual([]);
+    expect(found.defects).toEqual([
+      {
+        at: `${TOY_CORPUS_PACKAGE}/comprehendo.corpus.json`,
+        detail: 'comprehendo.corpus.json is corpus_packed version 7; this build reads version 1',
       },
     ]);
   });
