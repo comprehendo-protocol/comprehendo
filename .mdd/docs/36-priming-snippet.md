@@ -4,8 +4,8 @@ title: Priming Snippet Finalized
 type: COMPONENT
 path: Distribution / Priming Snippet
 source_files: [packages/spec/priming.md]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-7
@@ -67,10 +67,25 @@ N/A directly; this is the text an agent is given, not a function call.
 
 ## Acceptance Criteria
 
-- [ ] The published priming snippet measures under 150 tokens.
+- [x] The published priming snippet measures under 150 tokens.
+      144/150 on the real js-tiktoken meter (`o200k_base` and
+      `cl100k_base` both 144), iterated across ten measured
+      phrasings against the actual harness (169 -> 156 -> 152 -> 148
+      -> 144), never estimated. Live: `node
+      packages/spec/kit/budget/run.js --scope priming --file
+      packages/spec/priming.md` -> `PASS priming 144 / 150`, exit 0.
+      Mutation-verified: the same file plus one padding line ->
+      `FAIL priming 157 / 150 OVER BUDGET by 7`, exit 1.
 - [ ] An agent given only this snippet (and nothing else about
       Comprehendo) can correctly use `comprehend`/`docs` in the
-      Cold-Agent Benchmark [38] scripted suite.
+      Cold-Agent Benchmark [38] scripted suite. [deferred] Owned by
+      Cold-Agent Benchmark [38], not this feature; see known_issues.
+      What IS proven here: the published text carries all four
+      required instructions (marker probe, `comprehend`/`docs` call
+      shape, completeness contract, UNDOCUMENTED source-pass rule),
+      mutation-verified by deleting two of them and confirming
+      exactly 3 of 18 gate tests go red naming the missing
+      instruction, restored.
 
 ## Dependencies
 
