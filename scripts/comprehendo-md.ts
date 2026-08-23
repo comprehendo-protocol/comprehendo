@@ -114,6 +114,64 @@ function primingParagraph(packed: PackedCorpus, marker: string): string {
   ].join(' ');
 }
 
+/**
+ * The fence info-string every rendered example carries.
+ *
+ * The corpus's own topic files fence with no info-string at all, and this adds
+ * one. It is a RENDERING convention, the same class as the table pipes and the
+ * cell escaping above, and it makes no claim about the package: what it gives
+ * is a real source for the `language` a reader (Docs As Tests [37]) has to
+ * dispatch on, instead of an assumption about what an unlabelled fence means.
+ *
+ * `sh` is the spelling, and the transcript is never handed to a shell: [37]
+ * tokenizes it and spawns an argv array, so an operand can never become a
+ * command (the same argument corpora/ffmpeg/README.md makes about `apply`).
+ */
+export const EXAMPLE_LANGUAGE = 'sh';
+
+/**
+ * What a block IS, frozen, so a reader is never guessing at the `#` lines.
+ *
+ * Deliberately says nothing about the package: it describes the shape of the
+ * quoted material, which is this renderer's own business, exactly as the
+ * generated notice above is.
+ */
+const EXAMPLES_PREAMBLE: readonly string[] = Object.freeze([
+  "These are the corpus's own worked examples, quoted from the topic each one",
+  'belongs to. A line beginning with `#` is commentary the corpus carries',
+  'beside the command above it, never a command to run.',
+]);
+
+/**
+ * One worked example, quoted. The heading names the topic it came from and
+ * then the example's own title, both read off the corpus; the body is the
+ * example's `code` byte for byte, because a quoted example that is not
+ * verbatim is a second authoring of it.
+ */
+function exampleBlock(topic: string, title: string, code: string): readonly string[] {
+  return ['', `### \`${topic}\`: ${title}`, '', `\`\`\`${EXAMPLE_LANGUAGE}`, code, '```'];
+}
+
+/**
+ * Every worked example the corpus carries, in menu order, or nothing at all.
+ *
+ * A corpus with no examples renders no section rather than an empty heading:
+ * a heading over nothing is a promise the corpus did not make, and [37] would
+ * then have a surface with zero blocks, which is the honest report for it.
+ */
+function examplesSection(
+  packed: PackedCorpus,
+  index: readonly string[],
+): readonly string[] {
+  const blocks = index.flatMap((name) =>
+    (packed.docs.topics[name]?.examples ?? []).flatMap((example) =>
+      exampleBlock(name, example.title, example.code),
+    ),
+  );
+  if (blocks.length === 0) return [];
+  return ['', '## Examples', '', ...EXAMPLES_PREAMBLE, ...blocks];
+}
+
 /** The menu sentence: what `docs()` with no argument really returns. */
 const indexParagraph = (topics: number): string =>
   [
@@ -159,6 +217,7 @@ export function renderPacked(
     '| Topic | Answers | See also |',
     '|---|---|---|',
     ...index.map((name) => topicRow(name, packed.docs.topics[name])),
+    ...examplesSection(packed, index),
   ];
   return `${lines.join('\n')}\n`;
 }

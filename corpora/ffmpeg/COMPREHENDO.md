@@ -36,3 +36,132 @@ comes back UNDOCUMENTED, never as a guess.
 | `filters` | A filtergraph is a comma-separated chain of filters, each written `name=key=value:key=value`. | `scaling`, `codecs` |
 | `scaling` | `scale=w:h` resizes a video, and either axis may be given as `-1` to derive it from the other while preserving the aspect ratio. | `filters`, `codecs` |
 | `stream-selection` | Without `-map`, ffmpeg picks one stream of each kind by its own default rules. | `inputs`, `codecs` |
+
+## Examples
+
+These are the corpus's own worked examples, quoted from the topic each one
+belongs to. A line beginning with `#` is commentary the corpus carries
+beside the command above it, never a command to run.
+
+### `inputs`: FFMPEG_INPUT_NOT_FOUND, the path is resolved before anything is decoded
+
+```sh
+ffmpeg -i does-not-exist.mp4 out.mp4
+# does-not-exist.mp4: No such file or directory
+```
+
+### `inputs`: FFMPEG_INVALID_INPUT_DATA, the file opens and no demuxer claims it
+
+```sh
+ffmpeg -i notes.txt out.mp4
+# notes.txt: Invalid data found when processing input
+ffprobe notes.txt
+```
+
+### `inputs`: A synthetic input, so a reproduction needs no media file
+
+```sh
+ffmpeg -f lavfi -i testsrc=size=320x240:rate=10:duration=1 -c:v libx264 clip.mp4
+```
+
+### `outputs`: FFMPEG_NO_OUTPUT_FILE, the parser stops before any work happens
+
+```sh
+ffmpeg -i clip.mp4
+# At least one output file must be specified
+```
+
+### `outputs`: FFMPEG_OUTPUT_EXISTS, the prompt nobody is there to answer
+
+```sh
+ffmpeg -nostdin -i clip.mp4 exists.mp4
+# File 'exists.mp4' already exists. Exiting.
+ffmpeg -nostdin -n -i clip.mp4 exists.mp4
+# File 'exists.mp4' already exists. Exiting.   (same line, exit 1, on purpose)
+ffmpeg -nostdin -y -i clip.mp4 exists.mp4
+# overwrites exists.mp4 and continues
+```
+
+### `options`: FFMPEG_UNRECOGNIZED_OPTION, the parser stops on a name it does not know
+
+```sh
+ffmpeg -i clip.mp4 -vcodex libx264 out.mp4
+# Unrecognized option 'vcodex'.
+# Error splitting the argument list: Option not found
+```
+
+### `options`: FFMPEG_INVALID_FRAMERATE, a known option carrying an unreadable operand
+
+```sh
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -r not-a-number out.mp4
+# Invalid framerate value: not-a-number
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -r 30000/1001 out.mp4
+```
+
+### `codecs`: FFMPEG_UNKNOWN_ENCODER, encoder availability is a property of the build
+
+```sh
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -c:v libx266 out.mp4
+# Unknown encoder 'libx266'
+ffmpeg -encoders
+```
+
+### `codecs`: FFMPEG_FILTER_WITH_STREAMCOPY, filtering and copying are exclusive
+
+```sh
+ffmpeg -i clip.mp4 -vf scale=160:120 -c:v copy out.mp4
+# Filtergraph 'scale=160:120' was defined for video output stream 0:0 but codec copy was selected.
+# Filtering and streamcopy cannot be used together.
+ffmpeg -i clip.mp4 -vf scale=160:120 -c:v libx264 out.mp4
+```
+
+### `filters`: FFMPEG_UNKNOWN_FILTER, the first line is the cause and the rest is echo
+
+```sh
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -vf notafilter=1 out.mp4
+# [AVFilterGraph @ 0x...] No such filter: 'notafilter'
+# Error reinitializing filters!
+# Failed to inject frame into filter network: Invalid argument
+```
+
+### `filters`: FFMPEG_UNDEFINED_FILTER_LABEL, defined once and consumed once
+
+```sh
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -filter_complex "[0:v]scale=32:32[v]" -map "[vv]" out.mp4
+# Output with label 'vv' does not exist in any defined filter graph, or was already used elsewhere.
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -filter_complex "[0:v]scale=32:32[v]" -map "[v]" out.mp4
+```
+
+### `scaling`: FFMPEG_ODD_DIMENSION, the derived width is whatever the arithmetic gives
+
+```sh
+ffmpeg -i clip-1442x1440.mp4 -vf scale=-1:720 -c:v libx264 out.mp4
+# [libx264 @ 0x...] width not divisible by 2 (721x720)
+# Error initializing output stream 0:0 -- Error while opening encoder for output stream #0:0
+```
+
+### `scaling`: The fence: -2 derives and rounds, so odd cannot be expressed
+
+```sh
+ffmpeg -i clip-1442x1440.mp4 -vf scale=-2:720 -c:v libx264 out.mp4
+# 722x720: requested height exact, derived width even
+ffmpeg -i clip.mp4 -vf scale=trunc(iw/2)*2:trunc(ih/2)*2 -c:v libx264 out.mp4
+# both axes explicit, same guarantee
+```
+
+### `stream-selection`: FFMPEG_MAP_MATCHES_NO_STREAM, an explicit selection is a claim about the input
+
+```sh
+ffmpeg -i video-only.mp4 -map 0:v -map 0:a -c copy out.mp4
+# Stream map '0:a' matches no streams.
+# To ignore this, add a trailing '?' to the map.
+```
+
+### `stream-selection`: The heal: an optional specifier, same result when the stream is there
+
+```sh
+ffmpeg -i video-only.mp4 -map 0:v -map 0:a? -c copy out.mp4
+# succeeds, output carries video only
+ffmpeg -i with-audio.mp4 -map 0:v -map 0:a? -c copy out.mp4
+# succeeds, output carries video and audio, exactly as the unmarked form did
+```
