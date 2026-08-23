@@ -22,7 +22,7 @@ import { spawnSync } from 'node:child_process';
 import { join } from 'node:path';
 
 import { subjectOf } from '../../src/upstream-lock.js';
-import type { LockCapture, LockEntry, UpstreamLock } from '../../src/upstream-lock.js';
+import type { LockCapture, LockEntry } from '../../src/upstream-lock.js';
 import type { SurfaceObservation } from '../../src/upstream-watch.js';
 import {
   FFMPEG,
@@ -138,6 +138,6 @@ export function probeOne(entry: LockEntry): SurfaceObservation {
 }
 
 /** Every locked element, re-observed. One pass, one report. */
-export function probeAll(lock: UpstreamLock): readonly SurfaceObservation[] {
-  return Object.freeze(lock.entries.map((entry) => probeOne(entry)));
+export function probeAll(entries: readonly LockEntry[]): readonly SurfaceObservation[] {
+  return Object.freeze(entries.map((entry) => probeOne(entry)));
 }

@@ -7,6 +7,15 @@ name: Upstream watch (ffmpeg)
 #
 # It re-probes every element in corpora/ffmpeg/upstream-watch.lock against the
 # ffmpeg the runner really installs, and fails naming the element that moved.
+#
+# ONE MATRIX LEG PER DECLARED RANGE (corpora/ffmpeg/manifest.json's
+# target.versions), never one binary standing in for both: this corpus is
+# authored against both ffmpeg's 4.x line and its 6.x/7.x line, and a job
+# that only ever met whichever binary the runner happens to ship would watch
+# one range and silently never re-observe the other. GitHub's own
+# Ubuntu-version runner labels give each leg a real, different apt-installed
+# ffmpeg without a container: 22.04 ships 4.4.2, 24.04 ships 6.1.1, the same
+# two builds this fix's own corpus data was captured against.
 
 on:
   schedule:
@@ -20,6 +29,7 @@ on:
     paths:
       - "corpora/ffmpeg/**"
       - "packages/registry-tools/src/upstream-*.ts"
+      - "packages/registry-tools/src/version-range.ts"
       - "packages/registry-tools/test/ffmpeg-upstream-watch.test.ts"
       - "packages/registry-tools/test/helpers/ffmpeg-*.ts"
       - ".github/workflows/upstream-watch.yml"
@@ -29,7 +39,16 @@ permissions:
 
 jobs:
   watch:
-    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - range: ">=4.4 <5"
+            runner: ubuntu-22.04
+          - range: ">=6 <8"
+            runner: ubuntu-24.04
+    runs-on: ${{ matrix.runner }}
+    name: watch (${{ matrix.range }} on ${{ matrix.runner }})
 
     steps:
       - uses: actions/checkout@v5
@@ -41,14 +60,15 @@ jobs:
         with:
           node-version: "22"
 
-      # The tool being watched. Never pinned: the whole point of this job is to
-      # meet whatever ffmpeg the distribution is shipping now.
+      # The tool being watched. Never pinned to a patch: the whole point of
+      # this leg is to meet whatever this Ubuntu release is shipping now,
+      # inside the major this leg is responsible for.
       - name: Install ffmpeg
         run: |
           sudo apt-get update
           sudo apt-get install -y ffmpeg
 
-      - name: Record the version this run scanned
+      - name: Record the version this leg scanned
         run: ffmpeg -version | head -1
 
       - name: Install workspace dependencies
@@ -56,8 +76,18 @@ jobs:
           npm ci --prefix packages/spec
           npm ci --prefix packages/registry-tools
 
-      # Fails with the drifted element named, never silently. The report itself
-      # is printed by the suite, so the job log carries the evidence.
+      # Fails with the drifted element named, never silently. The report
+      # itself is printed by the suite, so the job log carries the evidence.
+      # An UnsupportedVersionError here (the runner's ffmpeg matches no
+      # declared range at all) fails the same way, distinctly named: see
+      # entriesFor's own doc comment in src/upstream-lock.ts.
       - name: Re-probe the locked ffmpeg surface
         working-directory: packages/registry-tools
         run: npx vitest run ffmpeg-upstream-watch
+
+      # The real induction suite, on the same matrix: every cataloged
+      # twin re-proved on THIS leg's real binary, not only on whichever
+      # ffmpeg happened to be preinstalled on a single default runner.
+      - name: Re-induce every cataloged failure
+        working-directory: packages/registry-tools
+        run: npx vitest run ffmpeg-induction ffmpeg-corpus ffmpeg-fingerprints

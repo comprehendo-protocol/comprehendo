@@ -6,10 +6,10 @@ path: Corpora / ffmpeg / Upstream Watch
 source_files: [corpora/ffmpeg/upstream-watch.lock, packages/registry-tools/src/upstream-lock.ts, packages/registry-tools/src/upstream-watch.ts, .github/workflows/upstream-watch.yml]
 status: complete
 phase: all
-last_synced: 2026-08-22
+last_synced: 2026-08-23
 initiative: comprehendo
 wave: comprehendo-wave-6
-depends_on: [32-ffmpeg-corpus]
+depends_on: [32-ffmpeg-corpus, 28-corpus-format]
 tags: [upstream-watch, lock-file, drift-detection, generalized-pattern, wrapper-over-tool-not-owned]
 test_files: [packages/registry-tools/test/ffmpeg-upstream-watch.test.ts, packages/registry-tools/test/helpers/ffmpeg-upstream-probe.ts]
 known_issues:
@@ -184,3 +184,46 @@ package-wide, not a defect in any one test.
 - Fixed by setting `testTimeout: 20_000` in `vitest.config.ts`
   (orchestrator-level, package-wide, not owned by any single
   feature). Verified: 328/328 green.
+
+### The lock recorded one global observation, but a wrapped CLI's wording and exit codes differ per major (fixed 2026-08-23)
+
+Found by independent review running the full suite on a machine with
+only ffmpeg 6.1.1 (the flagship corpus's original lock was observed
+only against 4.4.2). Every locked element failed, most on
+`expect.status` alone (ffmpeg 6.1's real exit codes scatter across
+many nonzero values instead of 4.4's uniform 1) even where the
+element's own pattern or text still matched, plus one genuine text
+change (see [32-ffmpeg-corpus](32-ffmpeg-corpus.md) Fixed Issues).
+
+- `LockEntry` gains a required `versions` field (the declared range
+  this observation belongs to, per [28-corpus-format](28-corpus-format.md)'s
+  `target.versions`); the format bumps to `upstreamWatch: 2` (a
+  breaking shape change to this feature's own internal, non-RFC-
+  governed format, not the additive-only rule 28's `manifest.json`
+  field follows). The SAME subject now legitimately locks once per
+  declared range rather than once overall; `parseLock`'s uniqueness
+  check moved from "subject" to "subject plus versions".
+- New `entriesFor(lock, installedVersion)` resolves which range's
+  entries apply to the binary really installed, and refuses (naming
+  every declared range) when none match, a DIFFERENT finding than
+  drift: the binary was never a supported target, not that a
+  supported one stopped matching. `computeSurfaceDrift`/`watchReport`
+  now take the RESOLVED entries, never the whole lock, so one real
+  observation is never compared against the wrong range's expectation.
+- `corpora/ffmpeg/upstream-watch.lock`'s 38 subjects (17 flags, 9
+  behaviors, 12 stderr patterns) were fully re-derived: every one
+  re-probed against BOTH real binaries (4.4.2 native, 6.1.1 via a real
+  container), 76 entries total, each a separate real capture, never
+  one text stretched to cover a major it was never re-observed
+  against.
+- `.github/workflows/upstream-watch.yml` gains a matrix, one leg per
+  declared range, using GitHub's own Ubuntu-version runner labels
+  (22.04 ships 4.4.2, 24.04 ships 6.1.1) rather than containers, so
+  the scheduled job actually re-induces both ranges instead of
+  whichever binary the default runner happens to ship.
+- Mutation-verified: `ffmpeg-upstream-watch.test.ts` gained cases for
+  a subject locked once per range (accepted), the same subject locked
+  twice for the SAME range (refused), a required `versions` field
+  (refused when empty), and a binary outside every declared range
+  (refused, distinctly, from `entriesFor`). Full suite re-run clean
+  against both real binaries: 448/448.
