@@ -42,7 +42,7 @@ overlap_count: 5
 **Core / Wrap Proxy**
   └── `24-wrap-proxy` - Wrap Opt-In Proxy (complete)
 **Corpora / ffmpeg / Corpus**
-  └── `32-ffmpeg-corpus` - ffmpeg Corpus (planned)
+  └── `32-ffmpeg-corpus` - ffmpeg Corpus (complete)
 **Corpora / ffmpeg / Fingerprints**
   └── `33-ffmpeg-fingerprints` - ffmpeg Fingerprints (planned)
 **Corpora / ffmpeg / Upstream Watch**
@@ -129,7 +129,7 @@ graph TD
   29_submission_gate["29-submission-gate"]:::done
   30_owner_endorsement["30-owner-endorsement"]:::done
   31_scoped_publisher["31-scoped-publisher"]:::done
-  32_ffmpeg_corpus["32-ffmpeg-corpus"]:::planned
+  32_ffmpeg_corpus["32-ffmpeg-corpus"]:::done
   33_ffmpeg_fingerprints["33-ffmpeg-fingerprints"]:::planned
   34_upstream_watch["34-upstream-watch"]:::planned
   35_comprehendo_md_generator["35-comprehendo-md-generator"]:::planned

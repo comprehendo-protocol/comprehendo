@@ -4,8 +4,8 @@ title: ffmpeg Corpus
 type: COMPONENT
 path: Corpora / ffmpeg / Corpus
 source_files: [corpora/ffmpeg/]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-22
 initiative: comprehendo
 wave: comprehendo-wave-6
