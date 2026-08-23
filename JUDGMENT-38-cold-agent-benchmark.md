@@ -262,3 +262,45 @@ real: ffmpeg's own stderr carries per-run timing and speed figures, so the
 text that really crossed into the session really was different. Rounding it,
 caching it, or stripping the variable lines would make the number tidier and
 less true. It is published as measured, and the doc says why.
+
+## Call 13: the live tier's number came back BAD, and it is published unchanged
+
+Real run, 2026-08-23, 17m53s of real wall time, 62 model turns, 0 unparseable
+replies. Model `llama3:8b`. System prompt sha256
+`3fb880a00b742b718e3d2a77746119c1868d3ea357c608a13b2a044361710c1d`, which is
+the sha256 of `packages/spec/priming.md` trimmed, 598 characters, 144 tokens
+on the real budget meter, verified independently after the run.
+
+```
+  agent                    LIVE isolated llama3 session (measures a MODEL, not the protocol; not gating)
+  tasksAttempted           14
+  tasksFirstCorrected      1
+  firstCorrectionRate      7.1% (baseline 100.0%)
+  sourceReadsOutsideGrant  6
+  sessionTokenCost         6906 tokens
+  breakdown: executable-fix 0/3, inert-pointer 0/9, clean 1/1, honest-miss 0/1
+```
+
+The temptation here is real and was refused three ways:
+
+1. **Not tuned into looking better.** No re-prompting, no coaching, no
+   few-shot examples, no retry on a wrong action. Every one of those would
+   have measured the coaching rather than the snippet, which is the entire
+   thing this feature exists to avoid.
+2. **Not quietly dropped.** The doc's own Business Rule 3 says the cost is
+   published "not only when it looks favorable", and the same discipline
+   applies to the rate. A tier that only reports when it flatters is not a
+   measurement.
+3. **Not allowed to gate.** It measures ONE 8B open-weights model. Letting it
+   fail the release would be as dishonest as hiding it, in the other
+   direction.
+
+What it actually says, precisely: 36's snippet has been proven to CONTAIN the
+four instructions this benchmark needs (36's own gate, mutation-verified) and
+has now, for the first time, been measured against a real model FOLLOWING
+them. Those are different claims and the gap between them is 92.9 points on
+one small model. The one thing the model did get right is the one a suite of
+pure failures could never have caught: on the working invocation it made no
+protocol call at all, which is the non-guessing property the clean task exists
+for. Recorded in the feature doc's `known_issues` as a `[gap]`, not a
+`[deferred]`, because nobody has decided anything about it yet.
