@@ -27,7 +27,7 @@
 
 import { matchesPattern } from './fingerprint-facets.js';
 import type { TruthFailure, UpstreamVerification } from './gate-upstream.js';
-import { elementKindOf, subjectOf } from './upstream-lock.js';
+import { elementKindOf, entriesFor, subjectOf } from './upstream-lock.js';
 import type { LockElementKind, LockEntry, UpstreamLock } from './upstream-lock.js';
 
 /** What a probe really saw when it re-ran a locked element's invocation. */
@@ -129,19 +129,27 @@ function driftOfEntry(entry: LockEntry, seen: SurfaceObservation): WatchDriftRec
 }
 
 /**
- * Every locked element that no longer matches what the tool really does.
+ * Every locked element (already resolved to the ONE range the binary really
+ * installed falls in, `entriesFor`) that no longer matches what the tool
+ * really does.
  *
  * An element with no observation is drift, never a pass: a probe that could not
  * run has told you nothing, and reporting nothing as clean is the exact failure
  * mode a watch exists to prevent.
+ *
+ * Takes the resolved ENTRIES, never the whole lock: a lock legitimately
+ * carries the same subject once per declared range, and comparing one real
+ * observation against every range's expectation at once would report the
+ * OTHER range's entry as drifted for no reason, a false positive `entriesFor`
+ * exists specifically to prevent.
  */
 export function computeSurfaceDrift(
-  lock: UpstreamLock,
+  entries: readonly LockEntry[],
   observations: readonly SurfaceObservation[],
 ): readonly WatchDriftRecord[] {
   const seenBy = new Map(observations.map((one) => [one.subject, one]));
   const drift: WatchDriftRecord[] = [];
-  for (const entry of lock.entries) {
+  for (const entry of entries) {
     const subject = subjectOf(entry);
     const seen = seenBy.get(subject);
     if (seen === undefined) {
@@ -160,18 +168,26 @@ export function computeSurfaceDrift(
   return Object.freeze(drift);
 }
 
-/** The whole watch result, in `comprehendo diff`'s report shape. */
+/**
+ * The whole watch result, in `comprehendo diff`'s report shape.
+ *
+ * Resolves the ONE range the binary really installed (`scanned`) falls in
+ * via `entriesFor`, and reports drift only for that range's entries: an
+ * `UnsupportedVersionError` propagates uncaught when the binary matches no
+ * declared range at all, a DIFFERENT finding than drift (see `entriesFor`).
+ */
 export function watchReport(
   lock: UpstreamLock,
   observations: readonly SurfaceObservation[],
   scanned: string,
 ): WatchReport {
+  const entries = entriesFor(lock, scanned);
   return Object.freeze({
     target: lock.target,
     scanned_version: scanned,
     locked_version: lock.lockedVersion,
-    locked: lock.entries.length,
-    drift: computeSurfaceDrift(lock, observations),
+    locked: entries.length,
+    drift: computeSurfaceDrift(entries, observations),
   });
 }
 

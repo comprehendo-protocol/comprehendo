@@ -34,8 +34,8 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/TheDecipherist/comprehendo"
-Repository = "https://github.com/TheDecipherist/comprehendo"
+Homepage = "https://github.com/comprehendo-protocol/comprehendo"
+Repository = "https://github.com/comprehendo-protocol/comprehendo"
 
 [tool.hatch.build.targets.wheel]
 packages = ["comprehendo"]

@@ -141,21 +141,49 @@ interface Verdict {
   readonly produced: string | undefined;
 }
 
-/** What one real exit status and one real stderr MEAN for this block. */
+/**
+ * What one real exit status and one real stderr MEAN for this block.
+ *
+ * Exit 0 passes, with ONE narrow exception verified live: ffmpeg's
+ * `FFMPEG_OUTPUT_EXISTS` really exits 0 on some builds while its stderr
+ * still carries the exact cataloged line (a real ffmpeg exit-code
+ * regression, not this project's; see corpora/ffmpeg/topics/outputs.md).
+ * comprehend(stderr) is text-only and never reads exit status
+ * (fingerprint-facets.ts's matchesPattern), so the routed match decides
+ * that one case, never the exit code alone.
+ *
+ * The exception is deliberately narrow: a block's heading licenses every
+ * command line under it (three lines can share one `### FFMPEG_..." title,
+ * the failing form twice and a genuine `-y` success as the contrast), so
+ * "the heading names a failure" is not "every line in this block must
+ * produce it." Only a command whose real stderr routes to EXACTLY the
+ * licensed twin, while exiting 0, is refused; an exit-0 line that matches
+ * nothing (the ordinary success case) still passes exactly as it always
+ * has, licensed heading or not.
+ */
 function judge(
   run: { readonly status: number; readonly stderr: string },
   licensed: string | undefined,
   context: Context,
   said: (text: string) => string,
 ): Verdict {
-  if (run.status === 0) return { ok: true, note: said('exit 0'), produced: undefined };
   const at = `exit ${String(run.status)}`;
   const match = context.index.match(run.stderr);
+  const produced = match.outcome === 'matched' ? match.entry.corpusEntryId : undefined;
+
+  if (run.status === 0 && produced !== licensed) {
+    return { ok: true, note: said('exit 0'), produced: undefined };
+  }
+  if (run.status === 0) {
+    // produced === licensed here, and licensed is defined (produced is only
+    // ever a real corpus code, never undefined, so equality forces both).
+    const why = `${at}, cataloged as ${produced} (ffmpeg's own exit status said nothing failed; the message did)`;
+    return { ok: true, note: said(`${why}:\n${tail(run.stderr)}`), produced };
+  }
   if (match.outcome !== 'matched') {
     const why = `${at}, and the stderr it really wrote routes to no cataloged failure (${match.outcome})`;
     return { ok: false, note: said(`${why}:\n${tail(run.stderr)}`), produced: undefined };
   }
-  const produced = match.entry.corpusEntryId;
   if (licensed === undefined) {
     const why = `${at}, cataloged as ${produced}, but this example's heading names no failure at all`;
     return { ok: false, note: said(`${why}:\n${tail(run.stderr)}`), produced };

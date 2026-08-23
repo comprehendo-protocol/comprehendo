@@ -45,7 +45,10 @@ export const TASKS: readonly Task[] = Object.freeze([
     pkg: 'ffmpeg',
     expect: 'FFMPEG_INPUT_NOT_FOUND',
     argv: [...INDUCE_PREFIX, '-i', 'does-not-exist.mp4', 'out.mp4'],
-    stderrWitness: 'does-not-exist.mp4: No such file or directory',
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: 'does-not-exist.mp4: No such file or directory', status: 1 },
+      { versions: '>=6 <8', stderr: 'Error opening input file does-not-exist.mp4.', status: 254 },
+    ],
   },
   {
     id: 'transcode-something-that-is-not-media',
@@ -55,7 +58,10 @@ export const TASKS: readonly Task[] = Object.freeze([
     expect: 'FFMPEG_INVALID_INPUT_DATA',
     argv: [...INDUCE_PREFIX, '-i', 'notes.txt', 'out.mp4'],
     fixture: { make: 'text', name: 'notes.txt' },
-    stderrWitness: 'notes.txt: Invalid data found when processing input',
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: 'notes.txt: Invalid data found when processing input', status: 1 },
+      { versions: '>=6 <8', stderr: 'Error opening input file notes.txt.', status: 183 },
+    ],
   },
   {
     id: 'the-output-already-exists',
@@ -76,7 +82,13 @@ export const TASKS: readonly Task[] = Object.freeze([
       'exists.mp4',
     ],
     fixture: { make: 'video', name: 'exists.mp4', size: '64x64' },
-    stderrWitness: "File 'exists.mp4' already exists. Exiting.",
+    // Same real text on both ranges; the exit status (0 on >=6 <8, a real
+    // ffmpeg regression, not this project's) is a separate concern the
+    // scoring harness resolves itself, never guessed at here.
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: "File 'exists.mp4' already exists. Exiting.", status: 1 },
+      { versions: '>=6 <8', stderr: "File 'exists.mp4' already exists. Exiting.", status: 0 },
+    ],
   },
   {
     id: 'inspect-a-clip-and-forget-the-output',
@@ -86,7 +98,10 @@ export const TASKS: readonly Task[] = Object.freeze([
     expect: 'FFMPEG_NO_OUTPUT_FILE',
     argv: [...INDUCE_PREFIX, '-i', 'clip.mp4'],
     fixture: { make: 'video', name: 'clip.mp4' },
-    stderrWitness: 'At least one output file must be specified',
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: 'At least one output file must be specified', status: 1 },
+      { versions: '>=6 <8', stderr: 'At least one output file must be specified', status: 1 },
+    ],
   },
   {
     // The headline task from Wave 6's demo-state, run for real: crop and
@@ -111,7 +126,10 @@ export const TASKS: readonly Task[] = Object.freeze([
       '-y',
       'out.mp4',
     ],
-    stderrWitness: 'width not divisible by 2 (721x720)',
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: 'width not divisible by 2 (721x720)', status: 1 },
+      { versions: '>=6 <8', stderr: 'width not divisible by 2 (721x720)', status: 187 },
+    ],
   },
   {
     id: 'remux-video-and-audio-from-a-silent-source',
@@ -133,7 +151,10 @@ export const TASKS: readonly Task[] = Object.freeze([
       'out.mp4',
     ],
     fixture: { make: 'video', name: 'video-only.mp4' },
-    stderrWitness: "Stream map '0:a' matches no streams.",
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: "Stream map '0:a' matches no streams.", status: 1 },
+      { versions: '>=6 <8', stderr: "Stream map '0:a' matches no streams.", status: 234 },
+    ],
   },
   {
     id: 'an-unsupported-codec-was-requested',
@@ -142,7 +163,10 @@ export const TASKS: readonly Task[] = Object.freeze([
     pkg: 'ffmpeg',
     expect: 'FFMPEG_UNKNOWN_ENCODER',
     argv: [...INDUCE_PREFIX, '-f', 'lavfi', '-i', SRC('64x64'), '-c:v', 'libx266', '-y', 'out.mp4'],
-    stderrWitness: "Unknown encoder 'libx266'",
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: "Unknown encoder 'libx266'", status: 1 },
+      { versions: '>=6 <8', stderr: "Unknown encoder 'libx266'", status: 8 },
+    ],
   },
   {
     id: 'resize-while-copying-the-video-stream',
@@ -162,7 +186,10 @@ export const TASKS: readonly Task[] = Object.freeze([
       'out.mp4',
     ],
     fixture: { make: 'video', name: 'clip.mp4' },
-    stderrWitness: 'Filtering and streamcopy cannot be used together.',
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: 'Filtering and streamcopy cannot be used together.', status: 1 },
+      { versions: '>=6 <8', stderr: 'Filtering and streamcopy cannot be used together.', status: 218 },
+    ],
   },
   {
     id: 'apply-a-filter-this-build-does-not-have',
@@ -177,11 +204,19 @@ export const TASKS: readonly Task[] = Object.freeze([
       '-i',
       SRC('64x64'),
       '-vf',
-      'notafilter=1',
+      // See ffmpeg-witnesses.ts: a bare `=1` (no `=key`) reads as a filter
+      // option to 4.4 but as a malformed option list to 6.1, which reports
+      // a parse error before ever checking the filter name. `notafilter=x=1`
+      // provokes the identical "No such filter" text on both, real and
+      // reproduced, so the argv is corrected here too rather than split.
+      'notafilter=x=1',
       '-y',
       'out.mp4',
     ],
-    stderrWitness: "No such filter: 'notafilter'",
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: "No such filter: 'notafilter'", status: 1 },
+      { versions: '>=6 <8', stderr: "No such filter: 'notafilter'", status: 8 },
+    ],
   },
   {
     id: 'map-a-filtergraph-output-that-was-never-labelled',
@@ -202,7 +237,18 @@ export const TASKS: readonly Task[] = Object.freeze([
       '-y',
       'out.mp4',
     ],
-    stderrWitness: "Output with label 'vv' does not exist in any defined filter graph",
+    stderrWitnesses: [
+      {
+        versions: '>=4.4 <5',
+        stderr: "Output with label 'vv' does not exist in any defined filter graph",
+        status: 1,
+      },
+      {
+        versions: '>=6 <8',
+        stderr: "Output with label 'vv' does not exist in any defined filter graph",
+        status: 234,
+      },
+    ],
   },
   {
     id: 'set-a-frame-rate-from-a-variable-that-was-not-a-number',
@@ -221,7 +267,10 @@ export const TASKS: readonly Task[] = Object.freeze([
       '-y',
       'out.mp4',
     ],
-    stderrWitness: 'Invalid framerate value: not-a-number',
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: 'Invalid framerate value: not-a-number', status: 1 },
+      { versions: '>=6 <8', stderr: 'Invalid framerate value: not-a-number', status: 234 },
+    ],
   },
   {
     id: 'mistype-the-video-codec-flag',
@@ -231,7 +280,10 @@ export const TASKS: readonly Task[] = Object.freeze([
     expect: 'FFMPEG_UNRECOGNIZED_OPTION',
     argv: [...INDUCE_PREFIX, '-i', 'clip.mp4', '-vcodex', 'libx264', '-y', 'out.mp4'],
     fixture: { make: 'video', name: 'clip.mp4' },
-    stderrWitness: "Unrecognized option 'vcodex'.",
+    stderrWitnesses: [
+      { versions: '>=4.4 <5', stderr: "Unrecognized option 'vcodex'.", status: 1 },
+      { versions: '>=6 <8', stderr: "Unrecognized option 'vcodex'.", status: 8 },
+    ],
   },
   {
     // Nothing is wrong here, and that is the point: a working invocation must

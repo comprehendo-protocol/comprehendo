@@ -1,7 +1,7 @@
 ---
 generated: 2026-08-23
 doc_count: 40
-connection_count: 63
+connection_count: 64
 overlap_count: 5
 ---
 
@@ -188,6 +188,7 @@ graph TD
   32_ffmpeg_corpus --> 28_corpus_format
   33_ffmpeg_fingerprints --> 21_fingerprint_index_matcher
   33_ffmpeg_fingerprints --> 32_ffmpeg_corpus
+  34_upstream_watch --> 28_corpus_format
   34_upstream_watch --> 32_ffmpeg_corpus
   35_comprehendo_md_generator --> 13_docs_engine
   35_comprehendo_md_generator --> 28_corpus_format

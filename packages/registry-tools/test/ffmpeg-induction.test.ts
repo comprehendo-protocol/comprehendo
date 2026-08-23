@@ -35,7 +35,13 @@ import {
   workspace,
 } from './helpers/ffmpeg-cli.js';
 import { indexOf, induceOne, loadFfmpegCorpus } from './helpers/ffmpeg-corpus.js';
-import { FENCE_SOURCES, WITNESSES, scaleArgv, withAudioFixture } from './helpers/ffmpeg-witnesses.js';
+import {
+  FENCE_SOURCES,
+  WITNESSES,
+  observationFor,
+  scaleArgv,
+  withAudioFixture,
+} from './helpers/ffmpeg-witnesses.js';
 
 let corpus: CorpusSource;
 let index: FingerprintIndex;
@@ -64,10 +70,18 @@ describe.each(WITNESSES.map((witness) => [witness.code, witness] as const))(
   'the cataloged failure %s',
   (code, witness) => {
     it('really fails, really writes the cataloged text, and really routes to itself', () => {
+      const observation = observationFor(witness, version);
       const induced = induceOne(code, index);
 
-      expect(induced.status).not.toBe(0);
-      expect(induced.stderr).toContain(witness.stderr);
+      // The real exit status THIS witness on THIS range really returns,
+      // never a blanket nonzero assumption: FFMPEG_OUTPUT_EXISTS really
+      // returns 0 on ffmpeg's `>=6 <8` line while still failing to write
+      // (a real ffmpeg regression, verified live, not this project's).
+      // comprehend(stderr) never reads exit status either
+      // (fingerprint-facets.ts's matchesPattern is text-only), so this is a
+      // fact about the binary, not a routing precondition.
+      expect(induced.status).toBe(observation.status);
+      expect(induced.stderr).toContain(observation.stderr);
       expect(induced.outcome).toBe('matched');
       expect(induced.matched).toBe(code);
     });

@@ -98,14 +98,21 @@ bug in this tool.
 - A block that fails to execute (syntax error, runtime error, or a wrong
   result) fails CI, naming the file and block.
 - A "wrong result" is defined without guessing at prose. The block's own
-  heading names the cataloged failure it demonstrates, and the verdict on
-  a non-zero exit comes from the corpus's own fingerprint index:
-  - a command that exits 0 passes;
+  heading names the cataloged failure it demonstrates, and the verdict
+  comes from the corpus's own fingerprint index, run over the stderr
+  regardless of exit status (exit status alone is not always reliable: a
+  real ffmpeg regression makes one cataloged failure exit 0 on some
+  builds, see Fixed Issues):
+  - a command that exits 0 passes, UNLESS its stderr routes to EXACTLY
+    the failure the block's heading names, which means the binary hit
+    the claimed failure while its own exit status said nothing did;
   - a command that exits non-zero must route to a cataloged failure, and
     it must be the one the heading names;
   - a heading that names a cataloged failure must actually get it, so an
     example that quietly started working again is a wrong result;
-  - a heading that names none licenses no failure: every command exits 0.
+  - a heading that names none licenses no failure: every command exits 0
+    with nothing routing, a routed match at exit 0 is still a wrong
+    result in reverse.
 - Nothing is ever skipped. An unsupported fence language, a program off
   the allowlist, a shell metacharacter outside quotes, or media the
   declared workspace does not carry each FAIL naming the block.
@@ -197,6 +204,35 @@ falsified.
   "passed"); restored, green. Real corpus still 15/15 blocks passing
   against ffmpeg 4.4.2-0ubuntu0.22.04.1 after the fix. registry-tools
   375/375, core 548/548.
+
+### The verdict trusted exit status unconditionally, which is not always true on ffmpeg 6.x (fixed 2026-08-23)
+
+Found running the full suite on a machine with only ffmpeg 6.1.1: the
+generated doc's own worked example for `FFMPEG_OUTPUT_EXISTS` (three
+command lines under one heading, two demonstrating the failure and one
+a genuine `-y` success as the contrast) failed, because `judge()`
+treated "exit 0" as an unconditional pass, which this project's own
+Business Rules text stated in as many words. ffmpeg's `>=6 <8` line
+really exits 0 for this one cataloged failure while its stderr still
+carries the exact cataloged line (a real ffmpeg regression, not this
+project's; see [32-ffmpeg-corpus](32-ffmpeg-corpus.md) Fixed Issues).
+
+- Fixed narrowly: exit 0 still passes in every case except one, a
+  command whose real stderr routes to EXACTLY the twin the block's
+  heading names. A first, broader attempt (route every exit-0 command
+  through the index) broke the multi-line-per-block pattern itself
+  (the `-y` success line shares its heading with the two failing
+  lines, and is not supposed to route anywhere); the narrow form
+  preserves every other exit-0 command's pass unchanged, licensed
+  heading or not.
+- The Business Rules text is corrected to state the real, narrower
+  rule rather than the rule the code used to enforce.
+- `corpora/ffmpeg/topics/outputs.md`'s own prose corrected from the
+  now-false "still stops at exit 1" claim (trimmed to stay under the
+  CC5 600-token topic budget after the addition, real tiktoken-class
+  meter, verified live).
+- Mutation-verified against the real generated `COMPREHENDO.md`, both
+  real binaries: 28/28 on 4.4.2, 28/28 on 6.1.1.
 
 ## Known Issues
 

@@ -54,7 +54,7 @@ another output already consumed.
 ### FFMPEG_UNKNOWN_FILTER, the first line is the cause and the rest is echo
 
 ```
-ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -vf notafilter=1 out.mp4
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -vf notafilter=x=1 out.mp4
 # [AVFilterGraph @ 0x...] No such filter: 'notafilter'
 # Error reinitializing filters!
 # Failed to inject frame into filter network: Invalid argument

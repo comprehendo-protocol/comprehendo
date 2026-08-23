@@ -1,7 +1,7 @@
 {
   "name": "@comprehendo/core",
   "version": "0.0.1",
-  "description": "Comprehendo provider SDK: marker/probe, twin builder, docs engine, config loader (JavaScript). Internal workspace package name; how this assembles into the published comprehendo npm package is a Wave 7 (Distribution) decision, not made here.",
+  "description": "Comprehendo provider SDK: marker/probe, twin builder, docs engine, config loader (JavaScript). Internal, unpublished workspace package; the root comprehendo npm package re-exports this package's build unchanged (see the repository root's package.json and index.js).",
   "type": "module",
   "private": true,
   "files": [
@@ -25,12 +25,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheDecipherist/comprehendo.git",
+    "url": "git+https://github.com/comprehendo-protocol/comprehendo.git",
     "directory": "packages/core"
   },
-  "homepage": "https://github.com/TheDecipherist/comprehendo#readme",
+  "homepage": "https://github.com/comprehendo-protocol/comprehendo#readme",
   "bugs": {
-    "url": "https://github.com/TheDecipherist/comprehendo/issues"
+    "url": "https://github.com/comprehendo-protocol/comprehendo/issues"
   },
   "devDependencies": {
     "typescript": "^5.6.3",

@@ -1,13 +1,16 @@
 {
   "comprehendo": "0.1",
-  "upstreamWatch": 1,
+  "upstreamWatch": 2,
   "provider": "@comprehendo/ffmpeg",
   "target": "ffmpeg",
-  "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-  "observedAt": "2026-08-22",
+  "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+  "observedAt": "2026-08-23",
   "entries": [
     {
       "flag": "-i",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-i",
         "topic:inputs",
@@ -23,12 +26,35 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'i'"
+      }
+    },
+    {
+      "flag": "-i",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-i",
+        "topic:inputs",
+        "twin:FFMPEG_INPUT_NOT_FOUND"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-i",
+          "no-such-input.mp4"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'i'"
+      }
     },
     {
       "flag": "-f",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-f",
         "topic:inputs"
@@ -45,12 +71,36 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'f'"
+      }
+    },
+    {
+      "flag": "-f",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-f",
+        "topic:inputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=32x32:rate=1:duration=1"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'f'"
+      }
     },
     {
       "flag": "-c",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-c",
         "topic:codecs",
@@ -66,12 +116,35 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'c'"
+      }
+    },
+    {
+      "flag": "-c",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-c",
+        "topic:codecs",
+        "twin:FFMPEG_MAP_MATCHES_NO_STREAM"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-c",
+          "copy"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'c'"
+      }
     },
     {
       "flag": "-c:v",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-c:v",
         "topic:codecs",
@@ -88,12 +161,36 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'c:v'"
+      }
+    },
+    {
+      "flag": "-c:v",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-c:v",
+        "topic:codecs",
+        "twin:FFMPEG_UNKNOWN_ENCODER",
+        "fix:filter-with-streamcopy#0"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-c:v",
+          "libx264"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'c:v'"
+      }
     },
     {
       "flag": "-c:a",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-c:a",
         "topic:codecs"
@@ -108,12 +205,34 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'c:a'"
+      }
+    },
+    {
+      "flag": "-c:a",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-c:a",
+        "topic:codecs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-c:a",
+          "aac"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'c:a'"
+      }
     },
     {
       "flag": "-map",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-map",
         "topic:stream-selection",
@@ -130,12 +249,36 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'map'"
+      }
+    },
+    {
+      "flag": "-map",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-map",
+        "topic:stream-selection",
+        "twin:FFMPEG_MAP_MATCHES_NO_STREAM",
+        "fix:map-matches-no-stream#0"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-map",
+          "0:v"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'map'"
+      }
     },
     {
       "flag": "-vf",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-vf",
         "topic:filters",
@@ -155,12 +298,39 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'vf'"
+      }
+    },
+    {
+      "flag": "-vf",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-vf",
+        "topic:filters",
+        "topic:scaling",
+        "twin:FFMPEG_ODD_DIMENSION",
+        "twin:FFMPEG_FILTER_WITH_STREAMCOPY",
+        "twin:FFMPEG_UNKNOWN_FILTER",
+        "fix:odd-dimension#0"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-vf",
+          "scale=32:32"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'vf'"
+      }
     },
     {
       "flag": "-af",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-af",
         "topic:filters"
@@ -175,12 +345,34 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'af'"
+      }
+    },
+    {
+      "flag": "-af",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-af",
+        "topic:filters"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-af",
+          "anull"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'af'"
+      }
     },
     {
       "flag": "-filter_complex",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-filter_complex",
         "topic:filters",
@@ -196,12 +388,35 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'filter_complex'"
+      }
+    },
+    {
+      "flag": "-filter_complex",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-filter_complex",
+        "topic:filters",
+        "twin:FFMPEG_UNDEFINED_FILTER_LABEL"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-filter_complex",
+          "[0:v]null[v]"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'filter_complex'"
+      }
     },
     {
       "flag": "-pix_fmt",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-pix_fmt",
         "twin:FFMPEG_ODD_DIMENSION"
@@ -216,12 +431,34 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'pix_fmt'"
+      }
+    },
+    {
+      "flag": "-pix_fmt",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-pix_fmt",
+        "twin:FFMPEG_ODD_DIMENSION"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-pix_fmt",
+          "yuv420p"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'pix_fmt'"
+      }
     },
     {
       "flag": "-r",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-r",
         "topic:options",
@@ -237,12 +474,35 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'r'"
+      }
+    },
+    {
+      "flag": "-r",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-r",
+        "topic:options",
+        "twin:FFMPEG_INVALID_FRAMERATE"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-r",
+          "30"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'r'"
+      }
     },
     {
       "flag": "-t",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-t",
         "topic:options"
@@ -257,12 +517,34 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 't'"
+      }
+    },
+    {
+      "flag": "-t",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-t",
+        "topic:options"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-t",
+          "1"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 't'"
+      }
     },
     {
       "flag": "-y",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-y",
         "topic:outputs",
@@ -277,12 +559,34 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'y'"
+      }
+    },
+    {
+      "flag": "-y",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-y",
+        "topic:outputs",
+        "fix:output-exists#0"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-y"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'y'"
+      }
     },
     {
       "flag": "-n",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-n",
         "topic:outputs",
@@ -297,12 +601,34 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'n'"
+      }
+    },
+    {
+      "flag": "-n",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-n",
+        "topic:outputs",
+        "fix:output-exists#0"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-n"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'n'"
+      }
     },
     {
       "flag": "-nostdin",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "topic:outputs",
         "twin:FFMPEG_OUTPUT_EXISTS"
@@ -315,12 +641,32 @@
       },
       "expect": {
         "stderrExcludes": "Unrecognized option 'nostdin'"
+      }
+    },
+    {
+      "flag": "-nostdin",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "topic:outputs",
+        "twin:FFMPEG_OUTPUT_EXISTS"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'nostdin'"
+      }
     },
     {
       "flag": "-encoders",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "topic:codecs",
         "twin:FFMPEG_UNKNOWN_ENCODER",
@@ -336,12 +682,35 @@
       "expect": {
         "stderrExcludes": "Unrecognized option 'encoders'",
         "status": 0
+      }
+    },
+    {
+      "flag": "-encoders",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "topic:codecs",
+        "twin:FFMPEG_UNKNOWN_ENCODER",
+        "fix:unknown-encoder#0"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-encoders"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'encoders'",
+        "status": 0
+      }
     },
     {
       "flag": "-filters",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "topic:filters",
         "twin:FFMPEG_UNKNOWN_FILTER",
@@ -357,12 +726,35 @@
       "expect": {
         "stderrExcludes": "Unrecognized option 'filters'",
         "status": 0
+      }
+    },
+    {
+      "flag": "-filters",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "topic:filters",
+        "twin:FFMPEG_UNKNOWN_FILTER",
+        "fix:unknown-filter#0"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-nostdin",
+          "-filters"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "stderrExcludes": "Unrecognized option 'filters'",
+        "status": 0
+      }
     },
     {
       "behavior": "scale-minus-two-derives-an-even-width",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_ODD_DIMENSION",
         "fix:odd-dimension#0",
@@ -394,12 +786,51 @@
       "expect": {
         "status": 0,
         "capture": "722,720"
+      }
+    },
+    {
+      "behavior": "scale-minus-two-derives-an-even-width",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_ODD_DIMENSION",
+        "fix:odd-dimension#0",
+        "topic:scaling"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=1442x1440:rate=5:duration=1",
+          "-vf",
+          "scale=-2:720",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-y",
+          "out.mp4"
+        ],
+        "capture": {
+          "read": "dimensions",
+          "file": "out.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "capture": "722,720"
+      }
     },
     {
       "behavior": "trunc-rounds-both-axes-to-even",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "fix:odd-dimension#1",
         "topic:scaling"
@@ -430,12 +861,50 @@
       "expect": {
         "status": 0,
         "capture": "100,50"
+      }
+    },
+    {
+      "behavior": "trunc-rounds-both-axes-to-even",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "fix:odd-dimension#1",
+        "topic:scaling"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=101x51:rate=5:duration=1",
+          "-vf",
+          "scale=trunc(iw/2)*2:trunc(ih/2)*2",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-y",
+          "out.mp4"
+        ],
+        "capture": {
+          "read": "dimensions",
+          "file": "out.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "capture": "100,50"
+      }
     },
     {
       "behavior": "optional-map-selects-nothing-when-absent",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_MAP_MATCHES_NO_STREAM",
         "fix:map-matches-no-stream#0",
@@ -466,12 +935,50 @@
       "expect": {
         "status": 0,
         "capture": "video"
+      }
+    },
+    {
+      "behavior": "optional-map-selects-nothing-when-absent",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_MAP_MATCHES_NO_STREAM",
+        "fix:map-matches-no-stream#0",
+        "topic:stream-selection"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "video-only.mp4",
+          "-map",
+          "0:v",
+          "-map",
+          "0:a?",
+          "-c",
+          "copy",
+          "-y",
+          "out.mp4"
+        ],
+        "fixture": "video-only",
+        "capture": {
+          "read": "streamKinds",
+          "file": "out.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "capture": "video"
+      }
     },
     {
       "behavior": "optional-map-still-selects-a-present-stream",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "fix:map-matches-no-stream#0",
         "topic:stream-selection"
@@ -501,12 +1008,49 @@
       "expect": {
         "status": 0,
         "capture": "video,audio"
+      }
+    },
+    {
+      "behavior": "optional-map-still-selects-a-present-stream",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "fix:map-matches-no-stream#0",
+        "topic:stream-selection"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "av.mp4",
+          "-map",
+          "0:v",
+          "-map",
+          "0:a?",
+          "-c",
+          "copy",
+          "-y",
+          "out.mp4"
+        ],
+        "fixture": "video-with-audio",
+        "capture": {
+          "read": "streamKinds",
+          "file": "out.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "capture": "video,audio"
+      }
     },
     {
       "behavior": "named-encoder-resolves-the-streamcopy-conflict",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_FILTER_WITH_STREAMCOPY",
         "fix:filter-with-streamcopy#0",
@@ -535,12 +1079,48 @@
       "expect": {
         "status": 0,
         "capture": "160,120"
+      }
+    },
+    {
+      "behavior": "named-encoder-resolves-the-streamcopy-conflict",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_FILTER_WITH_STREAMCOPY",
+        "fix:filter-with-streamcopy#0",
+        "topic:codecs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "clip.mp4",
+          "-vf",
+          "scale=160:120",
+          "-c:v",
+          "libx264",
+          "-y",
+          "out.mp4"
+        ],
+        "fixture": "clip",
+        "capture": {
+          "read": "dimensions",
+          "file": "out.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "capture": "160,120"
+      }
     },
     {
       "behavior": "overwrite-flag-replaces-an-existing-output",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_OUTPUT_EXISTS",
         "fix:output-exists#0",
@@ -571,12 +1151,50 @@
       "expect": {
         "status": 0,
         "capture": "320,240"
+      }
+    },
+    {
+      "behavior": "overwrite-flag-replaces-an-existing-output",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_OUTPUT_EXISTS",
+        "fix:output-exists#0",
+        "topic:outputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-y",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=320x240:rate=10:duration=1",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "exists.mp4"
+        ],
+        "fixture": "existing-output",
+        "capture": {
+          "read": "dimensions",
+          "file": "exists.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "capture": "320,240"
+      }
     },
     {
       "behavior": "refuse-flag-keeps-an-existing-output",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_OUTPUT_EXISTS",
         "fix:output-exists#0",
@@ -608,12 +1226,51 @@
         "status": 1,
         "stderrIncludes": "File 'exists.mp4' already exists. Exiting.",
         "capture": "64,64"
+      }
+    },
+    {
+      "behavior": "refuse-flag-keeps-an-existing-output",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_OUTPUT_EXISTS",
+        "fix:output-exists#0",
+        "topic:outputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-n",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=320x240:rate=10:duration=1",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "exists.mp4"
+        ],
+        "fixture": "existing-output",
+        "capture": {
+          "read": "dimensions",
+          "file": "exists.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "stderrIncludes": "File 'exists.mp4' already exists. Exiting.",
+        "capture": "64,64"
+      }
     },
     {
       "behavior": "lavfi-synthesizes-a-source",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "schema:-f",
         "topic:inputs"
@@ -642,12 +1299,48 @@
       "expect": {
         "status": 0,
         "capture": "320,240"
+      }
+    },
+    {
+      "behavior": "lavfi-synthesizes-a-source",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "schema:-f",
+        "topic:inputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=320x240:rate=10:duration=1",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-y",
+          "out.mp4"
+        ],
+        "capture": {
+          "read": "dimensions",
+          "file": "out.mp4"
+        }
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0,
+        "capture": "320,240"
+      }
     },
     {
       "behavior": "ffprobe-names-invalid-data",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_INVALID_INPUT_DATA",
         "fix:invalid-input-data#0",
@@ -664,12 +1357,36 @@
       "expect": {
         "status": 1,
         "stderrIncludes": "Invalid data found when processing input"
+      }
+    },
+    {
+      "behavior": "ffprobe-names-invalid-data",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_INVALID_INPUT_DATA",
+        "fix:invalid-input-data#0",
+        "topic:inputs"
+      ],
+      "probe": {
+        "program": "ffprobe",
+        "argv": [
+          "-hide_banner",
+          "notes.txt"
+        ],
+        "fixture": "text-file"
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 1,
+        "stderrIncludes": "Invalid data found when processing input"
+      }
     },
     {
       "stderrPattern": "*: No such file or directory*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_INPUT_NOT_FOUND",
         "fix:input-not-found#0",
@@ -687,12 +1404,37 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*: No such file or directory*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_INPUT_NOT_FOUND",
+        "fix:input-not-found#0",
+        "topic:inputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "does-not-exist.mp4",
+          "out.mp4"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 254
+      }
     },
     {
       "stderrPattern": "*: Invalid data found when processing input*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_INVALID_INPUT_DATA",
         "fix:invalid-input-data#0",
@@ -711,12 +1453,38 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*: Invalid data found when processing input*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_INVALID_INPUT_DATA",
+        "fix:invalid-input-data#0",
+        "topic:inputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "notes.txt",
+          "out.mp4"
+        ],
+        "fixture": "text-file"
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 183
+      }
     },
     {
       "stderrPattern": "*File '*' already exists. Exiting.*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_OUTPUT_EXISTS",
         "fix:output-exists#0",
@@ -741,12 +1509,44 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*File '*' already exists. Exiting.*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_OUTPUT_EXISTS",
+        "fix:output-exists#0",
+        "topic:outputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=64x64:rate=10:duration=1",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "exists.mp4"
+        ],
+        "fixture": "existing-output"
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 0
+      }
     },
     {
       "stderrPattern": "*At least one output file must be specified*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_NO_OUTPUT_FILE",
         "fix:no-output-file#0",
@@ -764,12 +1564,37 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*At least one output file must be specified*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_NO_OUTPUT_FILE",
+        "fix:no-output-file#0",
+        "topic:outputs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "clip.mp4"
+        ],
+        "fixture": "clip"
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 1
+      }
     },
     {
       "stderrPattern": "* not divisible by 2 (*)*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_ODD_DIMENSION",
         "fix:odd-dimension#0",
@@ -796,12 +1621,46 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "* not divisible by 2 (*)*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_ODD_DIMENSION",
+        "fix:odd-dimension#0",
+        "topic:scaling"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=1442x1440:rate=5:duration=1",
+          "-vf",
+          "scale=-1:720",
+          "-c:v",
+          "libx264",
+          "-pix_fmt",
+          "yuv420p",
+          "-y",
+          "out.mp4"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 187
+      }
     },
     {
       "stderrPattern": "*Stream map '*' matches no streams.*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_MAP_MATCHES_NO_STREAM",
         "fix:map-matches-no-stream#0",
@@ -827,12 +1686,45 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*Stream map '*' matches no streams.*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_MAP_MATCHES_NO_STREAM",
+        "fix:map-matches-no-stream#0",
+        "topic:stream-selection"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "video-only.mp4",
+          "-map",
+          "0:v",
+          "-map",
+          "0:a",
+          "-c",
+          "copy",
+          "-y",
+          "out.mp4"
+        ],
+        "fixture": "video-only"
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 234
+      }
     },
     {
       "stderrPattern": "*Unknown encoder '*'*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_UNKNOWN_ENCODER",
         "fix:unknown-encoder#0",
@@ -855,12 +1747,42 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*Unknown encoder '*'*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_UNKNOWN_ENCODER",
+        "fix:unknown-encoder#0",
+        "topic:codecs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=64x64:rate=10:duration=1",
+          "-c:v",
+          "libx266",
+          "-y",
+          "out.mp4"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 8
+      }
     },
     {
       "stderrPattern": "*Filtering and streamcopy cannot be used together.*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_FILTER_WITH_STREAMCOPY",
         "fix:filter-with-streamcopy#0",
@@ -884,12 +1806,43 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*Filtering and streamcopy cannot be used together.*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_FILTER_WITH_STREAMCOPY",
+        "fix:filter-with-streamcopy#0",
+        "topic:codecs"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "clip.mp4",
+          "-vf",
+          "scale=160:120",
+          "-c:v",
+          "copy",
+          "-y",
+          "out.mp4"
+        ],
+        "fixture": "clip"
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 218
+      }
     },
     {
       "stderrPattern": "*No such filter: '*'*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_UNKNOWN_FILTER",
         "fix:unknown-filter#0",
@@ -905,19 +1858,49 @@
           "-i",
           "testsrc=size=64x64:rate=10:duration=1",
           "-vf",
-          "notafilter=1",
+          "notafilter=x=1",
           "-y",
           "out.mp4"
         ]
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*No such filter: '*'*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_UNKNOWN_FILTER",
+        "fix:unknown-filter#0",
+        "topic:filters"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=64x64:rate=10:duration=1",
+          "-vf",
+          "notafilter=x=1",
+          "-y",
+          "out.mp4"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 8
+      }
     },
     {
       "stderrPattern": "*does not exist in any defined filter graph, or was already used elsewhere.*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_UNDEFINED_FILTER_LABEL",
         "fix:undefined-filter-label#0",
@@ -942,12 +1925,44 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*does not exist in any defined filter graph, or was already used elsewhere.*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_UNDEFINED_FILTER_LABEL",
+        "fix:undefined-filter-label#0",
+        "topic:filters"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=64x64:rate=10:duration=1",
+          "-filter_complex",
+          "[0:v]scale=32:32[v]",
+          "-map",
+          "[vv]",
+          "-y",
+          "out.mp4"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 234
+      }
     },
     {
       "stderrPattern": "*Invalid framerate value: *",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_INVALID_FRAMERATE",
         "fix:invalid-framerate#0",
@@ -970,12 +1985,42 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*Invalid framerate value: *",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_INVALID_FRAMERATE",
+        "fix:invalid-framerate#0",
+        "topic:options"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-f",
+          "lavfi",
+          "-i",
+          "testsrc=size=64x64:rate=10:duration=1",
+          "-r",
+          "not-a-number",
+          "-y",
+          "out.mp4"
+        ]
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 234
+      }
     },
     {
       "stderrPattern": "*Unrecognized option '*'.*",
+      "versions": ">=4.4 <5",
+      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
+      "observedAt": "2026-08-23",
       "tracesTo": [
         "twin:FFMPEG_UNRECOGNIZED_OPTION",
         "fix:unrecognized-option#0",
@@ -997,9 +2042,35 @@
       },
       "expect": {
         "status": 1
+      }
+    },
+    {
+      "stderrPattern": "*Unrecognized option '*'.*",
+      "versions": ">=6 <8",
+      "lockedVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+      "observedAt": "2026-08-23",
+      "tracesTo": [
+        "twin:FFMPEG_UNRECOGNIZED_OPTION",
+        "fix:unrecognized-option#0",
+        "topic:options"
+      ],
+      "probe": {
+        "program": "ffmpeg",
+        "argv": [
+          "-hide_banner",
+          "-nostdin",
+          "-i",
+          "clip.mp4",
+          "-vcodex",
+          "libx264",
+          "-y",
+          "out.mp4"
+        ],
+        "fixture": "clip"
       },
-      "lockedVersion": "ffmpeg version 4.4.2-0ubuntu0.22.04.1 Copyright (c) 2000-2021 the FFmpeg developers",
-      "observedAt": "2026-08-22"
+      "expect": {
+        "status": 8
+      }
     }
   ]
 }

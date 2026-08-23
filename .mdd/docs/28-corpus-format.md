@@ -3,15 +3,15 @@ id: 28-corpus-format
 title: Corpus Format
 type: COMPONENT
 path: Registry / Corpus Format
-source_files: [packages/registry-tools/src/corpus-format.ts, packages/registry-tools/src/corpus-source.ts, packages/registry-tools/src/corpus-validate.ts, packages/registry-tools/src/corpus-apply.ts, packages/registry-tools/src/corpus-violation.ts, packages/registry-tools/src/corpus-front-matter.ts]
+source_files: [packages/registry-tools/src/corpus-format.ts, packages/registry-tools/src/corpus-source.ts, packages/registry-tools/src/corpus-validate.ts, packages/registry-tools/src/corpus-apply.ts, packages/registry-tools/src/corpus-violation.ts, packages/registry-tools/src/corpus-front-matter.ts, packages/registry-tools/src/version-range.ts]
 status: complete
 phase: all
-last_synced: 2026-08-22
+last_synced: 2026-08-23
 initiative: comprehendo
 wave: comprehendo-wave-5
 depends_on: [03-shape-schemas]
 tags: [corpus-format, packed-artifact, one-topic-per-file, yaml-header, parse-validate-pack]
-test_files: [packages/registry-tools/test/corpus-parse.test.ts, packages/registry-tools/test/corpus-validate.test.ts, packages/registry-tools/test/corpus-pack.test.ts, packages/registry-tools/test/corpus-format-drift.test.ts]
+test_files: [packages/registry-tools/test/corpus-parse.test.ts, packages/registry-tools/test/corpus-validate.test.ts, packages/registry-tools/test/corpus-pack.test.ts, packages/registry-tools/test/corpus-format-drift.test.ts, packages/registry-tools/test/version-range.test.ts]
 known_issues:
   - "[resolved by 22-router-precedence] packages/core/src/router-discovery.ts is migrated to this feature's authoritative artifact (comprehendo.corpus.json, corpus_packed: 1). Fixed at the orchestrator level in 22's own file, mutation-verified, proven live against a real payload assembled with this feature's own readPackedCorpus/serializeCorpus. See 22-router-precedence.md Fixed Issues."
   - "[resolved by 17-corpus-generator] Corpus Generator [17]'s writeCorpus used to rewrite manifest.json wholesale from {header, target, manifest_hint}, silently dropping a hand-added declared_schema on the next comprehendo scan. Fixed at the orchestrator level in 17's own files (format.ts/corpus-io.ts/merge.ts, outside this feature's source_files), same treatment as manifest_hint, mutation-verified. See 17-corpus-generator.md Fixed Issues."
@@ -229,6 +229,40 @@ The package.json descriptor beside it:
 ## Dependencies
 
 - [03-shape-schemas](03-shape-schemas.md)
+
+## Fixed Issues
+
+### `target.version` could not express a corpus authored against more than one major (fixed 2026-08-23)
+
+Found by independent review running the full suite on a machine with only
+ffmpeg 6.1.1 installed (the flagship corpus was authored against 4.4.2):
+induction failed across the board, because a wrapped CLI's own wording (and
+even its exit status) is not stable across a major release, and the format
+had exactly one pinned `target.version` to describe it.
+
+- Added `target.versions: readonly string[]` to `CorpusSource`, an array
+  of version ranges (`">=4.4 <5"`) or exact pins, resolved by a new pure
+  module (`version-range.ts`, `matchesRange`/`parseVersion`/
+  `resolveVersion`). Additive-compatible per the RFC rule: a manifest
+  carrying only the old `target.version` parses unchanged, read as a
+  one-entry EXACT set (`readVersions`), the same meaning that field
+  always had. `.version` stays populated (first range, or the literal
+  old field) for an existing display-only reader.
+- `corpora/ffmpeg/manifest.json` now declares
+  `"versions": [">=4.4 <5", ">=6 <8"]` alongside the unchanged `version`.
+- No spec-kit shape schema covers `manifest.json`'s `target` field (it is
+  a registry-tools authoring-format concept, not RFC-normative), so no
+  schema update was needed; verified by checking `packages/spec/kit/
+  shapes/` directly rather than assuming.
+- Mutation-verified: `corpus-parse.test.ts` gained cases for the old
+  single-pin form, the new range-set form, and both present at once,
+  each asserting `.version`/`.versions` independently.
+- The fingerprint PATTERNS themselves needed almost no change: verified
+  live against both real binaries that 11 of 12 cataloged twins still
+  match unmodified (ffmpeg kept the load-bearing middle of its messages
+  stable even where it restructured the surrounding lines). The one
+  witness that needed anything was an argv fragility, not a format gap;
+  see [32-ffmpeg-corpus](32-ffmpeg-corpus.md) Fixed Issues.
 
 ## Known Issues
 

@@ -77,7 +77,8 @@ ffmpeg -i clip.mp4
 ffmpeg -nostdin -i clip.mp4 exists.mp4
 # File 'exists.mp4' already exists. Exiting.
 ffmpeg -nostdin -n -i clip.mp4 exists.mp4
-# File 'exists.mp4' already exists. Exiting.   (same line, exit 1, on purpose)
+# File 'exists.mp4' already exists. Exiting.   (same line; exit code varies
+# by build, the message does not)
 ffmpeg -nostdin -y -i clip.mp4 exists.mp4
 # overwrites exists.mp4 and continues
 ```
@@ -118,7 +119,7 @@ ffmpeg -i clip.mp4 -vf scale=160:120 -c:v libx264 out.mp4
 ### `filters`: FFMPEG_UNKNOWN_FILTER, the first line is the cause and the rest is echo
 
 ```sh
-ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -vf notafilter=1 out.mp4
+ffmpeg -f lavfi -i testsrc=size=64x64:duration=1 -vf notafilter=x=1 out.mp4
 # [AVFilterGraph @ 0x...] No such filter: 'notafilter'
 # Error reinitializing filters!
 # Failed to inject frame into filter network: Invalid argument

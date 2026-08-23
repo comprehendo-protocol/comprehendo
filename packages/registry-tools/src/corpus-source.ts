@@ -115,8 +115,23 @@ export interface CorpusSource {
   readonly provider: string;
   /** The target package this corpus is FOR. */
   readonly package: string;
-  /** The target version it was authored against. */
+  /**
+   * The target version it was authored against. Deprecated display field:
+   * `versions` is the field range-matching (upstream-watch, gate induction)
+   * actually resolves against. Kept populated (the first `versions` entry,
+   * or the literal `target.version` when the manifest only carries that
+   * older single-pin form) so an existing reader is never handed nothing.
+   */
   readonly version: string;
+  /**
+   * Every version range this corpus is authored against, e.g.
+   * `[">=4.4 <5", ">=6 <8"]`. A manifest carrying only the old
+   * `target.version` single pin reads as a one-entry EXACT-match set
+   * (`[version]`), the literal meaning that field always had: authored
+   * against exactly this build, matched via `version-range.ts`'s bare-
+   * version form, never widened into a range nobody declared.
+   */
+  readonly versions: readonly string[];
   readonly declaredSchema?: CorpusCallSchema;
   /** Menu order, exactly as index.json carries it. */
   readonly topics: readonly CorpusTopic[];
@@ -286,6 +301,19 @@ function readDeclaredSchema(value: unknown): CorpusCallSchema | undefined {
   });
 }
 
+/**
+ * The target's version range set, from `target.versions` (the current form)
+ * or `target.version` (the deprecated single pin, read as a one-entry EXACT
+ * set). Additive-compatible per the RFC rule: an old manifest with only
+ * `version` still parses, unchanged in meaning.
+ */
+function readVersions(target: Record<string, unknown>): readonly string[] {
+  const versions = list(target['versions']);
+  if (versions.length > 0) return Object.freeze(versions);
+  const single = text(target['version']);
+  return single === '' ? Object.freeze([]) : Object.freeze([single]);
+}
+
 /** Topic files on disk that no index entry advertises. */
 function strayTopicFiles(root: string, advertised: ReadonlySet<string>): string[] {
   const directory = join(root, 'topics');
@@ -322,10 +350,12 @@ export function parse(corpusDir: string): CorpusSource {
   const topics = entries.map((entry) => readTopic(corpusDir, record(entry)));
   const declaredSchema = readDeclaredSchema(manifest['declared_schema']);
 
+  const versions = readVersions(target);
   return Object.freeze({
     provider: text(manifest['provider']),
     package: text(target['package'], text(manifest['provider'])),
-    version: text(target['version']),
+    version: text(target['version'], versions[0] ?? ''),
+    versions,
     ...(declaredSchema === undefined ? {} : { declaredSchema }),
     topics: Object.freeze(topics),
     twins: Object.freeze(readTwins(readJson(corpusDir, 'twins.json'))),

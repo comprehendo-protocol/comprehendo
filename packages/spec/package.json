@@ -26,12 +26,12 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheDecipherist/comprehendo.git",
+    "url": "git+https://github.com/comprehendo-protocol/comprehendo.git",
     "directory": "packages/spec"
   },
-  "homepage": "https://github.com/TheDecipherist/comprehendo#readme",
+  "homepage": "https://github.com/comprehendo-protocol/comprehendo#readme",
   "bugs": {
-    "url": "https://github.com/TheDecipherist/comprehendo/issues"
+    "url": "https://github.com/comprehendo-protocol/comprehendo/issues"
   },
   "devDependencies": {
     "ajv": "^8.17.1",

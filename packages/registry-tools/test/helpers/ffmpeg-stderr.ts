@@ -15,8 +15,8 @@
 // matcher is the whole blob with that line replaced, exactly what an agent
 // holding a failed invocation would have.
 
-import { run, workspace } from './ffmpeg-cli.js';
-import { WITNESSES } from './ffmpeg-witnesses.js';
+import { ffmpegVersion, run, workspace } from './ffmpeg-cli.js';
+import { WITNESSES, observationFor } from './ffmpeg-witnesses.js';
 
 /** One cataloged failure, as the real binary really reported it. */
 export interface CatalogedStderr {
@@ -48,19 +48,29 @@ export function catalogedLine(stderr: string, fragment: string): string {
 
 /** Every cataloged failure, induced once out of the real binary. */
 export function catalogedStderr(): readonly CatalogedStderr[] {
+  const version = ffmpegVersion();
   return Object.freeze(
     WITNESSES.map((witness) => {
+      const observation = observationFor(witness, version);
       const site = workspace();
       try {
         witness.setup?.(site.path);
         const failed = run(witness.argv, site.path);
-        if (failed.status === 0) {
-          throw new Error(`the witness for ${witness.code} did not fail at all`);
+        // "Failed" is measured against THIS witness's own real observation,
+        // never a blanket nonzero assumption: FFMPEG_OUTPUT_EXISTS really
+        // exits 0 on the `>=6 <8` range while still writing the cataloged
+        // stderr line (see ffmpeg-witnesses.ts), so 0 is the correct answer
+        // for that one witness on that one range, not a missed induction.
+        if (failed.status !== observation.status) {
+          throw new Error(
+            `the witness for ${witness.code} exited ${String(failed.status)}, the real observation ` +
+              `for ${observation.versions} recorded ${String(observation.status)}`,
+          );
         }
         return Object.freeze({
           code: witness.code,
           stderr: failed.stderr,
-          line: catalogedLine(failed.stderr, witness.stderr),
+          line: catalogedLine(failed.stderr, observation.stderr),
         });
       } finally {
         site.cleanup();

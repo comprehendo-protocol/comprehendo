@@ -19,7 +19,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { CorpusSource } from '../src/corpus-format.js';
 import { folkloreFindings, registryTruthFindings } from '../src/gate-folklore.js';
-import { elementKindOf, parseLock, readLock, subjectOf } from '../src/upstream-lock.js';
+import { elementKindOf, entriesFor, parseLock, readLock, subjectOf } from '../src/upstream-lock.js';
 import type { LockEntry, UpstreamLock } from '../src/upstream-lock.js';
 import {
   computeSurfaceDrift,
@@ -55,11 +55,22 @@ const lock = (): UpstreamLock => readLock(FFMPEG_LOCK_PATH);
 /** The corpus this lock exists to protect, through 28's REAL parser. */
 const corpus = (): CorpusSource => loadFfmpegCorpus();
 
-/** One real probe pass over every locked element. */
-const observed = (of: UpstreamLock): readonly SurfaceObservation[] => probeAll(of);
+/**
+ * The entries that apply to the binary really installed: the SAME
+ * resolution `watchReport` does internally, exposed here because several
+ * tests need to pick a real entry to mutate before calling `watchReport`
+ * themselves, and picking one from the WRONG range would probe correctly
+ * but compare against an expectation no binary here was ever going to meet.
+ */
+const resolved = (of: UpstreamLock): readonly LockEntry[] => entriesFor(of, scannedVersion());
 
-const entriesOfKind = (of: UpstreamLock, kind: 'flag' | 'behavior' | 'stderrPattern'): LockEntry[] =>
-  of.entries.filter((entry) => elementKindOf(entry) === kind);
+/** One real probe pass over the entries that apply to this binary. */
+const observed = (entries: readonly LockEntry[]): readonly SurfaceObservation[] => probeAll(entries);
+
+const entriesOfKind = (
+  of: readonly LockEntry[],
+  kind: 'flag' | 'behavior' | 'stderrPattern',
+): LockEntry[] => of.filter((entry) => elementKindOf(entry) === kind);
 
 /** A lock carrying exactly one entry, for the synthetic-drift cases. */
 const lockOf = (from: UpstreamLock, entry: LockEntry): UpstreamLock =>
@@ -69,33 +80,33 @@ describe('the lock enumerates what the ffmpeg corpus actually depends on', () =>
   it('reads as a lock file and names the tool the corpus wraps', () => {
     const read = lock();
 
-    expect(read.upstreamWatch).toBe(1);
+    expect(read.upstreamWatch).toBe(2);
     expect(read.target).toBe(corpus().package);
     expect(read.provider).toBe(corpus().provider);
     expect(read.entries.length).toBeGreaterThan(0);
   });
 
-  it('locks the stderr pattern of every cataloged twin, verbatim from twins.json', () => {
+  it('locks the stderr pattern of every cataloged twin, verbatim from twins.json, on the binary really installed', () => {
     const read = lock();
     const cataloged = corpus()
       .twins.map((twin) => twin.fingerprint.messagePattern ?? '')
       .sort();
-    const locked = entriesOfKind(read, 'stderrPattern')
+    const locked = entriesOfKind(resolved(read), 'stderrPattern')
       .map((entry) => entry.stderrPattern ?? '')
       .sort();
 
     expect(locked).toEqual(cataloged);
   });
 
-  it('locks every operation the corpus declares as its own call surface', () => {
+  it('locks every operation the corpus declares as its own call surface, on the binary really installed', () => {
     const read = lock();
     const declared = [...(corpus().declaredSchema?.operations ?? [])].sort();
-    const flags = entriesOfKind(read, 'flag').map((entry) => entry.flag ?? '');
+    const flags = entriesOfKind(resolved(read), 'flag').map((entry) => entry.flag ?? '');
 
     for (const operation of declared) expect(flags).toContain(operation);
   });
 
-  it('locks the corrected behavior of every fix that carries an apply', () => {
+  it('locks the corrected behavior of every fix that carries an apply, on the binary really installed', () => {
     const read = lock();
     const source = corpus();
     const executable = source.twins.flatMap((twin) =>
@@ -103,7 +114,7 @@ describe('the lock enumerates what the ffmpeg corpus actually depends on', () =>
         .map((fix, index) => ({ id: twin.id, index, apply: fix.apply }))
         .filter((fix) => fix.apply !== undefined),
     );
-    const traces = entriesOfKind(read, 'behavior').flatMap((entry) => entry.tracesTo);
+    const traces = entriesOfKind(resolved(read), 'behavior').flatMap((entry) => entry.tracesTo);
 
     expect(executable.length).toBeGreaterThan(0);
     for (const fix of executable) expect(traces).toContain(`fix:${fix.id}#${String(fix.index)}`);
@@ -119,13 +130,27 @@ describe('the lock enumerates what the ffmpeg corpus actually depends on', () =>
     expect(unresolved).toEqual([]);
   });
 
-  it("re-probes each cataloged failure with 32's own inducing invocation", () => {
+  it('locks each subject once per declared version range, never once overall', () => {
+    // The format's whole point: a wrapped CLI's wording is not stable
+    // across a major, so the SAME subject legitimately appears once per
+    // range in target.versions, not once for the whole lock.
+    const read = lock();
+    const ranges = new Set(read.entries.map((entry) => entry.versions));
+
+    expect(ranges.size).toBeGreaterThan(1);
+    for (const range of ranges) {
+      const subjects = read.entries.filter((entry) => entry.versions === range).map(subjectOf);
+      expect(new Set(subjects).size).toBe(subjects.length);
+    }
+  });
+
+  it("re-probes each cataloged failure with 32's own inducing invocation, on the binary really installed", () => {
     const read = lock();
     const byPattern = new Map(
       corpus().twins.map((twin) => [twin.fingerprint.messagePattern ?? '', twin.code]),
     );
 
-    for (const entry of entriesOfKind(read, 'stderrPattern')) {
+    for (const entry of entriesOfKind(resolved(read), 'stderrPattern')) {
       const code = byPattern.get(entry.stderrPattern ?? '');
       const witness = WITNESSES.find((one) => one.code === code);
 
@@ -142,7 +167,7 @@ describe('the watch re-observes every locked element against the real binary', (
   it('is the real binary, and the report carries the version it really scanned', () => {
     const version = requireFfmpeg();
     const read = lock();
-    const report = watchReport(read, observed(read), scannedVersion());
+    const report = watchReport(read, observed(resolved(read)), scannedVersion());
 
     expect(version).toMatch(/^ffmpeg version /);
     expect(report.scanned_version).toBe(version);
@@ -151,13 +176,14 @@ describe('the watch re-observes every locked element against the real binary', (
 
   it('probes every locked element and finds no drift on this build', () => {
     const read = lock();
-    const report = watchReport(read, observed(read), scannedVersion());
+    const entries = resolved(read);
+    const report = watchReport(read, observed(entries), scannedVersion());
 
     // The report is the CI job's evidence, so it is printed, not only asserted.
     console.log(formatWatchReport(report).join('\n'));
 
     expect(report.drift).toEqual([]);
-    expect(report.locked).toBe(read.entries.length);
+    expect(report.locked).toBe(entries.length);
     expect(watchExitCode(report)).toBe(0);
   }, SPAWNS_REAL_BINARY);
 });
@@ -165,7 +191,7 @@ describe('the watch re-observes every locked element against the real binary', (
 describe('a changed upstream surface fails the watch, naming the element', () => {
   it('names a flag the binary no longer carries', () => {
     const read = lock();
-    const real = entriesOfKind(read, 'flag')[0] as LockEntry;
+    const real = entriesOfKind(resolved(read), 'flag')[0] as LockEntry;
     const drifted: LockEntry = {
       ...real,
       flag: '-vfx',
@@ -184,7 +210,7 @@ describe('a changed upstream surface fails the watch, naming the element', () =>
 
   it('names a stderr pattern the binary no longer writes', () => {
     const read = lock();
-    const real = entriesOfKind(read, 'stderrPattern')[0] as LockEntry;
+    const real = entriesOfKind(resolved(read), 'stderrPattern')[0] as LockEntry;
     const drifted: LockEntry = { ...real, stderrPattern: '*width not divisible by 3 (*)*' };
     const synthetic = lockOf(read, drifted);
     const report = watchReport(synthetic, [probeOne(drifted)], scannedVersion());
@@ -197,7 +223,7 @@ describe('a changed upstream surface fails the watch, naming the element', () =>
 
   it('names a behavior whose real result changed', () => {
     const read = lock();
-    const real = entriesOfKind(read, 'behavior').find(
+    const real = entriesOfKind(resolved(read), 'behavior').find(
       (entry) => entry.expect.capture !== undefined,
     ) as LockEntry;
     const drifted: LockEntry = { ...real, expect: { ...real.expect, capture: '999,999' } };
@@ -213,12 +239,13 @@ describe('a changed upstream surface fails the watch, naming the element', () =>
 
   it('treats an element nobody probed as drift, never as a silent pass', () => {
     const read = lock();
-    const drift = computeSurfaceDrift(read, []);
+    const entries = resolved(read);
+    const drift = computeSurfaceDrift(entries, []);
 
-    expect(drift.length).toBe(read.entries.length);
+    expect(drift.length).toBe(entries.length);
     expect(new Set(drift.map((record) => record.kind))).toEqual(new Set(['element-unprobed']));
     expect(drift.map((record) => record.subject).sort()).toEqual(
-      read.entries.map((entry) => subjectOf(entry)).sort(),
+      entries.map((entry) => subjectOf(entry)).sort(),
     );
   });
 });
@@ -227,7 +254,7 @@ describe("a watch failure routes into CC4 [26]'s drift-failure handling", () => 
   const driftedTwinReport = (): { readonly lock: UpstreamLock; readonly code: string } => {
     const read = lock();
     const twin = corpus().twins.find((one) => one.code === 'FFMPEG_ODD_DIMENSION');
-    const real = entriesOfKind(read, 'stderrPattern').find(
+    const real = entriesOfKind(resolved(read), 'stderrPattern').find(
       (entry) => entry.stderrPattern === (twin?.fingerprint.messagePattern ?? ''),
     ) as LockEntry;
     return {
@@ -266,7 +293,7 @@ describe("a watch failure routes into CC4 [26]'s drift-failure handling", () => 
 
   it('leaves the gate exactly as it found it when nothing drifted', () => {
     const read = lock();
-    const report = watchReport(read, observed(read), scannedVersion());
+    const report = watchReport(read, observed(resolved(read)), scannedVersion());
     const source = corpus();
     const clean = induceAll(source);
 
@@ -279,7 +306,7 @@ describe("a watch failure routes into CC4 [26]'s drift-failure handling", () => 
 describe("the report reuses comprehendo diff [17]'s drift-report contract", () => {
   it('records drift in the same four fields diff.ts declares', () => {
     const read = lock();
-    const drift = computeSurfaceDrift(read, []);
+    const drift = computeSurfaceDrift(resolved(read), []);
     const keys = new Set(drift.flatMap((record) => Object.keys(record)));
 
     for (const key of keys) expect(['kind', 'subject', 'was', 'now']).toContain(key);
@@ -289,7 +316,7 @@ describe("the report reuses comprehendo diff [17]'s drift-report contract", () =
 
   it('carries the report envelope and the exit-code rule diff established', () => {
     const read = lock();
-    const clean = watchReport(read, observed(read), scannedVersion());
+    const clean = watchReport(read, observed(resolved(read)), scannedVersion());
     const dirty = watchReport(read, [], scannedVersion());
 
     expect(Object.keys(clean).sort()).toEqual(
@@ -326,7 +353,7 @@ describe('the lock format refuses what it cannot watch', () => {
   const minimal = (over: Record<string, unknown>): string =>
     JSON.stringify({
       comprehendo: '0.1',
-      upstreamWatch: 1,
+      upstreamWatch: 2,
       provider: '@comprehendo/ffmpeg',
       target: 'ffmpeg',
       lockedVersion: 'ffmpeg version 4.4.2',
@@ -334,12 +361,43 @@ describe('the lock format refuses what it cannot watch', () => {
       entries: [
         {
           flag: '-i',
+          versions: '>=4.4 <5',
           lockedVersion: 'ffmpeg version 4.4.2',
           observedAt: '2026-08-22',
           tracesTo: ['schema:-i'],
           probe: { program: 'ffmpeg', argv: ['-nostdin', '-i', 'nope.mp4'] },
           expect: {},
           ...over,
+        },
+      ],
+    });
+
+  const minimalTwoRanges = (): string =>
+    JSON.stringify({
+      comprehendo: '0.1',
+      upstreamWatch: 2,
+      provider: '@comprehendo/ffmpeg',
+      target: 'ffmpeg',
+      lockedVersion: 'ffmpeg version 6.1.1',
+      observedAt: '2026-08-23',
+      entries: [
+        {
+          flag: '-i',
+          versions: '>=4.4 <5',
+          lockedVersion: 'ffmpeg version 4.4.2',
+          observedAt: '2026-08-22',
+          tracesTo: ['schema:-i'],
+          probe: { program: 'ffmpeg', argv: ['-nostdin', '-i', 'nope.mp4'] },
+          expect: {},
+        },
+        {
+          flag: '-i',
+          versions: '>=6 <8',
+          lockedVersion: 'ffmpeg version 6.1.1',
+          observedAt: '2026-08-23',
+          tracesTo: ['schema:-i'],
+          probe: { program: 'ffmpeg', argv: ['-nostdin', '-i', 'nope.mp4'] },
+          expect: {},
         },
       ],
     });
@@ -352,15 +410,51 @@ describe('the lock format refuses what it cannot watch', () => {
     expect(() => parseLock(minimal({ tracesTo: [] }))).toThrow(/tracesTo/);
   });
 
-  it('refuses a lock that is not one, and a lock with no entries', () => {
+  it('refuses an entry with no versions range: the field is required, not optional', () => {
+    expect(() => parseLock(minimal({ versions: '' }))).toThrow(/versions/);
+  });
+
+  it('refuses a lock that is not one, a v1 lock, and a lock with no entries', () => {
     expect(() => parseLock('{"entries":[]}')).toThrow(/upstreamWatch/);
-    expect(() => parseLock('{"upstreamWatch":1,"entries":[]}')).toThrow(/no entries/);
+    expect(() => parseLock('{"upstreamWatch":1,"entries":[]}')).toThrow(/upstreamWatch/);
+    expect(() => parseLock('{"upstreamWatch":2,"entries":[]}')).toThrow(/no entries/);
+  });
+
+  it('accepts the SAME subject locked twice, once per declared range', () => {
+    const read = parseLock(minimalTwoRanges());
+
+    expect(read.entries).toHaveLength(2);
+    expect(read.entries.map((entry) => entry.versions).sort()).toEqual(['>=4.4 <5', '>=6 <8']);
+  });
+
+  it('refuses the same subject locked twice for the SAME range', () => {
+    const twice = JSON.parse(minimalTwoRanges()) as { entries: Record<string, unknown>[] };
+    (twice.entries[1] as Record<string, unknown>)['versions'] = '>=4.4 <5';
+
+    expect(() => parseLock(JSON.stringify(twice))).toThrow(/locked twice for >=4\.4 <5/);
   });
 
   it('refuses a missing lock file rather than passing an empty watch', () => {
     expect(() => readLock(join(REPO_ROOT, 'corpora', 'ffmpeg', 'no-such.lock'))).toThrow(
       /no lock file/,
     );
+  });
+});
+
+describe('a binary outside every declared range is UNSUPPORTED, never drift', () => {
+  it('refuses, naming every declared range, rather than reporting drift', () => {
+    const read = lock();
+
+    expect(() => entriesFor(read, 'ffmpeg version 5.0.0')).toThrow(/matches none/);
+    expect(() => entriesFor(read, 'ffmpeg version 5.0.0')).toThrow(/not the same as drift/);
+  });
+
+  it('resolves the real installed binary to exactly one declared range', () => {
+    const read = lock();
+    const entries = resolved(read);
+    const ranges = new Set(entries.map((entry) => entry.versions));
+
+    expect(ranges.size).toBe(1);
   });
 });
 

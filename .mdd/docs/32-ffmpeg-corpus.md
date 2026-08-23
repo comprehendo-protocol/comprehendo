@@ -205,3 +205,45 @@ would misdirect a caller hitting the output-path variant.
 - `topics/inputs.md` tightened elsewhere to stay under the CC5
   600-token topic budget after the addition (real tiktoken-class
   meter, verified live via `runSubmissionGate`).
+
+### The `FFMPEG_UNKNOWN_FILTER` witness argv was fragile across ffmpeg majors, and the exit code for `FFMPEG_OUTPUT_EXISTS` really differs (fixed 2026-08-23)
+
+Found by independent review running the full suite on a machine with
+only ffmpeg 6.1.1: 2 of 12 witnesses had real problems, verified live
+against both 4.4.2 and 6.1.1, and the other 10 needed nothing at all
+(their patterns already match ffmpeg 6.1's real text unmodified, since
+ffmpeg kept the load-bearing MIDDLE of its messages stable even where
+it restructured the surrounding banner lines).
+
+- **Argv fragility, not a corpus gap.** `notafilter=1` (a bare `=1`
+  with no `key=`) reads as a filter option to 4.4's lenient parser,
+  which still reaches the unknown-filter check and reports "No such
+  filter: 'notafilter'". 6.1's stricter parser stops at the malformed
+  option list first and reports "No option name near '1'" instead, a
+  DIFFERENT real failure, not a wording change to the same one.
+  `notafilter=x=1` (a syntactically valid key=value pair) provokes the
+  identical "No such filter" text on both real binaries, verified
+  live; the witness argv (and the topic prose's own worked example,
+  `topics/filters.md`) is corrected rather than the fingerprint
+  pattern widened to catch a parse error that is not this twin.
+- **A real ffmpeg 6.x exit-code regression, recorded, not hidden.**
+  `FFMPEG_OUTPUT_EXISTS` genuinely exits 0 on ffmpeg's `>=6 <8` line
+  while still writing the exact cataloged stderr line and touching
+  nothing on disk, verified live against both binaries (4.4.2: exit 1;
+  6.1.1: exit 0, byte-identical message). `comprehend(stderr)` never
+  reads exit status (`fingerprint-facets.ts`'s `matchesPattern` is
+  text-only), so routing is unaffected; every consumer that used exit
+  status as its own "did this fail" signal (the induction helpers, the
+  cold-agent benchmark, the docs-execution gate) needed a real,
+  version-scoped fix instead. `topics/outputs.md`'s prose corrected
+  from the now-false "still stops at exit 1" claim.
+- Every witness's `stderr`/`status` is now version-scoped per
+  `corpora/ffmpeg/manifest.json`'s `target.versions` (see
+  [28-corpus-format](28-corpus-format.md) Fixed Issues), both entries
+  real, separately re-run captures, never one text stretched to cover
+  a major it was never re-observed against.
+- Mutation-verified across the whole chain (`ffmpeg-induction.test.ts`,
+  `ffmpeg-corpus.test.ts`, `ffmpeg-fingerprints.property.test.ts`):
+  full registry-tools suite (448/448), core (548/548), spec (436/436),
+  site (57/57), python (345/345), re-run clean against BOTH real
+  binaries (4.4.2 native, 6.1.1 via a real container), not simulated.

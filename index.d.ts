@@ -1,2 +1,1 @@
-declare function comprehendo(): string;
-export = comprehendo;
+export * from './packages/core/dist/index.js';

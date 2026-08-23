@@ -22,6 +22,8 @@
 
 import { existsSync, readFileSync } from 'node:fs';
 
+import { UnsupportedVersionError, matchesRange } from './version-range.js';
+
 /** Which of the three surface-element kinds an entry locks. */
 export type LockElementKind = 'flag' | 'behavior' | 'stderrPattern';
 
@@ -66,11 +68,21 @@ export interface LockExpectation {
 /**
  * One locked surface element: exactly one of `flag`, `behavior` or
  * `stderrPattern`, plus when and against what it was observed.
+ *
+ * The SAME subject may lock more than once, once per declared
+ * `target.versions` range (`corpora/ffmpeg/manifest.json`): a wrapped CLI's
+ * wording, and even its exit status, are not stable across a major, so one
+ * subject genuinely needs one real observation per supported major, never
+ * one observation stretched to cover every major it was never re-run
+ * against. `versions` is which range THIS entry was observed against;
+ * `entriesFor` resolves which entries apply to the binary really installed.
  */
 export interface LockEntry {
   readonly flag?: string;
   readonly behavior?: string;
   readonly stderrPattern?: string;
+  /** The declared range this observation belongs to, e.g. `>=4.4 <5`. */
+  readonly versions: string;
   /** The tool version string this element was really observed against. */
   readonly lockedVersion: string;
   /** The day it was observed, ISO `YYYY-MM-DD`. */
@@ -89,11 +101,17 @@ export interface LockEntry {
 /** The lock file itself. */
 export interface UpstreamLock {
   readonly comprehendo: string;
-  readonly upstreamWatch: 1;
+  readonly upstreamWatch: 2;
   readonly provider: string;
   /** The wrapped tool, as the corpus manifest's `target.package` names it. */
   readonly target: string;
-  /** The version the last full observation ran against. */
+  /**
+   * Informational only, the most recent range's build string: the real,
+   * load-bearing observation lives per-entry (`LockEntry.lockedVersion`,
+   * one per declared `target.versions` range), because a wrapped CLI does
+   * not hold still across a major and one global string cannot describe
+   * more than one of them honestly.
+   */
   readonly lockedVersion: string;
   readonly observedAt: string;
   readonly entries: readonly LockEntry[];
@@ -215,6 +233,7 @@ function readEntry(value: unknown, index: number): LockEntry {
     ...(flag !== undefined ? { flag } : {}),
     ...(behavior !== undefined ? { behavior } : {}),
     ...(stderrPattern !== undefined ? { stderrPattern } : {}),
+    versions: stringAt(value, 'versions', at),
     lockedVersion: stringAt(value, 'lockedVersion', at),
     observedAt: stringAt(value, 'observedAt', at),
     tracesTo: traces,
@@ -234,25 +253,32 @@ export function parseLock(text: string): UpstreamLock {
     throw new UpstreamLockError(`the lock file is not JSON: ${(cause as Error).message}`);
   }
   if (!isRecord(value)) throw new UpstreamLockError('the lock file is a JSON object');
-  if (value['upstreamWatch'] !== 1) {
-    throw new UpstreamLockError('the lock file declares "upstreamWatch": 1, and this one does not');
+  if (value['upstreamWatch'] !== 2) {
+    throw new UpstreamLockError(
+      'the lock file declares "upstreamWatch": 2 (per-range entries, versions field required), and this one does not',
+    );
   }
   const entries = value['entries'];
   if (!Array.isArray(entries) || entries.length === 0) {
     throw new UpstreamLockError('a lock file with no entries watches nothing and is refused');
   }
   const read = entries.map((entry, index) => readEntry(entry, index));
+  // A subject locks once PER RANGE, never once overall: the same subject
+  // legitimately appears for every declared major it has a real observation
+  // against (subjectOf/entriesFor tell them apart by `versions`).
   const subjects = new Set<string>();
   for (const entry of read) {
-    const subject = subjectOf(entry);
-    if (subjects.has(subject)) {
-      throw new UpstreamLockError(`${subject} is locked twice, so a drift report could not name it`);
+    const key = `${subjectOf(entry)}::${entry.versions}`;
+    if (subjects.has(key)) {
+      throw new UpstreamLockError(
+        `${subjectOf(entry)} is locked twice for ${entry.versions}, so a drift report could not name it`,
+      );
     }
-    subjects.add(subject);
+    subjects.add(key);
   }
   return Object.freeze({
     comprehendo: stringAt(value, 'comprehendo', 'lock'),
-    upstreamWatch: 1,
+    upstreamWatch: 2,
     provider: stringAt(value, 'provider', 'lock'),
     target: stringAt(value, 'target', 'lock'),
     lockedVersion: stringAt(value, 'lockedVersion', 'lock'),
@@ -269,4 +295,28 @@ export function readLock(path: string): UpstreamLock {
     );
   }
   return parseLock(readFileSync(path, 'utf8'));
+}
+
+/**
+ * Every entry that belongs to the range the binary really installed falls
+ * in, resolved by `versions` the same way a version-scoped witness is
+ * (`ffmpeg-witnesses.ts`'s `observationFor`). Refuses, naming every range
+ * declared in the lock, when the installed binary matches none: a
+ * DIFFERENT finding than drift (Upstream Watch [34]'s own doc), because it
+ * means the binary was never a supported target to begin with, not that a
+ * supported one stopped matching.
+ */
+export function entriesFor(
+  lock: UpstreamLock,
+  installedVersion: string,
+): readonly LockEntry[] {
+  const declared = [...new Set(lock.entries.map((entry) => entry.versions))];
+  const matching = declared.filter((range) => matchesRange(range, installedVersion));
+  if (matching.length === 0) {
+    throw new UnsupportedVersionError(
+      `${installedVersion} matches none of this lock's declared ranges (${declared.join(', ')}); ` +
+        'this is not the same as drift, the binary was never a supported target',
+    );
+  }
+  return Object.freeze(lock.entries.filter((entry) => matching.includes(entry.versions)));
 }
