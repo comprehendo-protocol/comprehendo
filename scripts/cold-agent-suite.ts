@@ -175,7 +175,7 @@ export function faithfulAgent(state: SessionState): AgentAction {
     }
     case 'docs': {
       const response = last.response;
-      if (response.code === 'UNDOCUMENTED') {
+      if (response.code === 'UNDOCUMENTED' && response.source_permitted === true) {
         // "never read source, unless docs answered UNDOCUMENTED, which permits
         // ONE source pass FOR THAT QUESTION." The only source read in the
         // whole policy, and it carries the question the grant was issued for.

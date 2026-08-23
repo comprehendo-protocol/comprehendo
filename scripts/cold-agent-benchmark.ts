@@ -29,12 +29,13 @@
 //
 // @see .mdd/docs/38-cold-agent-benchmark.md
 
-import { readFileSync, writeFileSync } from 'node:fs';
+import { existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { isAbsolute, join, resolve } from 'node:path';
 import { pathToFileURL } from 'node:url';
 
 import { applyToArgv } from './cold-agent-apply.ts';
 import { Cc9PreconditionError, cc9Scans, runCc9Gate } from './cold-agent-cc9.ts';
+import { createLiveAgent } from './cold-agent-live.ts';
 import type { Cc9Report, Cc9Scan } from './cold-agent-cc9.ts';
 import { PreconditionError, ffmpeg, ffmpegVersion, prepareHarness, prepareWorkspace } from './cold-agent-harness.ts';
 import type { Harness } from './cold-agent-harness.ts';
@@ -66,7 +67,12 @@ const STEP_CEILING = 12;
 
 // --- one task ---------------------------------------------------------------
 
-export type Agent = (state: SessionState) => AgentAction;
+/**
+ * Async because the live tier's agent is a real network round trip to a real
+ * model session. The faithful simulator is synchronous and is awaited anyway,
+ * so both tiers run through exactly one loop and neither gets a private one.
+ */
+export type Agent = (state: SessionState) => AgentAction | Promise<AgentAction>;
 
 /**
  * One task, played out for real.
@@ -76,7 +82,11 @@ export type Agent = (state: SessionState) => AgentAction;
  * actually opening the file would add nothing to the measurement while making
  * this harness do the very thing it exists to forbid.
  */
-export function runTask(task: Task, harness: Harness, agent: Agent): TaskTranscript {
+export async function runTask(
+  task: Task,
+  harness: Harness,
+  agent: Agent,
+): Promise<TaskTranscript> {
   const cwd = prepareWorkspace(task, harness.root);
   const observations: Observation[] = [];
   const actions: AgentAction[] = [];
@@ -86,7 +96,7 @@ export function runTask(task: Task, harness: Harness, agent: Agent): TaskTranscr
   let caught: unknown = undefined;
 
   for (let step = 0; step < STEP_CEILING; step += 1) {
-    const action = agent({ task, observations, attempts });
+    const action = await agent({ task, observations, attempts });
     actions.push(action);
     if (action.kind === 'done') break;
     switch (action.kind) {
@@ -129,8 +139,17 @@ export function runTask(task: Task, harness: Harness, agent: Agent): TaskTranscr
           });
           break;
         }
+        // The grant is real, so the pass is really taken. A target that ships
+        // no readable module source (ffmpeg is a program, not a package) gets
+        // the honest answer rather than a crash: that is what the permitted
+        // pass really finds, and pretending otherwise would be the folklore
+        // this project refuses. Found by the live tier's first real run, where
+        // the model spent its grant on the CLI target.
         const path = join(harness.root, 'node_modules', task.pkg, UNADOPTED_SOURCE);
-        observations.push({ kind: 'source', path, text: readFileSync(path, 'utf8') });
+        const text = existsSync(path)
+          ? readFileSync(path, 'utf8')
+          : `there is no readable module source at ${path}: ${task.pkg} ships no importable source in this tree`;
+        observations.push({ kind: 'source', path, text });
         break;
       }
     }
@@ -145,11 +164,17 @@ export interface BenchmarkOptions {
   readonly corpusDir?: string;
   readonly tasks?: readonly Task[];
   readonly agent?: Agent;
+  /** What ran, in one line, published so a record can never be read as the other tier's. */
+  readonly agentLabel?: string;
   readonly scans?: readonly Cc9Scan[];
 }
 
+export const SIMULATOR_LABEL =
+  'faithful simulator of packages/spec/priming.md (deterministic, measures the PROTOCOL)';
+
 export interface BenchmarkResult {
   readonly record: BenchmarkRecord;
+  readonly agentLabel: string;
   readonly breakdown: Readonly<Record<TaskKind, { readonly corrected: number; readonly attempted: number }>>;
   readonly transcripts: readonly TaskTranscript[];
   readonly cc9: Cc9Report;
@@ -169,9 +194,13 @@ export async function runBenchmark(options: BenchmarkOptions = {}): Promise<Benc
   const priming = readFileSync(join(repoRoot, 'packages', 'spec', 'priming.md'), 'utf8');
   const harness = await prepareHarness(options.corpusDir ?? join(repoRoot, 'corpora', 'ffmpeg'));
   const agent = options.agent ?? faithfulAgent;
-  let transcripts: readonly TaskTranscript[];
+  const transcripts: TaskTranscript[] = [];
   try {
-    transcripts = (options.tasks ?? TASKS).map((task) => runTask(task, harness, agent));
+    // Sequential on purpose: a session is one conversation, and a live model
+    // session cannot be run fourteen ways at once and still be one session.
+    for (const task of options.tasks ?? TASKS) {
+      transcripts.push(await runTask(task, harness, agent));
+    }
   } finally {
     harness.cleanup();
   }
@@ -202,6 +231,7 @@ export async function runBenchmark(options: BenchmarkOptions = {}): Promise<Benc
   }
   return {
     record,
+    agentLabel: options.agentLabel ?? SIMULATOR_LABEL,
     breakdown: breakdownOf(transcripts),
     transcripts,
     cc9,
@@ -225,7 +255,7 @@ export function renderReport(result: BenchmarkResult): readonly string[] {
   const record = result.record;
   const lines: string[] = [
     `cold-agent benchmark ${record.runId}`,
-    `  agent            faithful simulator of packages/spec/priming.md (deterministic)`,
+    `  agent            ${result.agentLabel}`,
     `  target           ${result.ffmpeg}`,
     `  tasksAttempted           ${String(record.tasksAttempted)}`,
     `  tasksFirstCorrected      ${String(record.tasksFirstCorrected)}`,
@@ -253,19 +283,55 @@ export function renderReport(result: BenchmarkResult): readonly string[] {
 type Writer = (line: string) => void;
 
 export const USAGE: readonly string[] = Object.freeze([
-  'cold-agent-benchmark [--out <file>] [--corpus <dir>]',
+  'cold-agent-benchmark [--out <file>] [--corpus <dir>] [--live-agent [model]]',
   '',
-  '  --out <file>    also write the run record as JSON',
-  '  --corpus <dir>  benchmark a different corpus directory',
+  '  --out <file>          also write the run record as JSON',
+  '  --corpus <dir>        benchmark a different corpus directory',
+  '  --live-agent [model]  ALSO run the suite through a real isolated model',
+  '                        session whose entire system prompt is the bytes of',
+  '                        packages/spec/priming.md. Published beside the gate,',
+  '                        never instead of it, and never gating: it measures a',
+  '                        model, and the gate measures the protocol.',
 ]);
+
+/**
+ * The live tier, run only when it is asked for. Its numbers are printed with
+ * the model and the hash of the system prompt beside them, and its pass/fail
+ * never touches the exit code.
+ */
+async function liveTier(model: string, out: Writer, corpusDir?: string): Promise<void> {
+  const priming = readFileSync(join(REPO_ROOT, 'packages', 'spec', 'priming.md'), 'utf8');
+  const live = createLiveAgent(priming, { model });
+  const result = await runBenchmark({
+    agent: live.agent,
+    agentLabel: `LIVE isolated ${model} session (measures a MODEL, not the protocol; not gating)`,
+    // CC9 is the gate's business, and re-running it twice in one invocation
+    // would say nothing new.
+    scans: [],
+    ...(corpusDir === undefined ? {} : { corpusDir }),
+  });
+  const session = live.report();
+  out('');
+  for (const line of renderReport(result)) out(line);
+  out(`  live model               ${session.model}`);
+  out(`  system prompt sha256     ${session.systemPromptSha256}`);
+  out(`  system prompt chars      ${String(session.systemPromptChars)} (the whole session context)`);
+  out(`  model turns              ${String(session.turns)}`);
+  out(`  unparseable replies      ${String(session.unparseableReplies)}`);
+  out('  NOTE  this tier is corroboration, not the gate: it measures one model.');
+}
 
 export async function main(argv: readonly string[], out: Writer, err: Writer): Promise<number> {
   let outFile: string | undefined;
   let corpusDir: string | undefined;
+  let liveModel: string | undefined;
   for (let index = 0; index < argv.length; index += 1) {
     const argument = argv[index] ?? '';
     const value = argv[index + 1];
-    if (argument === '--out' || argument === '--corpus') {
+    if (argument === '--live-agent') {
+      liveModel = value !== undefined && !value.startsWith('--') ? value : 'llama3';
+      if (liveModel === value) index += 1;
+    } else if (argument === '--out' || argument === '--corpus') {
       if (value === undefined) {
         err(`${argument} needs a path`);
         return 2;
@@ -283,6 +349,8 @@ export async function main(argv: readonly string[], out: Writer, err: Writer): P
     result = await runBenchmark({
       ...(corpusDir === undefined ? {} : { corpusDir }),
     });
+    for (const line of renderReport(result)) out(line);
+    if (liveModel !== undefined) await liveTier(liveModel, out, corpusDir);
   } catch (error) {
     if (error instanceof PreconditionError || error instanceof Cc9PreconditionError) {
       err(error.message);
@@ -290,7 +358,6 @@ export async function main(argv: readonly string[], out: Writer, err: Writer): P
     }
     throw error;
   }
-  for (const line of renderReport(result)) out(line);
   if (outFile !== undefined) {
     writeFileSync(outFile, `${JSON.stringify(result.record, null, 2)}\n`);
     out(`  wrote ${outFile}`);
