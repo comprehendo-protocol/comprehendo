@@ -3,7 +3,7 @@ id: 38-cold-agent-benchmark
 title: Cold-Agent Benchmark
 type: COMPONENT
 path: Distribution / Cold-Agent Benchmark
-source_files: [scripts/cold-agent-benchmark.ts, scripts/cold-agent-suite.ts, scripts/cold-agent-tasks.ts, scripts/cold-agent-apply.ts, scripts/cold-agent-harness.ts, scripts/cold-agent-cc9.ts, scripts/cold-agent-live.ts]
+source_files: [scripts/cold-agent-benchmark.ts, scripts/cold-agent-suite.ts, scripts/cold-agent-tasks.ts, scripts/cold-agent-apply.ts, scripts/cold-agent-harness.ts, scripts/cold-agent-cc9.ts, scripts/cold-agent-live.ts, scripts/cold-agent-versions.ts]
 status: complete
 phase: all
 last_synced: 2026-08-23
@@ -189,6 +189,42 @@ was not named as a Known Issue either.
   wrappers) turned the new test red, naming the exact mismatch
   (`expected '' to contain 'does-not-exist.mp4'`); restored, 41/41
   green, typecheck clean, full registry-tools suite 422/422.
+
+### The Operator baseline assumed a task's real exit status is always trustworthy, which is not always true (fixed 2026-08-23)
+
+Found running the full suite on a machine with only ffmpeg 6.1.1:
+`faithfulAgent`'s policy correctly, faithfully treats "exit 0" as
+"done, succeeded" (the snippet says nothing about distrusting a
+program's own exit code, and a rule teaching that would not be a small
+addition to a hundred-token snippet). ffmpeg's `>=6 <8` line really
+exits 0 for `FFMPEG_OUTPUT_EXISTS` while its stderr still names the
+real failure (a real ffmpeg regression, not this project's; see
+[32-ffmpeg-corpus](32-ffmpeg-corpus.md) Fixed Issues), so a faithful
+agent correctly never calls `comprehend` on that one task on that one
+range, through no fault of the protocol.
+
+- `OPERATOR_BASELINE` (the nominal 18/18, 100%) stays as published,
+  unchanged, and the faithful agent's policy is unchanged: neither is
+  wrong. What moved is what "at the baseline" means on a binary where
+  100% is not fully reachable. New `operatorBaselineFor(tasks,
+  installedVersion)` computes the REAL, reachable ceiling from the
+  same version-scoped witness data every other check in this fix
+  resolves against (a task whose real exit status is 0 for its
+  cataloged failure is excluded), never a hand-maintained exception
+  list. `BenchmarkResult` gains a `baseline` field so a reader sees
+  both the reachable figure this run was judged against and the
+  Operator's nominal one.
+- The gate's own pass/fail check, and every hardcoded `TASKS.length`
+  expectation in the test suite, now compares against the reachable
+  baseline for the binary really installed rather than a constant 14.
+  On `>=4.4 <5` the reachable count is still 14 (100%, unchanged); on
+  `>=6 <8` it is 13 (92.9%), the one real miss named by the mechanism
+  itself, not guessed at.
+- Mutation-verified: full suite (41/41) re-run clean against both real
+  binaries. A memory-heap-address instability in the harness spawn
+  guard test (added in this same wave, ffmpeg 6.1's stderr for this
+  failure embeds a real, per-invocation-random pointer 4.4's does not)
+  was found and fixed alongside, normalized out before comparison.
 
 ## Known Issues
 

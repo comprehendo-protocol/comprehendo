@@ -26,6 +26,8 @@
 // @see .mdd/docs/38-cold-agent-benchmark.md
 // @see packages/spec/priming.md
 
+import { matchesRange } from './cold-agent-versions.ts';
+
 // --- what the corpus hands back ---------------------------------------------
 
 /** A fix as it arrives on a twin. `apply` is literal call data, or absent. */
@@ -96,8 +98,86 @@ export interface Task {
   readonly fixture?: Fixture;
   /** honest-miss only: the question with no cataloged answer. */
   readonly question?: string;
-  /** A literal fragment of the stderr the real binary really writes. */
-  readonly stderrWitness?: string;
+  /**
+   * The real binary really writes, one entry per supported version range
+   * (`corpora/ffmpeg/manifest.json`'s `target.versions`): ffmpeg's wording,
+   * and even its exit status, are not stable across majors, so there is no
+   * single answer, only a real answer per range. Resolve with
+   * `stderrWitnessFor`/`statusWitnessFor`.
+   */
+  readonly stderrWitnesses?: readonly {
+    readonly versions: string;
+    readonly stderr: string;
+    readonly status: number;
+  }[];
+}
+
+/**
+ * The task's real stderr fragment for the binary really installed. Refuses,
+ * naming the ranges tried, when the task carries no witness for this
+ * version at all: an un-owned "just use the first one" fallback would
+ * silently assert text a different major never wrote.
+ */
+export function stderrWitnessFor(task: Task, installedVersion: string): string | undefined {
+  return witnessFor(task, installedVersion)?.stderr;
+}
+
+/** The task's real exit status for the binary really installed. */
+export function statusWitnessFor(task: Task, installedVersion: string): number | undefined {
+  return witnessFor(task, installedVersion)?.status;
+}
+
+function witnessFor(
+  task: Task,
+  installedVersion: string,
+): { readonly versions: string; readonly stderr: string; readonly status: number } | undefined {
+  const witnesses = task.stderrWitnesses;
+  if (witnesses === undefined) return undefined;
+  const found = witnesses.find((witness) => matchesRange(witness.versions, installedVersion));
+  if (found === undefined) {
+    const ranges = witnesses.map((witness) => witness.versions).join(', ');
+    throw new Error(
+      `${installedVersion} matches none of ${task.id}'s declared witness ranges (${ranges})`,
+    );
+  }
+  return found;
+}
+
+/**
+ * The first-correction rate really achievable on the binary really
+ * installed, which is not always 1 (the Operator's nominal 18/18): a task
+ * whose real, version-scoped exit status is 0 tells a caller relying on the
+ * program's own exit code that nothing failed, even when the cataloged
+ * failure really happened and its stderr still names it (verified live:
+ * FFMPEG_OUTPUT_EXISTS really exits 0 on ffmpeg's `>=6 <8` line). That is a
+ * real ffmpeg regression, not a Comprehendo defect, and not something the
+ * hundred-token priming snippet should be taught to work around (a rule
+ * distrusting a program's own exit code is not a small addition). The
+ * faithful agent's own policy (`faithfulAgent`) is correct to trust exit
+ * status; what has to move instead is what "at the baseline" MEANS on a
+ * binary where the baseline is not fully reachable through no fault of the
+ * protocol. Deliberately COMPUTED from the same real per-range data every
+ * other version-aware check resolves against, never a hand-maintained
+ * exception list that could drift from what the binary really does.
+ */
+export function operatorBaselineFor(tasks: readonly Task[], installedVersion: string): number {
+  return reachableTasks(tasks, installedVersion).length / tasks.length;
+}
+
+/**
+ * The tasks a caller trusting the program's own exit code can actually
+ * settle on this binary: every task that carries no version-scoped
+ * observation at all (the clean and honest-miss paths, whose success is
+ * never judged by a witnessed exit status), plus every failure task whose
+ * REAL, version-scoped exit status is not 0. The count `operatorBaselineFor`
+ * divides by `tasks.length`; exposed separately because an exact expected
+ * COUNT (not just a rate) is what a test asserting `tasksFirstCorrected`
+ * needs, without re-deriving it by multiplying a rate back out.
+ */
+export function reachableTasks(tasks: readonly Task[], installedVersion: string): readonly Task[] {
+  return tasks.filter(
+    (task) => task.stderrWitnesses === undefined || statusWitnessFor(task, installedVersion) !== 0,
+  );
 }
 
 export interface SessionState {
