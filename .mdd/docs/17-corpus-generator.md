@@ -15,7 +15,7 @@ test_files: [packages/core/test/cli-init.test.ts, packages/core/test/cli-scan.te
 known_issues:
   - "[deferred] Stub REJECTION is not implemented here, only stub marking and reporting. A corpus carrying `status: stub` is refused by Submission Gate [29] (Wave 5); this feature marks the fields, counts them, and reports them in `scan` and `diff` output. `pack` refusing a stub-bearing corpus is not that gate: the packed runtime format simply has no representation for a field nobody wrote."
   - "[deferred] The folklore-rule backstop (CC4 [26], Wave 5) is not built here. A twin whose `reason` and fixes are stubs has no inducing test, and nothing in this feature enforces that; it only makes the absence visible."
-  - "[deferred] Upstream Watch [34]'s CI wiring (Wave 6) is not written here. `diff` exposes everything it needs (exit 1 on drift, `--json` giving a `{target, scanned_version, corpus_version, drift[], stubs[]}` report), so the lock-file/workflow side is that component's job."
+  - "[resolved by 34-upstream-watch] Upstream Watch [34]'s CI wiring landed in Wave 6, and it is honestly PARTIAL reuse, not the full handoff this note anticipated: `diff`'s SCANNER (`scanTarget`, TypeScript exports and throw sites) does not reach a CLI target, so 34 could not call `diff` directly. What generalized was everything downstream of the scan, the `{kind, subject, was?, now?}` drift record, the report envelope, the never-writes rule, the `drift.length > 0 ? 1 : 0` exit code, reused verbatim in 34's own `upstream-watch.ts`. A first-class `comprehendo diff --target cli` verb, that would let a CLI-target watch call this feature directly, still belongs here, not built."
   - "[deferred] No `bin` entry was added to `packages/core/package.json`: that file is outside this feature's `source_files`, 14-sdk-entry builds against the same package concurrently, and how this package assembles into the published `comprehendo` npm package is already declared a Wave 7 (Distribution) decision. The entry point exists and is invoked as `node dist/cli/main.js <verb>`; wiring the bin name is a one-line job for whoever owns that manifest."
   - "[deferred] `packed: 1` (Docs Engine [13]) has no slot for twins or fixes, so `pack` emits the docs half of the corpus only. Getting authored twins into a running provider is SDK Entry [14]'s surface, and a combined artifact, if one is ever wanted, is Corpus Format [28]'s (Wave 5) call behind its version number."
   - "[gap] The scanner is a lexer, not a type checker (see Implementation Notes for why). A symbol re-exported through a barrel, an inferred return type, and a `throw` of a variable rather than a `new X(...)` are not resolved. They surface as an absent topic or twin, never as a wrong one, and `diff` reports the absence; a target that needs more will want the compiler API in a package that is allowed to depend on it."
@@ -320,8 +320,11 @@ a process (Upstream Watch [34] will want `diff`'s report, not its stdout):
   reporting; Submission Gate [29] (Wave 5) owns it.
 - [deferred] The folklore-rule backstop (CC4 [26], Wave 5) is not built
   here.
-- [deferred] Upstream Watch [34]'s CI wiring (Wave 6) is not written here;
-  `diff` exposes what it needs (exit 1 on drift, `--json` report).
+- [resolved by 34-upstream-watch] Upstream Watch [34]'s CI wiring
+  landed in Wave 6, partially: its scanner does not reach a CLI
+  target, so only the downstream drift-record/report/exit-code shape
+  was reused. A `comprehendo diff --target cli` verb still belongs
+  here. See the frontmatter entry.
 - [deferred] No `bin` entry in `packages/core/package.json`: that file is
   outside this feature's `source_files` and how this package is published
   is a Wave 7 decision.

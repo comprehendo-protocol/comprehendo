@@ -1,0 +1,175 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/ffmpeg",
+  "twins": [
+    {
+      "id": "input-not-found",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_INPUT_NOT_FOUND",
+      "reason": "A path ffmpeg was given could not be opened by the operating system, so nothing was probed and nothing was written. The message names the exact path, as given, before any shell or working-directory assumption is applied, but it does NOT say which of ffmpeg's arguments that path came from: the identical text is what ffmpeg prints when an OUTPUT path's containing directory does not exist, since both are the same open() failure from ffmpeg's point of view. Usually the input, since an input typo is the far more common mistake, but check the path itself against every -i and every output argument on the command line before assuming which one it is.",
+      "docs": "inputs",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*: No such file or directory*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "invalid-input-data",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_INVALID_INPUT_DATA",
+      "reason": "The input opened and no demuxer recognised its contents, so this is a format problem rather than a path problem. A text file, a saved error page, and a truncated or zero-byte download all arrive here, and ffprobe on the same path settles which one it is.",
+      "docs": "inputs",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*: Invalid data found when processing input*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "output-exists",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_OUTPUT_EXISTS",
+      "reason": "The output path already exists and the run had no terminal to answer the overwrite prompt on, so it stopped rather than deciding for the caller. This is the classic difference between a command that works by hand and the same command under cron, CI, or a subprocess.",
+      "docs": "outputs",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*File '*' already exists. Exiting.*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "no-output-file",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_NO_OUTPUT_FILE",
+      "reason": "The argument list carried inputs and no output, so the parser stopped before any decoding. It usually means an option swallowed the output path, or a command assembled programmatically lost its final element.",
+      "docs": "outputs",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*At least one output file must be specified*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "odd-dimension",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_ODD_DIMENSION",
+      "reason": "The encoder was handed a frame size with an odd axis, which H.264 in a 4:2:0 pixel format cannot represent because chroma is subsampled by two in each direction. The size is almost always derived rather than typed: a scale filter given -1 on one axis produces whatever the aspect ratio arithmetic yields, and about half of all sources yield an odd number.",
+      "docs": "scaling",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "* not divisible by 2 (*)*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "map-matches-no-stream",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_MAP_MATCHES_NO_STREAM",
+      "reason": "An explicit stream selection named a stream this input does not carry. Selecting explicitly is a claim about the input's contents, and an unmet claim stops the run rather than producing an output missing a track nobody asked to lose. Batch work meets it on the one clip in a folder that has no audio.",
+      "docs": "stream-selection",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Stream map '*' matches no streams.*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "unknown-encoder",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_UNKNOWN_ENCODER",
+      "reason": "The named encoder is not in this binary. Encoder availability is decided when ffmpeg is configured and built, not by its version number, so the same version can carry it on one machine and not on another, and the answer for the binary in hand comes from its own encoder listing.",
+      "docs": "codecs",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Unknown encoder '*'*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "filter-with-streamcopy",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_FILTER_WITH_STREAMCOPY",
+      "reason": "The same output stream was told both to run through a filtergraph and to be copied. Stream copy moves packets untouched, and a filter rewrites frames, so the two exclude each other and the conflict is reported instead of one of them being dropped silently.",
+      "docs": "codecs",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Filtering and streamcopy cannot be used together.*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "unknown-filter",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_UNKNOWN_FILTER",
+      "reason": "A filtergraph named a filter this build does not carry. The graph is built after the first frame is decoded, so the unknown name is followed by a cascade of consequences about reinitializing and injecting frames; the first line is the cause and the rest are its echo.",
+      "docs": "filters",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*No such filter: '*'*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "undefined-filter-label",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_UNDEFINED_FILTER_LABEL",
+      "reason": "A complex filtergraph referred to a label that no part of the graph defines, or that another output already consumed. One sentence covers both readings because the wiring step cannot tell them apart, and a label is defined once and consumed once.",
+      "docs": "filters",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*does not exist in any defined filter graph, or was already used elsewhere.*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "invalid-framerate",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_INVALID_FRAMERATE",
+      "reason": "The frame rate option carried an operand that is neither a number nor a ratio, so the parser stopped before any work. A known option with an unreadable value usually means an upstream variable expanded to a word or to nothing, which is a different problem from a misspelled option.",
+      "docs": "options",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Invalid framerate value: *",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "unrecognized-option",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "FFMPEG_UNRECOGNIZED_OPTION",
+      "reason": "The argument list could not be split because it carried a name the parser does not know. The name is quoted with its leading dash removed. A typo, an option belonging to a different ffmpeg version, and an operand that lost its option all land here, and nothing was read or written.",
+      "docs": "options",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Unrecognized option '*'.*",
+        "kind": "runtime-error"
+      }
+    }
+  ]
+}

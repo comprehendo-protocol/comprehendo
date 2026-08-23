@@ -3,7 +3,7 @@ id: comprehendo
 title: Comprehendo Protocol and Reference Implementation
 status: active
 version: 1
-content_hash: 1afb4f89661a9021
+content_hash: 9ed17ef23975cedb
 ---
 
 # Comprehendo Protocol and Reference Implementation
@@ -91,7 +91,7 @@ gate as community submissions.
 | comprehendo-wave-3 | Python Port | complete | The identical kit passes with zero fixture changes; a Python-serialized twin is byte-identical to its Node fixture. |
 | comprehendo-wave-4 | The Sidecar Router | complete | `comprehend(raw)` on an un-adopted toy returns the right twin or an honest UNSTRUCTURED; each config knob demonstrably changes routing; native adoption flips precedence automatically. |
 | comprehendo-wave-5 | Registry and the Submission Gate | complete | An untestable-fix submission is rejected naming the folklore rule; a passing submission publishes as `@comprehendo/<pkg>` with its fingerprint index built. |
-| comprehendo-wave-6 | The Flagship: ffmpeg | planned | On camera: priming snippet in, wrong flag, `comprehend(stderr)` returns a twin whose `fixes[0]` works, session lands within budget. |
+| comprehendo-wave-6 | The Flagship: ffmpeg | complete | On camera: priming snippet in, wrong flag, `comprehend(stderr)` returns a twin whose `fixes[0]` works, session lands within budget. |
 | comprehendo-wave-7 | Distribution | planned | `COMPREHENDO.md` generates and drift-gates; the priming snippet is measured; the cold-agent benchmark passes at the target rate. |
 
 ## Open Questions

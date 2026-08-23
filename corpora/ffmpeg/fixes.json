@@ -1,0 +1,139 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/ffmpeg",
+  "fixes": {
+    "input-not-found": [
+      {
+        "title": "Runbook: confirm every path on the command line, input AND output, then the file or directory behind it",
+        "docs": "inputs",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "invalid-input-data": [
+      {
+        "title": "Runbook: ask ffprobe what the file actually is before treating it as media",
+        "docs": "inputs",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "output-exists": [
+      {
+        "title": "Runbook: decide the overwrite policy, because -y and -n are different decisions about data",
+        "docs": "outputs",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "no-output-file": [
+      {
+        "title": "Runbook: find the missing output path in the argument list",
+        "docs": "outputs",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "odd-dimension": [
+      {
+        "title": "Fence: derive the width with -2, which rounds to even and cannot express an odd value",
+        "apply": { "-vf": "scale=-2:720" },
+        "docs": "scaling",
+        "confidence": "likely",
+        "status": "ready",
+        "stub_fields": []
+      },
+      {
+        "title": "Runbook: round both axes explicitly when neither is derived",
+        "docs": "scaling",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "map-matches-no-stream": [
+      {
+        "title": "Heal: mark the stream selection optional with a trailing question mark",
+        "apply": { "-map": ["0:v", "0:a?"] },
+        "docs": "stream-selection",
+        "confidence": "likely",
+        "status": "ready",
+        "stub_fields": []
+      },
+      {
+        "title": "Runbook: keep the abort when a missing track means the input is wrong",
+        "docs": "stream-selection",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "unknown-encoder": [
+      {
+        "title": "Runbook: read the encoder list of the binary in hand, not of the version",
+        "docs": "codecs",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "filter-with-streamcopy": [
+      {
+        "title": "Heal: name a real video encoder, since a filtergraph requires re-encoding",
+        "apply": { "-c:v": "libx264" },
+        "docs": "codecs",
+        "confidence": "likely",
+        "status": "ready",
+        "stub_fields": []
+      },
+      {
+        "title": "Runbook: drop the filter instead, when only the container was meant to change",
+        "docs": "codecs",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "unknown-filter": [
+      {
+        "title": "Runbook: read the first line as the cause and the filter list of this build",
+        "docs": "filters",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "undefined-filter-label": [
+      {
+        "title": "Runbook: check the label for both readings, undefined and already consumed",
+        "docs": "filters",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "invalid-framerate": [
+      {
+        "title": "Runbook: trace the operand back to the variable that produced it",
+        "docs": "options",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ],
+    "unrecognized-option": [
+      {
+        "title": "Runbook: match the quoted name against the option list of this version",
+        "docs": "options",
+        "confidence": "high",
+        "status": "ready",
+        "stub_fields": []
+      }
+    ]
+  }
+}
