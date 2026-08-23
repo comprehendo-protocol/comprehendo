@@ -14,9 +14,9 @@ started: 2026-08-22
 - [x] 39-registry-reservations (task), already complete from prior ad hoc work outside the wave build chain; phase field corrected idle -> all, no builder dispatched
 - [x] 35-comprehendo-md-generator (COMPONENT), 19/19 new tests green, merged; found and fixed a real bug (exit 70 instead of 2 on an unpackable corpus), mutation-verified 10 ways against the real ffmpeg corpus
 - [x] 36-priming-snippet (COMPONENT), 18/18 new tests green, merged; 144/150 tokens on the real meter, iterated across 10 measured phrasings, both content and budget mutation-verified
-- [x] 37-docs-as-tests (COMPONENT), 26/26 new tests green, merged; extended 35's renderer with real, executed fenced code blocks (35 deliberately deferred this, previously zero blocks existed); closed a real, currently-open hole (worked examples were never actually run in CI, only paralleled by a hand-maintained argv table)
-- [ ] 38-cold-agent-benchmark (COMPONENT)
-- [ ] 40-registry-website (COMPONENT)
+- [x] 37-docs-as-tests (COMPONENT), 26/26 new tests green, merged; extended 35's renderer with real, executed fenced code blocks (35 deliberately deferred this, previously zero blocks existed); closed a real, currently-open hole (worked examples were never actually run in CI, only paralleled by a hand-maintained argv table); post-merge review found and fixed a real write-target sandbox escape, see Fixed Issues
+- [~] 38-cold-agent-benchmark (COMPONENT), still building
+- [x] 40-registry-website (COMPONENT), 61/61 new tests green (55 site + 6 contract), merged; satisfies_contracts on 29's verifyAgainstUpstream resolved to done (refuses every trust tier above community without a real verified upstream check); real registry-tools 404 handled honestly (UNAVAILABLE, not empty); real RFC served byte-identical; adversarial review dispatched
 
 ## Judgment log
 
@@ -230,3 +230,60 @@ pre-fix (succeeded) and post-fix (refused). Two new regression tests
 added, mutation-verified (revert -> both go red; restore -> green).
 registry-tools 375/375, core 548/548 after the fix. Full writeup in
 `37-docs-as-tests.md`'s Fixed Issues section.
+
+### 40-registry-website (13 calls, unattended, no blockers)
+
+1. **satisfies_contracts investigated, not copy-pasted**: doc arrived
+   with 29's `verifyAgainstUpstream` at `status: pending` (same
+   templating artifact wave 5 hit on 30). Resolved to `done` because a
+   website makes a PUBLIC TRUST CLAIM (a rendered badge), which is
+   exactly what CC11/29's contract exists to gate: it refuses every
+   trust tier above `community` unless the ruling it renders really
+   carries `registryTruth`/`folklore` as `pass`. Reads CHECK OUTCOMES
+   (31's own `UPSTREAM_CHECKS`, imported not copied) and 30's own
+   `computeEndorsement`, no second opinion authored here. Tested
+   against two REAL `runSubmissionGate` runs (real ffmpeg induction,
+   real CC5 meter): one all-pass, one `registryTruth: not-run`.
+   Mutation-verified, 3 tests red on deleting the refusal.
+2. `comprehendo-protocol/registry` confirmed still not to exist (real
+   404). Built a generic client and proved it live against repos that
+   DO exist: the target repo (404 -> honest UNAVAILABLE, never an
+   empty list), `comprehendo-protocol/comprehendo` (real 200, honestly
+   empty), `nodejs/node` (real ranking over real reactions, PRs
+   excluded). First case goes red the day the repo is created, the
+   correct staleness signal.
+3. `MDs/comprehendo-spec.md` confirmed still untracked (`git log --all
+   -- MDs/` empty). Generator refuses with exit 2 naming the file
+   rather than shipping spec-less; live proof ran against the real
+   957-line RFC, `cmp` byte-identical. Committing the RFC is a
+   repository-level decision outside this feature (83 em dashes vs.
+   this project's own rule); recorded as a `[gap]`, not silently fixed.
+4. New top-level `site/` (not `scripts/`): a deliverable artifact, not
+   repo tooling, own `package.json`/`tsconfig.json`/`.gitignore`, zero
+   shared files touched.
+5. Two runners on purpose: `site/test/` under bare `node --test`
+   (matches `packages/spec`); the contract suite under
+   `packages/registry-tools` vitest because it needs 32's witness
+   table/induction helpers, unreachable from `site/`'s node runtime.
+   The one network module deliberately stays out of `packages/` so
+   CC6's structural scan keeps covering exactly what it already covers.
+6. Contrast checked by computation (not a rendered Playwright/axe
+   gate): honest here specifically because the site imports zero
+   third-party stylesheets, so every rendered colour really is in
+   `render.ts`; recorded `[gap]`, becomes insufficient the day a vendor
+   stylesheet is added.
+7. A real flake found and fixed at the hook: the contract suite's
+   `beforeAll` spawns real ffmpeg concurrently with 32/34's own suites
+   under parallel load, occasionally exceeding vitest's 10s hook
+   timeout (this package's config only lifted the TEST timeout).
+   Fixed by lifting the hook timeout to 60s in the same file this
+   feature already owned; confirmed stable across 3 consecutive runs.
+8. `packages/python` not runnable in this environment (3.10 vs. 3.11+
+   needed), zero Python touched. Baseline before this feature:
+   registry-tools 347/347, core 548/548, spec 436/436.
+9. Orchestrator independently re-verified post-merge: real CLI run of
+   `site/build.ts` against the real RFC and real GitHub API (6 files
+   written, real 404 handled honestly, 0 write surfaces, `spec.md`
+   confirmed byte-identical via `diff`), full site suite (55/55) and
+   contract suite (6/6) re-run green, typecheck clean. Adversarial
+   review dispatched (isolated worktree) before PE3 close-out.

@@ -4,8 +4,8 @@ title: Registry Website
 type: COMPONENT
 path: Distribution / Registry Website
 source_files: [site/build.ts, site/src/registry.ts, site/src/pages.ts, site/src/render.ts, site/src/read-only.ts, site/src/github.ts, site/src/most-wanted.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-23
 initiative: comprehendo
 wave: comprehendo-wave-7
