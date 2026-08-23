@@ -1,25 +1,36 @@
 {
   "name": "comprehendo",
   "version": "0.0.1",
-  "description": "Placeholder package for comprehendo",
+  "description": "The protocol that makes software packages understandable to AI: comprehend(raw) routes a caught error or bare stderr text to a structured twin carrying its own executable fix, docs(pkg, query) answers the complete reference in the asker's own vocabulary, and a native provider's own marker takes precedence automatically. See https://comprehendo.dev.",
+  "type": "module",
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
     "index.js",
-    "index.d.ts"
+    "index.d.ts",
+    "packages/core/dist",
+    "packages/core/package.json"
   ],
   "scripts": {
-    "test": "node --test"
+    "build": "npm run build --prefix packages/core",
+    "pretest": "npm run build",
+    "test": "node --test index.test.js"
   },
-  "keywords": [],
+  "keywords": [
+    "comprehendo",
+    "ai",
+    "agent",
+    "error-handling",
+    "documentation"
+  ],
   "author": "TheDecipherist",
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/TheDecipherist/comprehendo.git"
+    "url": "git+https://github.com/comprehendo-protocol/comprehendo.git"
   },
-  "homepage": "https://github.com/TheDecipherist/comprehendo#readme",
+  "homepage": "https://comprehendo.dev",
   "bugs": {
-    "url": "https://github.com/TheDecipherist/comprehendo/issues"
+    "url": "https://github.com/comprehendo-protocol/comprehendo/issues"
   }
 }
