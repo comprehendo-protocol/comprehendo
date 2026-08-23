@@ -36,6 +36,50 @@ describe('parse reads the five-file corpus shape Corpus Generator [17] produces'
     expect(corpus.version).toBe('1.0.0');
   });
 
+  it('reads target.version as a one-entry EXACT versions set, the old single-pin form', async () => {
+    // The old form a corpus authored before version-scoped witnesses existed
+    // still parses, and means exactly what it always meant: authored against
+    // this one build, not a range nobody declared.
+    const tree = await authored();
+
+    const corpus = parse(tree.corpus);
+
+    expect(corpus.versions).toEqual(['1.0.0']);
+  });
+
+  it('reads target.versions, the range-set form, when the manifest carries it', async () => {
+    const tree = await authored();
+    const manifest = readJsonFile(tree.paths.manifest);
+    const target = manifest['target'] as Record<string, unknown>;
+    const { version: _oldVersion, ...withoutVersion } = target;
+    writeJsonFile(tree.paths.manifest, {
+      ...manifest,
+      target: { ...withoutVersion, versions: ['>=1.0 <2', '>=3 <4'] },
+    });
+
+    const corpus = parse(tree.corpus);
+
+    expect(corpus.versions).toEqual(['>=1.0 <2', '>=3 <4']);
+    // .version stays populated for an existing display-only reader: the
+    // first range entry when the old single field is gone.
+    expect(corpus.version).toBe('>=1.0 <2');
+  });
+
+  it('keeps the deprecated target.version as the display field when both are present', async () => {
+    const tree = await authored();
+    const manifest = readJsonFile(tree.paths.manifest);
+    const target = manifest['target'] as Record<string, unknown>;
+    writeJsonFile(tree.paths.manifest, {
+      ...manifest,
+      target: { ...target, version: '1.0.0', versions: ['>=1.0 <2', '>=3 <4'] },
+    });
+
+    const corpus = parse(tree.corpus);
+
+    expect(corpus.version).toBe('1.0.0');
+    expect(corpus.versions).toEqual(['>=1.0 <2', '>=3 <4']);
+  });
+
   it('reads the topics in the index.json menu order, with their file names', async () => {
     const tree = await authored();
 

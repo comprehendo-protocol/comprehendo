@@ -6,7 +6,7 @@ path: Corpora / ffmpeg / Fingerprints
 source_files: [corpora/ffmpeg/]
 status: complete
 phase: all
-last_synced: 2026-08-22
+last_synced: 2026-08-23
 initiative: comprehendo
 wave: comprehendo-wave-6
 depends_on: [21-fingerprint-index-matcher, 32-ffmpeg-corpus]
@@ -110,6 +110,33 @@ N/A directly; reached through `comprehend(stderr)` (Router & Precedence
       index at all; a deliberately-planted collision in exactly one
       toy twin (not all of them, to avoid a vacuous intra-package
       false positive) is what the teeth check targets.
+
+## Fixed Issues
+
+### The local-mutation degradation threshold was calibrated to one ffmpeg major's text shape (fixed 2026-08-23)
+
+Found running the full suite on a machine with only ffmpeg 6.1.1: the
+property test asserting local mutations meaningfully degrade routing
+(never a vacuous property) used a fixed count (`>800` of the real
+trials), calibrated against 4.4.2's real cataloged lines. 6.1.1's real
+lines are genuinely shorter and more direct for several twins (verified
+live: 4.4 degrades about 60% of trials, 6.1 about 39%, both a robust,
+clearly non-vacuous majority), so the fixed count failed on a real,
+honest distribution difference, not a routing regression: the
+underlying fingerprint matching was unaffected (see
+[32-ffmpeg-corpus](32-ffmpeg-corpus.md) Fixed Issues, 10 of 12 patterns
+needed no change at all).
+
+- Fixed by asserting a PROPORTION of the real trial count (`> seen *
+  0.3`) instead of a magic number tied to one binary's text shape, for
+  both assertions that read this count. This is the honest fix per the
+  project's own rule against loosening a fingerprint to make a test
+  pass: no pattern was touched, only the test's own threshold, which
+  measures a property about DISTRIBUTION, not about routing
+  correctness, and was never meant to be a per-major constant.
+  Mutation-verified: both real distributions (60%/39%) clear the new
+  threshold with real margin; a synthetic near-zero-degradation
+  distribution would still fail it.
 
 ## Dependencies
 

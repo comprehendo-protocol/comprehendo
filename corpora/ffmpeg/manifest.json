@@ -5,6 +5,7 @@
   "target": {
     "package": "ffmpeg",
     "version": "4.4.2",
+    "versions": [">=4.4 <5", ">=6 <8"],
     "source": "cli"
   },
   "manifest_hint": {

@@ -176,14 +176,25 @@ describe('damaging the words a pattern does pin degrades, never redirects', () =
     expect(seen, 'no local mutations were generated, the property would be vacuous').toBeGreaterThan(
       1200,
     );
+    // A PROPORTION of `seen`, not a magic count: the absolute number of local
+    // mutations that land on pinned text depends on how many words the real
+    // cataloged line carries, and that count really differs by version
+    // (ffmpeg 6.1's real lines are shorter and more direct than 4.4's, verified
+    // live: 4.4 degrades ~60% of trials, 6.1 degrades ~39%, both a robust
+    // majority and neither remotely vacuous). A fixed count calibrated to one
+    // binary's text shape would either be loose on the other or, worse, would
+    // have silently started failing here instead of where the real drift is:
+    // in the witness capture, which IS version-scoped (ffmpeg-witnesses.ts).
     expect(degraded, 'no local mutation broke its pattern, the property would be vacuous').toBeGreaterThan(
-      800,
+      seen * 0.3,
     );
   });
 
   it('answers every degraded case with the UNSTRUCTURED twin, verbatim and fixless', () => {
+    let seen = 0;
     let checked = 0;
     for (const trial of trials(LOCAL_KINDS)) {
+      seen += 1;
       if (trial.result.outcome === 'matched') continue;
       checked += 1;
       expect(trial.result.twin.code, where(trial)).toBe('UNSTRUCTURED');
@@ -192,7 +203,10 @@ describe('damaging the words a pattern does pin degrades, never redirects', () =
       expect(trial.result.twin.received).toBe(trial.raw);
     }
 
-    expect(checked, 'nothing degraded, so no UNSTRUCTURED twin was inspected').toBeGreaterThan(800);
+    // Same proportional reasoning as the test above, over the same trials.
+    expect(checked, 'nothing degraded, so no UNSTRUCTURED twin was inspected').toBeGreaterThan(
+      seen * 0.3,
+    );
   });
 
   it('agrees with the oracle on every single trial, confident or not', () => {

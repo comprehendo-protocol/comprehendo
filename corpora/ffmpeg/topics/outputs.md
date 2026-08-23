@@ -48,7 +48,7 @@ be answered and the run stops, so the same command that worked by hand fails
 under cron, CI, or a subprocess. Naming `-y` or `-n` is what makes the outcome
 identical in both settings. They are not two ways to keep going: `-y`
 overwrites whatever was at that path and continues, while `-n` reports the same
-already-exists line and still stops at exit 1, on purpose. Which one is correct
+already-exists line and still stops, on purpose. Which one is correct
 depends on whether that file is expendable, which is a decision about data
 rather than a convenience flag, and it is why this entry is a runbook and not a
 silent correction. Adding `-nostdin` keeps the wording deterministic, which is
@@ -69,7 +69,8 @@ ffmpeg -i clip.mp4
 ffmpeg -nostdin -i clip.mp4 exists.mp4
 # File 'exists.mp4' already exists. Exiting.
 ffmpeg -nostdin -n -i clip.mp4 exists.mp4
-# File 'exists.mp4' already exists. Exiting.   (same line, exit 1, on purpose)
+# File 'exists.mp4' already exists. Exiting.   (same line; exit code varies
+# by build, the message does not)
 ffmpeg -nostdin -y -i clip.mp4 exists.mp4
 # overwrites exists.mp4 and continues
 ```

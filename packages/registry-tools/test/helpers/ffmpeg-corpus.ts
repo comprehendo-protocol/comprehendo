@@ -26,7 +26,7 @@ import { fixKey } from '../../src/gate-upstream.js';
 import type { TruthFailure, UpstreamVerification } from '../../src/gate-upstream.js';
 import { applyToArgv, ffmpegVersion, run, workspace } from './ffmpeg-cli.js';
 import type { FfmpegRun } from './ffmpeg-cli.js';
-import { WITNESSES } from './ffmpeg-witnesses.js';
+import { WITNESSES, observationFor } from './ffmpeg-witnesses.js';
 
 /** The corpus directory this feature owns, from the repository root. */
 export const FFMPEG_CORPUS_DIR = join(
@@ -102,6 +102,7 @@ export function induceOne(code: string, index: FingerprintIndex): Induced {
  */
 export function induceAll(corpus: CorpusSource): UpstreamVerification {
   const index = indexOf(corpus);
+  const version = ffmpegVersion();
   const inducedCodes: string[] = [];
   const verifiedFixes: string[] = [];
   const failures: TruthFailure[] = [];
@@ -120,7 +121,8 @@ export function induceAll(corpus: CorpusSource): UpstreamVerification {
     try {
       witness.setup?.(site.path);
       const failed = run(witness.argv, site.path);
-      const routed = routeInduction(twin.code, failed, index);
+      const expectedStatus = observationFor(witness, version).status;
+      const routed = routeInduction(twin.code, failed, expectedStatus, index);
       if (routed !== undefined) {
         failures.push(routed);
         continue;
@@ -146,13 +148,20 @@ export function induceAll(corpus: CorpusSource): UpstreamVerification {
 function routeInduction(
   code: string,
   failed: FfmpegRun,
+  expectedStatus: number,
   index: FingerprintIndex,
 ): TruthFailure | undefined {
-  if (failed.status === 0) {
+  // Judged against THIS witness's own real observation, never a blanket
+  // "0 means it did not fail": FFMPEG_OUTPUT_EXISTS really exits 0 on
+  // ffmpeg's >=6 <8 line while still failing to write, a real ffmpeg
+  // regression verified live, not this project's (see ffmpeg-witnesses.ts).
+  if (failed.status !== expectedStatus) {
     return {
       kind: 'not-inducible',
       at: code,
-      detail: `the real binary did not fail at all when the witness for ${code} ran`,
+      detail:
+        `the witness for ${code} really exited ${String(failed.status)}, ` +
+        `the real observation for the installed binary recorded ${String(expectedStatus)}`,
     };
   }
   const match = index.match(failed.stderr);
