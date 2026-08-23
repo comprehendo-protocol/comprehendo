@@ -97,7 +97,13 @@ beforeAll(async () => {
     measure: await specMeter(),
   });
   site = await siteRegistry();
-});
+  // Vitest's HOOK timeout is 10s and this package's config only lifts the TEST
+  // timeout (to 20s, and for this exact reason: real subprocess work under
+  // load). This hook spawns the real binary once per cataloged failure, twice
+  // over, while two other suites in this package are doing the same thing in
+  // parallel, and it was observed timing out at 10s in a full run. 60s is
+  // headroom for that contention without hiding a genuinely hung induction.
+}, 60_000);
 
 const listing = (gate: GateResult | undefined, manifest?: unknown): CorpusListing =>
   site.listingOf({

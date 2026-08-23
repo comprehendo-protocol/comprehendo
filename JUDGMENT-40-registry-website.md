@@ -212,3 +212,15 @@ gitignored. Baselines before any of this feature's code existed:
 registry-tools 347/347, core 548/548, spec 436/436. `packages/python` still
 cannot run here (needs 3.11+, this box defaults to 3.10), pre-existing, and
 zero Python files were touched.
+
+## 13. A real flake, found in the full-suite run and fixed at the hook
+
+The contract suite's `beforeAll` spawns the real ffmpeg once per cataloged
+failure, twice over, while `ffmpeg-corpus.test.ts` and
+`ffmpeg-induction.test.ts` are doing the same thing in parallel workers.
+Vitest's HOOK timeout is 10s and this package's config lifts only the TEST
+timeout, so one full run in five reported the file as failed with its six
+tests skipped. Fixed at the hook (`60_000`) rather than in
+`packages/registry-tools/vitest.config.ts`, which is a shared file this
+feature does not own and which a sibling worktree could be touching.
+Confirmed stable: three consecutive full runs, 353/353 each.
