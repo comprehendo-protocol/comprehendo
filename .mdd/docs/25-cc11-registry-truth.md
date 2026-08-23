@@ -77,15 +77,54 @@ N/A (a SPEC, no code exports).
 
 ## Acceptance Criteria
 
-- [ ] The gate installs the real target package and reproduces every
-      cataloged fingerprint in CI before accepting a corpus PR.
-- [ ] A fingerprint the real package cannot be induced to produce is
-      rejected, naming the failure.
-- [ ] A directory name with no exact-match real package is rejected.
-- [ ] The danger lint flags a destructive `apply` payload lacking
-      justification.
-- [ ] The injection lint rejects instruction-shaped prose in `reason`,
-      summaries, or docs.
+- [x] The gate installs the real target package and reproduces every
+      cataloged fingerprint in CI before accepting a corpus PR. Split
+      across the two halves it belongs to: the INSTALL is CI's own step
+      (CC6 [27] forbids `child_process` inside `packages/registry-tools`,
+      so a gate that shelled out to `npm install` would violate the
+      contract it enforces), and Submission Gate [29]'s
+      `verifyAgainstUpstream` receives that real install root, loads the
+      real package out of it and really calls it.
+      `gate-upstream.test.ts` performs the install for real (`npm pack`
+      plus `npm install --offline` of a real tarball into a real
+      node_modules tree) and asserts every cataloged fingerprint is
+      really induced and every executable fix really resolves on retry.
+      Structurally mandatory: a gate run with no verification reports
+      `registryTruth` as `not-run`, which is never `pass`, so nothing can
+      be marked publishable without it.
+- [x] A fingerprint the real package cannot be induced to produce is
+      rejected, naming the failure. `gate-upstream.test.ts` installs a
+      REAL later release in which the cataloged failure no longer occurs
+      (`not-inducible`, naming the code), and separately proves that a
+      witness whose real failure routes to a DIFFERENT cataloged entry is
+      rejected as `misrouted` naming the entry it actually matched, which
+      is the routing-hijack case this contract exists for. Verified to
+      have teeth: accepting a non-throwing witness as induced turns 2
+      tests red.
+- [x] A directory name with no exact-match real package is rejected.
+      Structural, per this doc's Implementation Notes: the directory must
+      resolve to an installed package AND that package must declare that
+      exact name. `gate-upstream.test.ts` covers both, a directory
+      nothing is installed under (`no-such-package`) and a directory
+      whose installed package declares another name
+      (`directory-mismatch`).
+- [x] The danger lint flags a destructive `apply` payload lacking
+      justification. `gate-lints.test.ts`: a destructive operation with
+      no justification is flagged naming the operation, one justified by
+      a topic that never mentions it is still flagged, and a destructive
+      OPERAND on an ordinary operation (`-y`, ffmpeg's overwrite flag) is
+      flagged too. A justified destructive apply still raises
+      `elevatedReview`, so a bot never lands one. The corpus format has
+      no dedicated justification field; the fix's `docs` pointer stands
+      in and must name the token (recorded as a gap on [29]). Verified to
+      have teeth: dropping the justification test turns 3 tests red.
+- [x] The injection lint rejects instruction-shaped prose in `reason`,
+      summaries, or docs. `gate-lints.test.ts` covers a twin reason, a
+      topic summary, a fix title and a worked example's comment, and
+      asserts the corpus as authored passes untouched. The phrase table
+      is a floor and says so, and it deliberately rejects second-person
+      prose, because this contract's rule is that corpus text is about
+      the tool and never addressed to the agent.
 
 ## Dependencies
 

@@ -66,12 +66,31 @@ N/A (a SPEC, no code exports).
 
 ## Acceptance Criteria
 
-- [ ] The gate rejects a corpus submission containing an unprovoked twin
-      code or fix, naming the specific entry.
-- [ ] The gate runs identically against a native corpus (the Operator's)
-      and a community submission.
-- [ ] A synthetic drift scenario (a fix that stops reproducing) fails CI
-      as drift, not as a silent pass.
+- [x] The gate rejects a corpus submission containing an unprovoked twin
+      code or fix, naming the specific entry. Submission Gate [29]'s
+      `folkloreFindings` diffs the catalog against the coverage the gate
+      itself OBSERVED while calling the really-installed package (never
+      an author declaration, per this doc's Implementation Notes), and
+      names both the twin code and the fix title:
+      `gate-folklore.test.ts`, "rejects an unprovoked twin code BY NAME"
+      and "rejects an unprovoked fix BY NAME, not merely its twin".
+      Verified to have teeth: making the check return nothing turns 5
+      tests red.
+- [x] The gate runs identically against a native corpus (the Operator's)
+      and a community submission. There is no tier parameter in
+      `GateInput` to special-case on, which is the enforcement rather
+      than an omission; `gate-folklore.test.ts`, "one discipline for
+      both tiers", runs two real corpora through one gate call and
+      asserts that the same defect in either produces identical check
+      outcomes and identical finding kinds.
+- [x] A synthetic drift scenario (a fix that stops reproducing) fails CI
+      as drift, not as a silent pass. `gate-upstream.test.ts` installs a
+      REAL later release of the toy target in which the cataloged
+      rejection was dropped, and the gate answers `not-inducible` naming
+      the code; `gate-folklore.test.ts` asserts that entry is reported
+      once, as drift, and NOT as "no inducing test". Verified to have
+      teeth: treating a non-throwing witness as induced turns 2 tests
+      red.
 
 ## Dependencies
 
