@@ -152,3 +152,50 @@ N/A directly; this corpus is consumed through `comprehend(stderr)` and
 - [deferred] Two real ffmpeg failures were investigated and not cataloged
   (an ogg container copy whose stderr names nothing specific, and `-t abc`,
   which duplicates `FFMPEG_INVALID_FRAMERATE`'s shape).
+
+## Fixed Issues
+
+### `FFMPEG_ODD_DIMENSION`'s fingerprint covered width only, missing the equally common height case (fixed 2026-08-22)
+
+Found by review, independently reproduced: `*width not divisible by 2
+(*)*` never matched a real, equally common mirror failure, an odd
+HEIGHT (`ffmpeg -f lavfi -i testsrc=size=100x301 -vf scale=50:-1 -c:v
+libx264 -pix_fmt yuv420p out.mp4` really fails with `height not
+divisible by 2 (50x151)`, verified live). `topics/scaling.md`'s own
+prose already claimed to cover "an odd width or height", so the
+fingerprint was under-inclusive relative to the corpus's own stated
+claim, not the fix (`-2` already resolves both axes, verified live).
+
+- Fixed by widening the pattern to `* not divisible by 2 (*)*`.
+  Mutation-verified: reverted to the width-only form, new test goes
+  red (`outcome: 'miss'`); restored, green.
+
+### `FFMPEG_INPUT_NOT_FOUND`'s pattern also matches a missing OUTPUT directory, and the twin overclaimed which one occurred (fixed 2026-08-22)
+
+Found by review, independently reproduced: `ffmpeg` prints the
+IDENTICAL `<path>: No such file or directory` shape whether the
+missing path is an input or an output directory (verified live,
+`ffmpeg -i clip.mp4 -y nonexistentdir/out.mp4` fails the same way, on
+the output). The corpus format's literal-plus-wildcard pattern
+language cannot distinguish the two: ffmpeg's own message never names
+which argument the path came from, and no earlier context in the
+captured stderr (`-hide_banner`/`-nostdin` per this corpus's own
+induction convention) reliably separates them either. The twin's
+`reason` and the fix's `title` both confidently said "input", which
+would misdirect a caller hitting the output-path variant.
+
+- Fixed by correcting the claim rather than attempting a false
+  -precision pattern trick: the twin's `reason`, the fix's `title`,
+  and the `inputs` topic's prose all now say plainly that this
+  message can mean either an input or an output path, name the
+  output-directory case explicitly, and tell the caller to check
+  both, input first. The pattern itself is unchanged (intentionally
+  loose, now honestly documented as such) since no honest tightening
+  exists. A new test pins this as disclosed, tested behavior: the
+  output-directory case is asserted to genuinely route to
+  `FFMPEG_INPUT_NOT_FOUND` (not a bug, the corpus's own honesty
+  claim), so a future change to either the pattern or the claim has
+  to update both together.
+- `topics/inputs.md` tightened elsewhere to stay under the CC5
+  600-token topic budget after the addition (real tiktoken-class
+  meter, verified live via `runSubmissionGate`).

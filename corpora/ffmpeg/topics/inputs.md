@@ -40,6 +40,11 @@ operating system's own reason, and is a path or permission problem. A path
 ffmpeg opens and cannot understand reports invalid data, and is a format
 problem: the bytes are there, and no demuxer claims them.
 
+The "cannot open" message is not input-specific despite living in this
+topic: a missing OUTPUT directory prints the identical
+`<path>: No such file or directory`. Check every `-i` first, the more
+common mistake, then the output path.
+
 The second one is where a wrong assumption hides longest, because the file
 exists and looks fine to a shell. A text file, an HTML error page saved with a
 media extension, and a zero-byte download all reach that message. `ffprobe` on

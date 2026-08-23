@@ -5,7 +5,7 @@
   "fixes": {
     "input-not-found": [
       {
-        "title": "Runbook: confirm the path ffmpeg was handed, then the file behind it",
+        "title": "Runbook: confirm every path on the command line, input AND output, then the file or directory behind it",
         "docs": "inputs",
         "confidence": "high",
         "status": "ready",

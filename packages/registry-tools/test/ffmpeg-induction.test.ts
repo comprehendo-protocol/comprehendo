@@ -25,8 +25,10 @@ import type { CorpusSource } from '../src/corpus-format.js';
 import type { FingerprintIndex } from '../src/fingerprint.js';
 import { fixKey } from '../src/gate-upstream.js';
 import {
+  INDUCE_PREFIX,
   applyToArgv,
   dimensions,
+  makeVideo,
   requireFfmpeg,
   run,
   streamKinds,
@@ -174,6 +176,67 @@ describe('the fence: an odd derived dimension cannot be expressed with scale=-2'
 
       expect(fenced.status).toBe(0);
       expect(dimensions(site.path, 'out.mp4')).toBe('722,720');
+    } finally {
+      site.cleanup();
+    }
+  });
+});
+
+describe('FFMPEG_ODD_DIMENSION covers both axes, not only width', () => {
+  // Found by review: the pattern originally read `*width not divisible by 2
+  // (*)*`, so a real, equally common mirror failure (an odd HEIGHT) never
+  // matched at all, despite the scaling topic's own prose already claiming
+  // to cover "an odd width or height". Widened to `* not divisible by 2
+  // (*)*`. Proved here against a real, independently chosen source (not
+  // copied from FENCE_SOURCES), on the height axis specifically.
+  it('really fails on an odd height, and really routes to the same twin as an odd width', () => {
+    const site = workspace();
+    try {
+      const heightOdd = run(scaleArgv('100x301', 'scale=50:-1'), site.path);
+
+      expect(heightOdd.status).not.toBe(0);
+      expect(heightOdd.stderr).toContain('height not divisible by 2 (50x151)');
+      const match = index.match(heightOdd.stderr);
+      expect(match.outcome).toBe('matched');
+      expect(match.outcome === 'matched' ? match.entry.corpusEntryId : undefined).toBe(
+        'FFMPEG_ODD_DIMENSION',
+      );
+
+      const fenced = run(scaleArgv('100x301', 'scale=50:-2'), site.path);
+      expect(fenced.status).toBe(0);
+      expect(dimensions(site.path, 'out.mp4')).toBe('50,150');
+    } finally {
+      site.cleanup();
+    }
+  });
+});
+
+describe('FFMPEG_INPUT_NOT_FOUND: a disclosed, not a hidden, ambiguity', () => {
+  // Found by review: the same "<path>: No such file or directory" text is
+  // what ffmpeg prints for a missing OUTPUT directory too, and the format's
+  // literal-plus-wildcard pattern language cannot distinguish the two
+  // (ffmpeg's own message never names which argument the path came from).
+  // Rather than a false-precision pattern trick, the twin's reason, its fix
+  // title, and the inputs topic were all corrected to say so honestly: this
+  // test is what keeps that claim from silently going stale. If this ever
+  // starts failing, the corpus's own honesty claim (not a bug fix) needs to
+  // be revisited alongside it.
+  it('an output directory that does not exist really produces the identical stderr shape, and still routes to FFMPEG_INPUT_NOT_FOUND', () => {
+    const site = workspace();
+    try {
+      makeVideo(site.path, 'clip.mp4', '64x64');
+      const missingOutputDir = run(
+        [...INDUCE_PREFIX, '-i', 'clip.mp4', '-y', 'nonexistentdir/out.mp4'],
+        site.path,
+      );
+
+      expect(missingOutputDir.status).not.toBe(0);
+      expect(missingOutputDir.stderr).toContain('nonexistentdir/out.mp4: No such file or directory');
+      const match = index.match(missingOutputDir.stderr);
+      expect(match.outcome).toBe('matched');
+      expect(match.outcome === 'matched' ? match.entry.corpusEntryId : undefined).toBe(
+        'FFMPEG_INPUT_NOT_FOUND',
+      );
     } finally {
       site.cleanup();
     }

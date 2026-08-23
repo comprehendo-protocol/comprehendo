@@ -8,7 +8,7 @@
       "status": "ready",
       "stub_fields": [],
       "code": "FFMPEG_INPUT_NOT_FOUND",
-      "reason": "An input path could not be opened, so nothing was probed and nothing was written. The path is reported as it was given, before any shell or working-directory assumption is applied, which is where relative paths and unexpanded variables show up.",
+      "reason": "A path ffmpeg was given could not be opened by the operating system, so nothing was probed and nothing was written. The message names the exact path, as given, before any shell or working-directory assumption is applied, but it does NOT say which of ffmpeg's arguments that path came from: the identical text is what ffmpeg prints when an OUTPUT path's containing directory does not exist, since both are the same open() failure from ffmpeg's point of view. Usually the input, since an input typo is the far more common mistake, but check the path itself against every -i and every output argument on the command line before assuming which one it is.",
       "docs": "inputs",
       "orphaned": false,
       "fingerprint": {
@@ -69,7 +69,7 @@
       "orphaned": false,
       "fingerprint": {
         "exception": "",
-        "message_pattern": "*width not divisible by 2 (*)*",
+        "message_pattern": "* not divisible by 2 (*)*",
         "kind": "runtime-error"
       }
     },
