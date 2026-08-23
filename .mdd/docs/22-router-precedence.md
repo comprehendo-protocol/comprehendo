@@ -190,6 +190,18 @@ recorded this).
   `docs()` answer correctly from it.
 - Full suite green throughout: core 540/540, registry-tools 242/242,
   spec 418/418 unaffected.
+- [gap] Found by review: only the whole-artifact `corpus_packed`
+  version gate is atomic. Once it passes, `fingerprints`/`twins`/`docs`
+  are still validated as three independent sub-fields (`shapeOf`, same
+  per-field independence the old three-file design had), so a
+  hand-corrupted installed artifact (valid version, malformed `twins`)
+  can still produce a fingerprint match with no catalog to answer it,
+  UNSTRUCTURED where a twin was cataloged. Never silent (both halves
+  are reported as defects), and 28's own "an atomic artifact makes
+  that unrepresentable" claim is really about `pack()` keeping a
+  PRODUCED artifact internally consistent at the source, not a defense
+  against a file corrupted after publish; this note exists so the two
+  claims are not conflated.
 
 ## Interface Overview
 
