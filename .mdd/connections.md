@@ -1,8 +1,8 @@
 ---
-generated: 2026-08-22
+generated: 2026-08-23
 doc_count: 40
 connection_count: 63
-overlap_count: 6
+overlap_count: 5
 ---
 
 # MDD Connections
@@ -62,21 +62,21 @@ overlap_count: 6
 **Python / Python Core**
   └── `18-python-core` - Python Core (complete)
 **Registry / Corpus Format**
-  └── `28-corpus-format` - Corpus Format (planned)
+  └── `28-corpus-format` - Corpus Format (complete)
 **Registry / Cross-Cutting Contracts / Folklore Gate**
-  └── `26-cc4-folklore-gate` - CC4 Folklore Gate (planned)
+  └── `26-cc4-folklore-gate` - CC4 Folklore Gate (complete)
 **Registry / Cross-Cutting Contracts / No Telemetry**
-  └── `27-cc6-no-telemetry` - CC6 No Telemetry (planned)
+  └── `27-cc6-no-telemetry` - CC6 No Telemetry (complete)
 **Registry / Cross-Cutting Contracts / Registry Truth**
-  └── `25-cc11-registry-truth` - CC11 Registry Truth (planned)
+  └── `25-cc11-registry-truth` - CC11 Registry Truth (complete)
 **Registry / Fingerprint Index**
   └── `21-fingerprint-index-matcher` - Fingerprint Index & Matcher (complete)
 **Registry / Owner Endorsement**
-  └── `30-owner-endorsement` - Owner Endorsement (planned)
+  └── `30-owner-endorsement` - Owner Endorsement (complete)
 **Registry / Scoped Publisher**
-  └── `31-scoped-publisher` - Scoped Publisher (planned)
+  └── `31-scoped-publisher` - Scoped Publisher (complete)
 **Registry / Submission Gate**
-  └── `29-submission-gate` - Submission Gate (planned)
+  └── `29-submission-gate` - Submission Gate (complete)
 **Spec / Budget Harness**
   └── `06-budget-harness` - Budget Harness (complete)
 **Spec / Conformance Fixtures**
@@ -122,13 +122,13 @@ graph TD
   22_router_precedence["22-router-precedence"]:::done
   23_config_loader["23-config-loader"]:::done
   24_wrap_proxy["24-wrap-proxy"]:::done
-  25_cc11_registry_truth["25-cc11-registry-truth"]:::planned
-  26_cc4_folklore_gate["26-cc4-folklore-gate"]:::planned
-  27_cc6_no_telemetry["27-cc6-no-telemetry"]:::planned
-  28_corpus_format["28-corpus-format"]:::planned
-  29_submission_gate["29-submission-gate"]:::planned
-  30_owner_endorsement["30-owner-endorsement"]:::planned
-  31_scoped_publisher["31-scoped-publisher"]:::planned
+  25_cc11_registry_truth["25-cc11-registry-truth"]:::done
+  26_cc4_folklore_gate["26-cc4-folklore-gate"]:::done
+  27_cc6_no_telemetry["27-cc6-no-telemetry"]:::done
+  28_corpus_format["28-corpus-format"]:::done
+  29_submission_gate["29-submission-gate"]:::done
+  30_owner_endorsement["30-owner-endorsement"]:::done
+  31_scoped_publisher["31-scoped-publisher"]:::done
   32_ffmpeg_corpus["32-ffmpeg-corpus"]:::planned
   33_ffmpeg_fingerprints["33-ffmpeg-fingerprints"]:::planned
   34_upstream_watch["34-upstream-watch"]:::planned
@@ -212,7 +212,6 @@ Files referenced by 2+ docs:
 - `packages/core/src/router-discovery.ts` - 22-router-precedence, 23-config-loader
 - `packages/core/src/router-precedence.ts` - 22-router-precedence, 23-config-loader
 - `packages/core/src/router.ts` - 22-router-precedence, 23-config-loader
-- `packages/registry-tools/src/gate.ts` - 29-submission-gate, 30-owner-endorsement
 
 ## Warnings
 

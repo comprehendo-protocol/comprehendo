@@ -71,18 +71,15 @@ N/A (a SPEC, no code exports).
       UNSTRUCTURED response: `fingerprint-match.test.ts`, "an ambiguous
       match degrades to UNSTRUCTURED with candidates named"; carried
       through Router & Precedence [22]'s `comprehend(raw)` unchanged.
-- [ ] A registry-corpus update that would create a cross-package
-      fingerprint collision fails the registry build (Submission Gate
-      [29]). [deferred] Genuinely blocked on Submission Gate [29]
-      (Wave 5), which does not exist yet: there is no registry BUILD
-      step to fail. What exists today, one level down: Fingerprint
-      Index & Matcher [21]'s `buildFingerprintIndex` already refuses
-      to build an index carrying two entries with the same id and
-      different fingerprints (`identityDefects`), and a within- or
-      cross-package identical-fingerprint duplicate is deduped or
-      refused the same way (21's judgment log, calls 7 and 11). [29]
-      is the consumer of that refusal at submission time, not a
-      reimplementation of it.
+- [x] A registry-corpus update that would create a cross-package
+      fingerprint collision fails the registry build: Submission Gate
+      [29]'s `gate-fingerprint.ts` compiles ONE fingerprint index over
+      every corpus in a PR plus every corpus already published (never
+      one per corpus), naming both packages and both entries on a
+      collision. `gate-corpus-checks.test.ts`, "sees a collision with
+      a corpus already published, not only inside the PR". Built on
+      Fingerprint Index & Matcher [21]'s real `buildFingerprintIndex`
+      refusal (`identityDefects`), not a reimplementation of it.
 
 ## Dependencies
 

@@ -84,6 +84,24 @@ export async function fingerprintModule(): Promise<FingerprintModule> {
   return loading;
 }
 
+/** Corpus Format [28]'s real module, the same cross-package specifier trick. */
+interface CorpusFormatModule {
+  readonly readPackedCorpus: (raw: unknown) => unknown;
+  readonly serializeCorpus: (packed: unknown) => string;
+}
+
+const CORPUS_FORMAT_SOURCE = join(PACKAGE_ROOT, '..', 'registry-tools', 'src', 'corpus-format.ts');
+
+let loadingCorpusFormat: Promise<CorpusFormatModule> | undefined;
+
+/** Corpus Format [28]'s real module, loaded once. */
+export async function corpusFormatModule(): Promise<CorpusFormatModule> {
+  loadingCorpusFormat ??= import(
+    /* @vite-ignore */ pathToFileURL(CORPUS_FORMAT_SOURCE).href
+  ) as Promise<unknown> as Promise<CorpusFormatModule>;
+  return loadingCorpusFormat;
+}
+
 /** A real compiled index over the given corpus fingerprints. */
 export async function realMatcher(entries: readonly unknown[]): Promise<RealIndex> {
   const { buildFingerprintIndex } = await fingerprintModule();
@@ -200,21 +218,35 @@ export function cleanTrees(): void {
 }
 
 /**
- * The files a published `@comprehendo/<toy>` corpus package ships, built with
- * the real tools: 21's `serializeIndex` for the fingerprint artifact, the
- * shared twin catalog for the twins, and the packed corpus 13 reads.
+ * The one file a published `@comprehendo/<toy>` corpus package ships, built
+ * with Corpus Format [28]'s real `readPackedCorpus`/`serializeCorpus`: the
+ * raw fingerprint entries (compiled into an index only at discovery time,
+ * never inside the artifact), the shared twin catalog, and the packed docs
+ * 13 reads, all inside the one artifact 28 rules on.
  */
 export async function toyCorpusFiles(): Promise<Record<string, string>> {
-  const { serializeIndex } = await fingerprintModule();
+  const { readPackedCorpus, serializeCorpus } = await corpusFormatModule();
+  const packed = readPackedCorpus({
+    comprehendo: '0.1',
+    corpus_packed: 1,
+    package: TOY,
+    provider: TOY,
+    version: '1.0.0',
+    docs: toyPacked(),
+    twins: catalog(sortEntry),
+    fingerprints: [TOY_FINGERPRINT],
+  });
   return {
     'package.json': `${JSON.stringify(
-      { name: TOY_CORPUS_PACKAGE, version: '0.3.1', comprehendoCorpus: { target: TOY } },
+      {
+        name: TOY_CORPUS_PACKAGE,
+        version: '0.3.1',
+        comprehendoCorpus: { target: TOY, format: 1, artifact: 'comprehendo.corpus.json' },
+      },
       null,
       2,
     )}\n`,
-    'comprehendo.fingerprints.json': serializeIndex(await realMatcher([TOY_FINGERPRINT])),
-    'comprehendo.twins.json': `${JSON.stringify(catalog(sortEntry), null, 2)}\n`,
-    'comprehendo.packed.json': `${JSON.stringify(toyPacked(), null, 2)}\n`,
+    'comprehendo.corpus.json': serializeCorpus(packed),
   };
 }
 

@@ -203,6 +203,12 @@ export function mergeScan(existing: AuthoringCorpus, scan: TargetScan): Authorin
     provider: existing.provider,
     target: { package: scan.package, version: scan.version, source: scan.source },
     manifest_hint: existing.manifest_hint,
+    // Human-owned, same as manifest_hint: a scan can never know a provider's
+    // apply grammar, so it is carried through untouched. Found by review
+    // (28-corpus-format): writeCorpus previously had no field to carry it
+    // through at all, so a hand-added declared_schema was silently dropped
+    // by the next scan.
+    ...(existing.declared_schema === undefined ? {} : { declared_schema: existing.declared_schema }),
     topics,
     twins,
     fixes,

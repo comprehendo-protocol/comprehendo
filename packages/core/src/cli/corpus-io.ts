@@ -21,6 +21,7 @@ import {
   topicStubFields,
   twinStubFields,
   type AuthoringCorpus,
+  type DeclaredSchemaHint,
   type FixRecord,
   type RecordStatus,
   type SymbolKind,
@@ -207,6 +208,25 @@ function readFixes(path: string): Record<string, FixRecord[]> {
   return fixes;
 }
 
+/**
+ * The provider's declared call surface, when the manifest carries one.
+ * Human-owned (a scan can never know a provider's `apply` grammar), so this
+ * is a READ, never a derivation, and `writeCorpus` carries the result back
+ * out unchanged. `undefined` means "no `declared_schema` key at all", kept
+ * distinct from an empty one so a corpus with no `apply` yet stays silent
+ * about a schema it does not have.
+ */
+function readDeclaredSchema(value: unknown): DeclaredSchemaHint | undefined {
+  if (typeof value !== 'object' || value === null) return undefined;
+  const schema = record(value);
+  const nested = list(schema['nested_pipeline_operations']);
+  return {
+    surface: text(schema['surface']),
+    operations: list(schema['operations']),
+    ...(nested.length === 0 ? {} : { nested_pipeline_operations: nested }),
+  };
+}
+
 /** Reads a corpus from disk. Refuses a format version this build cannot read. */
 export function readCorpus(paths: CorpusPaths): AuthoringCorpus {
   const manifest = readJson(paths.manifest);
@@ -220,6 +240,7 @@ export function readCorpus(paths: CorpusPaths): AuthoringCorpus {
   const index = readJson(paths.index);
   const target = record(manifest['target']);
   const hint = record(record(manifest['manifest_hint'])['comprehendo']);
+  const declaredSchema = readDeclaredSchema(manifest['declared_schema']);
   const entries = Array.isArray(index['topics']) ? index['topics'] : [];
   return {
     provider: text(manifest['provider']),
@@ -234,6 +255,7 @@ export function readCorpus(paths: CorpusPaths): AuthoringCorpus {
         level: typeof hint['level'] === 'number' ? hint['level'] : 1,
       },
     },
+    ...(declaredSchema === undefined ? {} : { declared_schema: declaredSchema }),
     topics: entries.map((raw) => {
       const entry = record(raw);
       const file = text(entry['file'], `topics/${topicFileName(text(entry['topic']))}`);
@@ -277,6 +299,9 @@ export function writeCorpus(paths: CorpusPaths, corpus: AuthoringCorpus): string
     ...header,
     target: corpus.target,
     manifest_hint: corpus.manifest_hint,
+    // Human-owned (see readDeclaredSchema): written back verbatim, never
+    // regenerated, and only present when the corpus actually carries one.
+    ...(corpus.declared_schema === undefined ? {} : { declared_schema: corpus.declared_schema }),
   });
   writeJson(paths.index, {
     ...header,

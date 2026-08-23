@@ -364,6 +364,30 @@ Found by review, all mutation-verified after fixing:
    on a stray subdirectory under `topics/`. Fixed: `rmSync(...,
    {recursive: true, force: true})`.
 
+### `writeCorpus` silently dropped a hand-added `declared_schema` on the next scan (fixed 2026-08-22)
+
+Found by Corpus Format [28]'s build (wave 5), while it was adding
+`declared_schema` to `manifest.json` (the slot CC7 [09] needs to
+enforce the apply grammar at the registry tier). `AuthoringCorpus` had
+no field for it at all, so `readCorpus` never read a hand-added
+`declared_schema` off disk, and `writeCorpus` rewrote `manifest.json`
+wholesale from `{header, target, manifest_hint}` on every `scan`,
+losing it. Contradicted this feature's own central rule, "a re-scan
+never touches a human-owned field": `declared_schema` is exactly as
+human-owned as `manifest_hint`, which the same code path already
+carries through correctly.
+
+- Fixed by giving it the identical treatment as `manifest_hint`:
+  `AuthoringCorpus` gained an optional `declared_schema` field,
+  `readCorpus` reads it, `writeCorpus` writes it back verbatim only
+  when present, and `mergeScan` carries `existing.declared_schema`
+  through untouched (never derived, never regenerated). Fixed at the
+  orchestrator level (outside 28's own `source_files`, in
+  `format.ts`/`corpus-io.ts`/`merge.ts`, all owned by this feature).
+  Mutation-verified: 1 new test in `cli-scan.test.ts`'s "field
+  ownership on a re-scan" suite, red without the fix (the field came
+  back `undefined` after a re-scan), green with it.
+
 ### Doc named a Wave 5 component as this feature's file format (fixed 2026-08-22)
 
 Was: Architecture and Data Model attributed the generated file shape to
