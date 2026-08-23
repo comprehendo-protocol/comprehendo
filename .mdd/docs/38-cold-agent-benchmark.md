@@ -164,6 +164,32 @@ this tool with its stack.
 - [32-ffmpeg-corpus](32-ffmpeg-corpus.md)
 - [10-cc9-marker-freeze](10-cc9-marker-freeze.md)
 
+## Fixed Issues
+
+### The harness's ffmpeg spawn wrapper duplicated the corpus test helper's, unguarded (fixed 2026-08-23)
+
+Found by review. `cold-agent-harness.ts`'s `ffmpeg()`/`ffmpegVersion()`
+duplicate `run()`/`ffmpegVersion()` from
+`packages/registry-tools/test/helpers/ffmpeg-cli.ts` (same `spawnSync`
+shape, timeout, stdio), the same kind of build-boundary-imposed
+duplication `cold-agent-apply.ts`'s `applyToArgv` already is, but
+unlike that one, nothing asserted the two spawn wrappers actually
+agree. This is precisely the drift risk this project's own stated
+policy (an unguarded copy is drift waiting) exists to catch, and it
+was not named as a Known Issue either.
+
+- Fixed by adding a guard test asserting the two wrappers produce
+  identical `{status, stderr}` over a REAL induced failure (`-i
+  does-not-exist.mp4`, a real ffmpeg invocation): `-version` was
+  considered first and rejected, because it writes to stdout, not
+  stderr, so a wrapper divergence in encoding or stdio configuration
+  would pass unnoticed regardless of a real bug.
+- Mutation-verified: appending an extra flag to the harness's
+  `spawnSync` call (simulating a config divergence between the two
+  wrappers) turned the new test red, naming the exact mismatch
+  (`expected '' to contain 'does-not-exist.mp4'`); restored, 41/41
+  green, typecheck clean, full registry-tools suite 422/422.
+
 ## Known Issues
 
 - [deferred] The gating number measures the PROTOCOL through a deterministic

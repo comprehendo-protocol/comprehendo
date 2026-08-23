@@ -50,7 +50,7 @@ overlap_count: 5
 **Distribution / COMPREHENDO.md Generator**
   └── `35-comprehendo-md-generator` - COMPREHENDO.md Generator (complete)
 **Distribution / Cold-Agent Benchmark**
-  └── `38-cold-agent-benchmark` - Cold-Agent Benchmark (planned)
+  └── `38-cold-agent-benchmark` - Cold-Agent Benchmark (complete)
 **Distribution / Docs As Tests**
   └── `37-docs-as-tests` - Docs As Tests (complete)
 **Distribution / Priming Snippet**
@@ -58,7 +58,7 @@ overlap_count: 5
 **Distribution / Registry Reservations**
   └── `39-registry-reservations` - Package Name & Registry Reservations (complete)
 **Distribution / Registry Website**
-  └── `40-registry-website` - Registry Website (planned)
+  └── `40-registry-website` - Registry Website (complete)
 **Python / Python Core**
   └── `18-python-core` - Python Core (complete)
 **Registry / Corpus Format**
@@ -135,9 +135,9 @@ graph TD
   35_comprehendo_md_generator["35-comprehendo-md-generator"]:::done
   36_priming_snippet["36-priming-snippet"]:::done
   37_docs_as_tests["37-docs-as-tests"]:::done
-  38_cold_agent_benchmark["38-cold-agent-benchmark"]:::planned
+  38_cold_agent_benchmark["38-cold-agent-benchmark"]:::done
   39_registry_reservations["39-registry-reservations"]:::done
-  40_registry_website["40-registry-website"]:::planned
+  40_registry_website["40-registry-website"]:::done
   03_shape_schemas --> 01_cc2_shape_identity
   04_conformance_fixtures --> 01_cc2_shape_identity
   04_conformance_fixtures --> 03_shape_schemas

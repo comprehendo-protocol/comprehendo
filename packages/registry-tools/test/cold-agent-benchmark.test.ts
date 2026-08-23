@@ -23,6 +23,7 @@ import {
 } from '../../../scripts/cold-agent-benchmark.ts';
 import type { Agent, BenchmarkResult } from '../../../scripts/cold-agent-benchmark.ts';
 import { cc9Scans, runCc9Gate } from '../../../scripts/cold-agent-cc9.ts';
+import { ffmpeg as harnessFfmpeg, ffmpegVersion as harnessFfmpegVersion } from '../../../scripts/cold-agent-harness.ts';
 import { ACTION_MENU, actionFrom, systemPromptOf } from '../../../scripts/cold-agent-live.ts';
 import {
   OPERATOR_BASELINE,
@@ -38,7 +39,14 @@ import type {
   TaskTranscript,
 } from '../../../scripts/cold-agent-suite.ts';
 import { TASKS } from '../../../scripts/cold-agent-tasks.ts';
-import { INDUCE_PREFIX, applyToArgv as corpusApply, requireFfmpeg, run, workspace } from './helpers/ffmpeg-cli.js';
+import {
+  INDUCE_PREFIX,
+  applyToArgv as corpusApply,
+  ffmpegVersion,
+  requireFfmpeg,
+  run,
+  workspace,
+} from './helpers/ffmpeg-cli.js';
 import { WITNESSES } from './helpers/ffmpeg-witnesses.js';
 
 const REPO_ROOT = join(import.meta.dirname, '..', '..', '..');
@@ -261,6 +269,30 @@ describe('the faithful agent follows only the priming snippet', () => {
     expect(() => benchmarkApply(['-i', 'a.mp4', 'out.mp4'], { '-x': 'y' }, declaredOperations)).toThrow(
       /declared_schema does not declare/,
     );
+  });
+
+  it("spawns ffmpeg exactly as the corpus test helper's own run() does", () => {
+    // The harness's ffmpeg()/ffmpegVersion() duplicate run()/ffmpegVersion()
+    // from ffmpeg-cli.ts (same spawnSync shape, same timeout, same stdio).
+    // Found unguarded by review: unlike applyToArgv above, nothing asserted
+    // the two wrappers actually agree, so a divergence in either one could
+    // drift silently. Guarded here the same way, over a REAL induced
+    // failure (`-version` writes to stdout, not stderr, so it cannot tell
+    // the two wrappers apart; a real induced failure can).
+    requireFfmpeg();
+    const dir = workspace();
+    try {
+      const argv = [...INDUCE_PREFIX, '-i', 'does-not-exist.mp4', 'out.mp4'];
+      const viaHarness = harnessFfmpeg(argv, dir.path);
+      const viaHelper = run(argv, dir.path);
+
+      expect(viaHarness.status).not.toBe(0);
+      expect(viaHarness.stderr).toContain('does-not-exist.mp4');
+      expect(viaHarness).toEqual({ status: viaHelper.status, stderr: viaHelper.stderr });
+      expect(harnessFfmpegVersion()).toEqual(ffmpegVersion());
+    } finally {
+      dir.cleanup();
+    }
   });
 });
 

@@ -383,3 +383,14 @@ Fixed Issues section.
     the original wording anticipated.
 11. Adversarial review dispatched (isolated worktree) before PE3
     close-out.
+
+**Post-merge review finding, fixed 2026-08-23**: the harness's
+`ffmpeg()`/`ffmpegVersion()` unguardedly duplicated the corpus test
+helper's `run()`/`ffmpegVersion()`, the same class of duplication
+`applyToArgv` already is, but without a guard test. Fixed with a
+guard test comparing both wrappers over a real induced failure
+(`-version` was rejected first since it writes to stdout, so a
+wrapper divergence would pass unnoticed). Mutation-verified: an
+injected spawn-config divergence turned the new test red naming the
+mismatch; restored, 41/41 green, full registry-tools suite 422/422.
+Full writeup in `38-cold-agent-benchmark.md`'s Fixed Issues section.
