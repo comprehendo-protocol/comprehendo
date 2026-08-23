@@ -39,7 +39,8 @@ describe('the trust ladder decides what may bot-merge', () => {
   });
 
   it('treats unknown adoption as high for a first-time corpus, failing closed', () => {
-    const { targetAdoption: _unknown, ...unknownAdoption } = facts({ firstTimeCorpus: true });
+    const unknownAdoption = facts({ firstTimeCorpus: true });
+    delete (unknownAdoption as { targetAdoption?: string }).targetAdoption;
     const policy = mergePolicy(unknownAdoption, true, false);
 
     expect(policy.botMergeEligible).toBe(false);

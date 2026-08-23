@@ -156,7 +156,7 @@ export async function fixture(name = 'toy-encoder'): Promise<Fixture> {
     submission: (directory = name): SubmissionCorpus => ({ directory, source: parse(corpus) }),
     rewrite: async (edit): Promise<void> => {
       const { readCorpus, writeCorpus } = await generatorModule();
-      writeCorpus(paths, edit(readCorpus(paths) as unknown as AuthoredCorpus));
+      writeCorpus(paths, edit(readCorpus(paths)));
     },
     patchManifest: (patch): void => {
       writeJsonFile(paths.manifest, { ...readJsonFile(paths.manifest), ...patch });

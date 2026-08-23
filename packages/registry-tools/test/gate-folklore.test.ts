@@ -97,7 +97,11 @@ describe('the folklore rule rejects what no test provoked', () => {
       fixes: Object.fromEntries(
         Object.entries(corpus.fixes).map(([id, list]) => [
           id,
-          list.map(({ apply: _apply, ...rest }) => rest),
+          list.map((fix) => {
+            const pointerOnly = { ...fix };
+            delete pointerOnly['apply'];
+            return pointerOnly;
+          }),
         ]),
       ),
     }));
