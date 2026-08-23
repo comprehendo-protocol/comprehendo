@@ -230,7 +230,7 @@ export function applyToArgv(
           `the apply for ${option} is not a string operand or a non-empty list of them, so it is not literal call data for a command line`,
         );
       }
-      next = insertOption(dropOption(next, option), option, operands as readonly string[]);
+      next = insertOption(dropOption(next, option), option, operands);
     }
   }
   return Object.freeze(next);
