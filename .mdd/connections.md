@@ -44,7 +44,7 @@ overlap_count: 5
 **Corpora / ffmpeg / Corpus**
   └── `32-ffmpeg-corpus` - ffmpeg Corpus (complete)
 **Corpora / ffmpeg / Fingerprints**
-  └── `33-ffmpeg-fingerprints` - ffmpeg Fingerprints (planned)
+  └── `33-ffmpeg-fingerprints` - ffmpeg Fingerprints (complete)
 **Corpora / ffmpeg / Upstream Watch**
   └── `34-upstream-watch` - Upstream Watch (planned)
 **Distribution / COMPREHENDO.md Generator**
@@ -130,7 +130,7 @@ graph TD
   30_owner_endorsement["30-owner-endorsement"]:::done
   31_scoped_publisher["31-scoped-publisher"]:::done
   32_ffmpeg_corpus["32-ffmpeg-corpus"]:::done
-  33_ffmpeg_fingerprints["33-ffmpeg-fingerprints"]:::planned
+  33_ffmpeg_fingerprints["33-ffmpeg-fingerprints"]:::done
   34_upstream_watch["34-upstream-watch"]:::planned
   35_comprehendo_md_generator["35-comprehendo-md-generator"]:::planned
   36_priming_snippet["36-priming-snippet"]:::planned
