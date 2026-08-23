@@ -1,0 +1,92 @@
+name: Docs as tests
+
+# Every fenced code block in a GENERATED docs surface is executed here against
+# the real program the corpus documents (Principle 10: generated, never
+# hand-rotted). A worked example that stopped working is a CI failure naming
+# the file and the block index, not a stale snippet somebody notices months
+# later.
+#
+# This is deliberately NOT a markdown linter. Its subject is the files this
+# repository GENERATES from tested truth, currently `corpora/*/COMPREHENDO.md`
+# from COMPREHENDO.md Generator [35].
+#
+# The binary is a precondition, never a skip: a green run that executed nothing
+# is exactly the folklore CC4 [26] exists to catch, so the runner exits 2 when
+# ffmpeg is absent and this job fails.
+
+on:
+  push:
+    paths:
+      - "corpora/**"
+      - "scripts/run-docs-code-blocks.ts"
+      - "scripts/docs-code-blocks.ts"
+      - "scripts/docs-transcript-workspace.ts"
+      - "scripts/comprehendo-md.ts"
+      - "scripts/generate-comprehendo-md.ts"
+      - "packages/registry-tools/src/corpus-*.ts"
+      - "packages/registry-tools/src/fingerprint*.ts"
+      - "packages/registry-tools/src/gate-fingerprint.ts"
+      - "packages/registry-tools/test/docs-code-blocks.test.ts"
+      - ".github/workflows/docs-as-tests.yml"
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  blocks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+
+      # The corpus documents a PROGRAM, so the program is what its examples are
+      # executed against. Never a double, never remembered text.
+      - name: Install the program the corpus documents
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ffmpeg
+          ffmpeg -version | head -1
+
+      - name: Install
+        run: |
+          npm ci --prefix packages/core
+          npm ci --prefix packages/registry-tools
+
+      # The runner loads the BUILT modules of registry-tools (Corpus Format
+      # [28]'s parser and Fingerprint Index & Matcher [21]'s index builder), so
+      # the build is a precondition of the gate rather than an optimization.
+      - name: Build the packages the runner reads
+        run: |
+          npm run build --prefix packages/core
+          npm run build --prefix packages/registry-tools
+
+      - name: Type-check the scripts
+        run: ./packages/registry-tools/node_modules/.bin/tsc -p scripts/tsconfig.json
+
+      # Every generated surface in the tree, not a named one: a corpus added
+      # later gets its examples executed without anyone editing this file.
+      - name: Execute every block of every generated surface
+        run: |
+          status=0
+          for corpus in corpora/*/; do
+            [ -f "${corpus}manifest.json" ] || continue
+            echo "== ${corpus}"
+            node scripts/run-docs-code-blocks.ts "${corpus}" || status=$?
+          done
+          exit $status
+
+      # The gate's own suite: the extraction cases, the transcript refusals,
+      # and the mutation cases that prove a deliberately broken example really
+      # fails rather than merely parsing.
+      - name: The gate's own suite
+        working-directory: packages/registry-tools
+        run: npx vitest run docs-code-blocks
