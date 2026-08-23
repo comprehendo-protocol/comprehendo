@@ -25,6 +25,7 @@ import type { FingerprintIndex } from '../../src/fingerprint.js';
 import { fixKey } from '../../src/gate-upstream.js';
 import type { TruthFailure, UpstreamVerification } from '../../src/gate-upstream.js';
 import { applyToArgv, ffmpegVersion, run, workspace } from './ffmpeg-cli.js';
+import type { FfmpegRun } from './ffmpeg-cli.js';
 import { WITNESSES } from './ffmpeg-witnesses.js';
 
 /** The corpus directory this feature owns, from the repository root. */
@@ -101,7 +102,6 @@ export function induceOne(code: string, index: FingerprintIndex): Induced {
  */
 export function induceAll(corpus: CorpusSource): UpstreamVerification {
   const index = indexOf(corpus);
-  const declared = corpus.declaredSchema?.operations ?? [];
   const inducedCodes: string[] = [];
   const verifiedFixes: string[] = [];
   const failures: TruthFailure[] = [];
@@ -120,45 +120,13 @@ export function induceAll(corpus: CorpusSource): UpstreamVerification {
     try {
       witness.setup?.(site.path);
       const failed = run(witness.argv, site.path);
-      if (failed.status === 0) {
-        failures.push({
-          kind: 'not-inducible',
-          at: twin.code,
-          detail: `the real binary did not fail at all when the witness for ${twin.code} ran`,
-        });
-        continue;
-      }
-      const match = index.match(failed.stderr);
-      if (match.outcome !== 'matched') {
-        failures.push({
-          kind: match.outcome === 'ambiguous' ? 'misrouted' : 'not-inducible',
-          at: twin.code,
-          detail: `the stderr this witness really produced routed as ${match.outcome}`,
-        });
-        continue;
-      }
-      if (match.entry.corpusEntryId !== twin.code) {
-        failures.push({
-          kind: 'misrouted',
-          at: twin.code,
-          detail: `the failure this witness really provoked matches ${match.entry.corpusEntryId}`,
-        });
+      const routed = routeInduction(twin.code, failed, index);
+      if (routed !== undefined) {
+        failures.push(routed);
         continue;
       }
       inducedCodes.push(twin.code);
-
-      for (const fix of corpus.fixes[twin.id] ?? []) {
-        if (fix.apply === undefined) continue;
-        const corrected = applyToArgv(witness.argv, fix.apply, declared);
-        const retried = run(corrected, site.path);
-        if (retried.status === 0) verifiedFixes.push(fixKey(twin.code, fix.title));
-        else
-          failures.push({
-            kind: 'fix-did-not-resolve',
-            at: fixKey(twin.code, fix.title),
-            detail: `applying "${fix.title}" and retrying still failed:\n${retried.stderr}`,
-          });
-      }
+      proveFixes(corpus, twin.id, twin.code, witness.argv, site.path, verifiedFixes, failures);
     } finally {
       site.cleanup();
     }
@@ -172,4 +140,61 @@ export function induceAll(corpus: CorpusSource): UpstreamVerification {
     verifiedFixes: Object.freeze(verifiedFixes),
     failures: Object.freeze(failures),
   });
+}
+
+/** Why this run did not settle the entry, or `undefined` when it did. */
+function routeInduction(
+  code: string,
+  failed: FfmpegRun,
+  index: FingerprintIndex,
+): TruthFailure | undefined {
+  if (failed.status === 0) {
+    return {
+      kind: 'not-inducible',
+      at: code,
+      detail: `the real binary did not fail at all when the witness for ${code} ran`,
+    };
+  }
+  const match = index.match(failed.stderr);
+  if (match.outcome !== 'matched') {
+    return {
+      kind: match.outcome === 'ambiguous' ? 'misrouted' : 'not-inducible',
+      at: code,
+      detail: `the stderr this witness really produced routed as ${match.outcome}`,
+    };
+  }
+  if (match.entry.corpusEntryId !== code) {
+    return {
+      kind: 'misrouted',
+      at: code,
+      detail: `the failure this witness really provoked matches ${match.entry.corpusEntryId}`,
+    };
+  }
+  return undefined;
+}
+
+/** Each executable fix, applied to the same failing argv and really rerun. */
+function proveFixes(
+  corpus: CorpusSource,
+  id: string,
+  code: string,
+  argv: readonly string[],
+  cwd: string,
+  verified: string[],
+  failures: TruthFailure[],
+): void {
+  const declared = corpus.declaredSchema?.operations ?? [];
+  for (const fix of corpus.fixes[id] ?? []) {
+    if (fix.apply === undefined) continue;
+    const retried = run(applyToArgv(argv, fix.apply, declared), cwd);
+    if (retried.status === 0) {
+      verified.push(fixKey(code, fix.title));
+      continue;
+    }
+    failures.push({
+      kind: 'fix-did-not-resolve',
+      at: fixKey(code, fix.title),
+      detail: `applying "${fix.title}" and retrying still failed:\n${retried.stderr}`,
+    });
+  }
 }
