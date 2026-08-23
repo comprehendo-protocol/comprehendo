@@ -19,8 +19,18 @@ started: 2026-08-22
 - [x] 29-submission-gate (COMPONENT), 67/67 new tests green, merged; checked off 25's and 26's ACs (their enforcement now real); checked off 20's third AC too (fingerprint lint now runs a real cross-package collision check)
 - [x] 30-owner-endorsement (COMPONENT), 48/48 new tests green, merged; satisfies 29's mandatory verifyAgainstUpstream contract transitively, mutation-verified against a doctored gate result; resolved two of 23-config-loader's known_issues
 - [x] 31-scoped-publisher (COMPONENT), 21/21 new tests green, merged; satisfies_contracts flipped to done; measured (not just predicted) the router-discovery.ts producer/consumer gap with a real live payload
-- [ ] 30-owner-endorsement (COMPONENT)
-- [ ] 31-scoped-publisher (COMPONENT)
+
+## Orchestrator-level fix (post-batch, before PE4)
+
+router-discovery.ts (owned by 22-router-precedence) migrated from its
+provisional three-file convention to Corpus Format [28]'s authoritative
+`comprehendo.corpus.json`, closing the producer/consumer gap 28 predicted
+and 31 measured live. Mutation-verified (new version-gate test, red
+without the fix), verified live end to end (a real payload assembled
+with 28's own functions is discovered with zero defects), reviewed in
+an isolated worktree (no blocking findings; one documentation-nuance
+note added to 22's doc). Full detail in 22-router-precedence.md's Fixed
+Issues. Commits b908432, 632a1a7.
 
 ## Judgment log
 

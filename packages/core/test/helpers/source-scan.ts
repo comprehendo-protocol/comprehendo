@@ -71,13 +71,23 @@ export function transitiveImportClosure(entryPath: string): SourceFile[] {
 
 /** Every `.ts` file under `src/`, recursively, sorted by path. */
 export function readCoreSources(): SourceFile[] {
-  return walk(SRC_ROOT)
+  return readSourcesUnder(SRC_ROOT);
+}
+
+/**
+ * Every `.ts` file under an arbitrary source root, recursively, sorted by
+ * path. `readCoreSources` is this applied to `SRC_ROOT`; CC6 [27]'s
+ * package-wide network scan applies it to a sibling package's `src/` too,
+ * which core cannot import (one-way dependency) but can still read as files.
+ */
+export function readSourcesUnder(root: string): SourceFile[] {
+  return walk(root)
     .filter((file) => file.endsWith('.ts'))
     .sort()
     .map((file) => {
       const text = readFileSync(file, 'utf8');
       return {
-        path: relative(SRC_ROOT, file).split(sep).join('/'),
+        path: relative(root, file).split(sep).join('/'),
         text,
         code: blankComments(text),
       };
@@ -238,9 +248,19 @@ export const FORBIDDEN_MODULES = ['fs', 'net', 'http', 'dns', 'child_process'] a
 
 /** Every forbidden module a source file imports, statically or dynamically. */
 export function findForbiddenImports(source: string): string[] {
+  return findModuleImports(source, FORBIDDEN_MODULES);
+}
+
+/**
+ * Every module named in `modules` that a source file imports, statically or
+ * dynamically. `findForbiddenImports` is this applied to CC1's fixed five;
+ * CC6 [27]'s package-wide scan applies it to the wider network-module list
+ * instead.
+ */
+export function findModuleImports(source: string, modules: readonly string[]): string[] {
   const code = blankComments(source);
   const found = new Set<string>();
-  for (const name of FORBIDDEN_MODULES) {
+  for (const name of modules) {
     const specifier = `(?:node:)?${name}(?:/[\\w./-]+)?`;
     const patterns = [
       new RegExp(`from\\s*['"]${specifier}['"]`),
