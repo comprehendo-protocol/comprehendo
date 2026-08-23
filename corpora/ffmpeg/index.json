@@ -1,0 +1,19 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/ffmpeg",
+  "topics": [
+    { "topic": "inputs", "file": "topics/inputs.md", "status": "ready", "orphaned": false },
+    { "topic": "outputs", "file": "topics/outputs.md", "status": "ready", "orphaned": false },
+    { "topic": "options", "file": "topics/options.md", "status": "ready", "orphaned": false },
+    { "topic": "codecs", "file": "topics/codecs.md", "status": "ready", "orphaned": false },
+    { "topic": "filters", "file": "topics/filters.md", "status": "ready", "orphaned": false },
+    { "topic": "scaling", "file": "topics/scaling.md", "status": "ready", "orphaned": false },
+    {
+      "topic": "stream-selection",
+      "file": "topics/stream-selection.md",
+      "status": "ready",
+      "orphaned": false
+    }
+  ]
+}

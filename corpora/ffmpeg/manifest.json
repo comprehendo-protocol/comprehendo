@@ -1,0 +1,35 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/ffmpeg",
+  "target": {
+    "package": "ffmpeg",
+    "version": "4.4.2",
+    "source": "cli"
+  },
+  "manifest_hint": {
+    "comprehendo": {
+      "version": "0.1",
+      "level": 1
+    }
+  },
+  "declared_schema": {
+    "surface": "ffmpeg",
+    "operations": [
+      "-i",
+      "-f",
+      "-c",
+      "-c:v",
+      "-c:a",
+      "-map",
+      "-vf",
+      "-af",
+      "-filter_complex",
+      "-pix_fmt",
+      "-r",
+      "-t",
+      "-y",
+      "-n"
+    ]
+  }
+}
