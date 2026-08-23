@@ -4,8 +4,8 @@ title: Cold-Agent Benchmark
 type: COMPONENT
 path: Distribution / Cold-Agent Benchmark
 source_files: [scripts/cold-agent-benchmark.ts, scripts/cold-agent-suite.ts, scripts/cold-agent-tasks.ts, scripts/cold-agent-apply.ts, scripts/cold-agent-harness.ts, scripts/cold-agent-cc9.ts, scripts/cold-agent-live.ts]
-status: planned
-phase: idle
+status: complete
+phase: all
 last_synced: 2026-08-23
 initiative: comprehendo
 wave: comprehendo-wave-7

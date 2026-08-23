@@ -15,8 +15,8 @@ started: 2026-08-22
 - [x] 35-comprehendo-md-generator (COMPONENT), 19/19 new tests green, merged; found and fixed a real bug (exit 70 instead of 2 on an unpackable corpus), mutation-verified 10 ways against the real ffmpeg corpus
 - [x] 36-priming-snippet (COMPONENT), 18/18 new tests green, merged; 144/150 tokens on the real meter, iterated across 10 measured phrasings, both content and budget mutation-verified
 - [x] 37-docs-as-tests (COMPONENT), 26/26 new tests green, merged; extended 35's renderer with real, executed fenced code blocks (35 deliberately deferred this, previously zero blocks existed); closed a real, currently-open hole (worked examples were never actually run in CI, only paralleled by a hand-maintained argv table); post-merge review found and fixed a real write-target sandbox escape, see Fixed Issues
-- [~] 38-cold-agent-benchmark (COMPONENT), still building
-- [x] 40-registry-website (COMPONENT), 61/61 new tests green (55 site + 6 contract), merged; satisfies_contracts on 29's verifyAgainstUpstream resolved to done (refuses every trust tier above community without a real verified upstream check); real registry-tools 404 handled honestly (UNAVAILABLE, not empty); real RFC served byte-identical; adversarial review dispatched
+- [x] 38-cold-agent-benchmark (COMPONENT), 40/40 new tests green, merged; deterministic protocol-fidelity gate scores 14/14 (100%, matches the Operator baseline); live corroboration against a real llama3:8b model scores 1/14 (7.1%), published unchanged as a `[gap]`; CC9 re-run against both the JS and Python marker-freeze suites for real, live, on every run; found and fixed two real harness bugs via the live tier
+- [x] 40-registry-website (COMPONENT), 61/61 new tests green (55 site + 6 contract), merged; satisfies_contracts on 29's verifyAgainstUpstream resolved to done (refuses every trust tier above community without a real verified upstream check); real registry-tools 404 handled honestly (UNAVAILABLE, not empty); real RFC served byte-identical; post-merge review found and fixed two real bypasses in the read-only audit's pattern table, see Fixed Issues
 
 ## Judgment log
 
@@ -300,3 +300,86 @@ uses either shape, so this closed a dormant hole, not an active leak.
 Two regression tests added, mutation-verified (revert -> both red;
 restore -> 57/57 green). Full writeup in `40-registry-website.md`'s
 Fixed Issues section.
+
+### 38-cold-agent-benchmark (13 calls, unattended, no blockers)
+
+1. **The central scope question, checked not assumed**: does a
+   literal "an agent given only the priming snippet" reading need a
+   real live model session? Measured, not guessed: no provider API
+   key exists in this environment (`claude` CLI's `--system-prompt`
+   still carries roughly 34,000 chars of harness preamble plus 11
+   tool defs, ruled out on real evidence); `ollama` is installed and
+   serving with `llama3:8b` and `qwen3.5:9.7B` pulled, and the
+   `/api/chat` endpoint takes a `system` message verbatim, so a
+   session's ENTIRE context really is controllable byte for byte.
+   `qwen3.5` timed out at roughly 1.7s/token; `llama3` answered a
+   real probe turn correctly in 38.9s. Built both tiers: Tier A
+   (gating) is a deterministic simulator that faithfully follows the
+   published snippet's own instructions against the real scripted
+   suite; Tier B (published, never gating) is a real isolated
+   `llama3:8b` session, system-prompt sha256-pinned to
+   `packages/spec/priming.md`.
+2. Seven files, not one (the doc's one-file plan would have been
+   roughly 1,700 lines): pure session types/policy/scoring
+   (`cold-agent-suite.ts`), pure task data (`cold-agent-tasks.ts`),
+   pure `apply` grammar (`cold-agent-apply.ts`), impure real
+   consumer tree (`cold-agent-harness.ts`), impure CC9 re-run
+   (`cold-agent-cc9.ts`), impure run/CLI (`cold-agent-benchmark.ts`),
+   impure live tier (`cold-agent-live.ts`). Same pure/impure split
+   precedent 35 set.
+3. The CLI argv applier ([28]'s `apply` grammar) exists only in a
+   test helper (`ffmpeg-cli.ts`); duplicated into
+   `cold-agent-apply.ts` and GUARDED by a test asserting byte
+   identical argv against the helper for every fix in the real
+   catalog, the project's stated answer to a build-boundary-imposed
+   duplication.
+4. The 14-task suite: 12 cataloged failures (one per real induced
+   twin) plus a clean success path (measures non-guessing: zero
+   protocol calls on a working invocation) plus one honest-miss path
+   (an un-adopted package, UNDOCUMENTED, the one permitted source
+   pass). First-corrected defined per task kind (executable-fix,
+   inert-pointer, clean, honest-miss), published as a breakdown
+   alongside the single rate.
+5. CC9 re-runs BOTH real implementations as real subprocesses
+   (vitest for JS, pytest for Python via a resolved interpreter
+   order that fails naming what's missing rather than skipping,
+   same discipline as `requireFfmpeg`), never a reimplementation.
+   Mutation-verified live: the real marker literal computed once,
+   full benchmark re-run, watched fail, reverted immediately;
+   permanently pinned by a test that drives the real subprocess
+   runner.
+6. An ungranted source read is counted and REFUSED, never performed:
+   the refusal is a visible transcript observation, not a silent
+   skip.
+7. **The live tier found two real harness bugs the simulator
+   structurally could not**: a granted source pass spent on a CLI
+   target crashed on a nonexistent `node_modules/ffmpeg/index.js`
+   (fixed: an honest sentence saying the target ships no importable
+   source); an inert docs pointer applied as if executable threw
+   (fixed: recorded as a real mistake, correctly not counted as
+   first-corrected). Both now pinned by permanent tests.
+8. **The live number came back bad and is published unchanged**:
+   7.1% (1/14) against the 100% deterministic baseline, 6 ungranted
+   source reads, recorded as a `[gap]` (not `[deferred]`, nobody has
+   decided anything about it). Refused three ways to not fudge it:
+   no re-prompting/coaching/retry-on-wrong-action; not quietly
+   dropped (Business Rule 3 requires publishing "not only when it
+   looks favorable"); not allowed to gate (measures one 8B model,
+   not the protocol).
+9. Orchestrator independently re-verified post-merge: full suite
+   green on the merged wave branch (registry-tools 421/421, core
+   548/548, spec 436/436), real CLI run of the deterministic gate
+   (14/14, CC9 pass on both JS and Python), and, materially,
+   **discovered the checkout's own `packages/python/.venv` (Python
+   3.13.7) actually runs the Python suite for real (345/345)**,
+   correcting every prior wave's "not runnable" finding, which used
+   the system `python3` (3.10) rather than this checkout's own venv.
+10. **Backward sweep, orchestrator's call**: `36-priming-snippet.md`'s
+    AC2 and its known_issues entry were waiting on this feature,
+    flagged by name in [38]'s own report as not its doc to edit.
+    Re-tagged AC2 to `[x]` and the known_issues entry to `[gap]`,
+    reflecting the two-number shape the proof actually landed in
+    (100% deterministic, 7.1% live) rather than the single pass/fail
+    the original wording anticipated.
+11. Adversarial review dispatched (isolated worktree) before PE3
+    close-out.
