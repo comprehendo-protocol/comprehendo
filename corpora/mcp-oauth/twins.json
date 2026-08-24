@@ -1,0 +1,63 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/mcp-oauth",
+  "twins": [
+    {
+      "id": "unregistered-client",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MCP_OAUTH_UNREGISTERED_CLIENT",
+      "reason": "The SDK's own authorize handler looked up client_id in the provider's clientsStore and found nothing, before your own provider.authorize() ever ran. This is a real, structural check the SDK's mcpAuthRouter performs for every request, not something you implement yourself: a client_id that was never returned by a real POST /register call (a typo, a stale value copied from an old session, or a request crafted by someone who never registered at all) is rejected here, unconditionally, every time. If you are hand-rolling your own authorize route instead of mounting mcpAuthRouter, nothing enforces this for you, and you have reopened the exact hole this check exists to close (an unvalidated client_id lets a phished consent-click hand an attacker a real code for a redirect_uri of their choosing).",
+      "docs": "unregistered-client",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*\"error\":\"invalid_client\",\"error_description\":\"Invalid client_id\"*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "redirect-uri-mismatch",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MCP_OAUTH_REDIRECT_URI_MISMATCH",
+      "reason": "client_id resolved to a real, registered client, but the redirect_uri on this request is not one that client registered (RFC 8252 SS7.3's loopback port relaxation aside, it is otherwise an exact match, never startsWith). This is the second half of the same structural check as MCP_OAUTH_UNREGISTERED_CLIENT, and it is the one that actually stops a phished consent-click from working: PKCE alone only proves the client redeeming a code is the one that started the flow, never that the flow was allowed to send its result anywhere the caller chose. A hand-rolled authorize route that skips this check will happily redirect a real authorization code to an attacker's own redirect_uri.",
+      "docs": "redirect-uri-mismatch",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*\"error\":\"invalid_request\",\"error_description\":\"Unregistered redirect_uri\"*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "pkce-mismatch",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MCP_OAUTH_PKCE_MISMATCH",
+      "reason": "The token endpoint recomputed SHA256(code_verifier) and it did not equal the code_challenge recorded when the authorization code was issued. This fires at the real /token exchange, after a real, valid code has already been minted, so it usually means the client sent the wrong code_verifier (a copy-paste error while testing by hand, or a client that generated a fresh PKCE pair for a retry instead of reusing the one from the original /authorize request), not that anything about the server's own registration or consent step was wrong. The code itself is not burned by a failed verifier check, so a client that sends the wrong verifier can retry with the right one against the same still-good code; sending the SAME wrong verifier twice, or reusing an already-consumed code, is a different failure (invalid_grant with a different real message) and should be visibly distinguishable from a typo, not silently identical.",
+      "docs": "pkce-mismatch",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*\"error\":\"invalid_grant\",\"error_description\":\"code_verifier does not match the challenge\"*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "unsupported-grant-type",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MCP_OAUTH_UNSUPPORTED_GRANT_TYPE",
+      "reason": "The token endpoint only ever implements two grant types on the server side of this SDK: authorization_code (the real DCR+PKCE flow this whole corpus documents) and refresh_token. Any other grant_type, client_credentials being the one an agent reaches for most often (it is the simplest OAuth grant to remember and does not need a user-facing consent step), is refused outright: there is no server-side extension point for adding one, by design, because a personal MCP server has no separate machine-to-machine caller to authenticate that way, and claude.ai's own connector never sends anything but authorization_code and refresh_token.",
+      "docs": "unsupported-grant-type",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*\"error\":\"unsupported_grant_type\",\"error_description\":\"The grant type is not supported by this authorization server.\"*",
+        "kind": "runtime-error"
+      }
+    }
+  ]
+}

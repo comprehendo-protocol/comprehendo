@@ -1,0 +1,46 @@
+{
+  "name": "@comprehendo/cli",
+  "version": "0.0.1",
+  "description": "Comprehendo consumer CLI: the one place in this monorepo allowed to touch the network (CC6 No Telemetry [27] scans packages/core, packages/python and packages/registry-tools for zero network code; this package exists outside that boundary on purpose, for the one verb that genuinely needs to reach the npm registry on the consumer's own explicit request). `comprehendo add <pkg>` checks whether a corpus is published and installs it; every other verb (`init`/`scan`/`diff`/`pack`) delegates to @comprehendo/core's own network-free implementation unchanged. Internal, unpublished workspace package; the root comprehendo npm package's `bin` re-exports this package's build unchanged, the same pattern the root's `index.js` already uses for @comprehendo/core.",
+  "type": "module",
+  "private": true,
+  "files": [
+    "dist"
+  ],
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "bin": {
+    "comprehendo": "./dist/main.js"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "pretest": "npm run build && npm run build --prefix ../core && npm run build --prefix ../registry-tools",
+    "test": "vitest run",
+    "typecheck": "tsc --noEmit -p tsconfig.test.json",
+    "lint": "eslint ."
+  },
+  "keywords": [
+    "comprehendo",
+    "cli",
+    "corpus-discovery"
+  ],
+  "author": "TheDecipherist",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/comprehendo-protocol/comprehendo.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://github.com/comprehendo-protocol/comprehendo#readme",
+  "bugs": {
+    "url": "https://github.com/comprehendo-protocol/comprehendo/issues"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.3",
+    "vitest": "^4.0.0",
+    "@types/node": "^22.9.0",
+    "eslint": "^10.0.0",
+    "typescript-eslint": "^8.67.0",
+    "eslint-plugin-unused-imports": "^4.1.4"
+  }
+}

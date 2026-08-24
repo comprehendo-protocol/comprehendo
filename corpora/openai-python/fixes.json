@@ -1,0 +1,28 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/openai-python",
+  "fixes": {
+    "api-removed-v0": [
+      {
+        "title": "Runbook: instantiate a client and call the resource method, the v0 module-level call has no v1 equivalent",
+        "docs": "v0-to-v1-migration",
+        "confidence": "high"
+      }
+    ],
+    "missing-api-key": [
+      {
+        "title": "Runbook: pass api_key explicitly or set OPENAI_API_KEY, which key is correct is a decision about credentials, not something to guess at",
+        "docs": "authentication",
+        "confidence": "high"
+      }
+    ],
+    "invalid-api-key": [
+      {
+        "title": "Runbook: the key itself is wrong, generate or correct it at platform.openai.com, this is not a code change",
+        "docs": "authentication",
+        "confidence": "high"
+      }
+    ]
+  }
+}

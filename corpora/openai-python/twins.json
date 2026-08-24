@@ -1,0 +1,49 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/openai-python",
+  "twins": [
+    {
+      "id": "api-removed-v0",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "OPENAI_API_REMOVED_V0",
+      "reason": "The v0 module-level API (openai.ChatCompletion, openai.Completion, openai.Embedding, openai.Moderation, and their siblings) does not exist in openai>=1.0.0 at all; every one of them now raises the instant it is accessed, before any network call, because the package's own migration shim intercepts the attribute read and refuses on purpose rather than failing later with a confusing error. It is not a network problem, an auth problem, or a rate limit: it fires with no API key and no internet. Training data written before the v1 release quotes the v0 shape as if it still worked, which is the one thing this failure never means.",
+      "docs": "v0-to-v1-migration",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*You tried to access openai.*, but this is no longer supported in openai>=1.0.0*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "missing-api-key",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "OPENAI_MISSING_API_KEY",
+      "reason": "openai.OpenAI() (or AsyncOpenAI()) was constructed with no api_key argument and no OPENAI_API_KEY (or OPENAI_ADMIN_KEY, for the admin client) in the environment. This is a client-side check the SDK runs at construction time, before any request: the client never had credentials to send, so nothing about a specific request is wrong.",
+      "docs": "authentication",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Missing credentials. Please pass an `api_key`*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "invalid-api-key",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "OPENAI_INVALID_API_KEY",
+      "reason": "A key was supplied, the client sent a real request, and OpenAI's own API answered 401: the key itself is malformed, revoked, or was never issued (a placeholder left in from a code sample is the common case). This is the server's answer, not a client-side check, so it means a real round trip happened and the credential specifically is what the server rejected.",
+      "docs": "authentication",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Incorrect API key provided: *",
+        "kind": "runtime-error"
+      }
+    }
+  ]
+}

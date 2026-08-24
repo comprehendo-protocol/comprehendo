@@ -30,6 +30,14 @@ import { PreconditionError, WorkspaceError } from './docs-code-blocks.ts';
 /** The executable under test. Overridable so CI can point at a pinned build. */
 const SURFACE_PATH = process.env['COMPREHENDO_FFMPEG'] ?? '';
 
+/**
+ * The interpreter a `python`-language worked example runs against. Same
+ * override name `test/helpers/openai-python-witnesses.ts` uses for the
+ * corpus's own induction, so one env var pins both against the same real
+ * install.
+ */
+const PYTHON_PATH = (): string => process.env['COMPREHENDO_PYTHON'] ?? 'python3';
+
 /** How long one documented invocation may take before it is a failure. */
 const TIMEOUT = 120_000;
 
@@ -266,3 +274,108 @@ export const fixtureCache = (): { readonly path: string; readonly cleanup: () =>
   const path = mkdtempSync(join(tmpdir(), 'comprehendo-37-cache-'));
   return { path, cleanup: (): void => rmSync(path, { recursive: true, force: true }) };
 };
+
+/**
+ * The real interpreter, or the sentence CI owes. Same never-a-skip contract
+ * as `requireProgram`, kept separate because a `python`-language block needs
+ * no `declared_schema.surface` CLI at all: the interpreter IS the program,
+ * and a corpus whose examples are all shell transcripts never pays this
+ * precondition.
+ */
+export function requirePython(): void {
+  try {
+    execFileSync(PYTHON_PATH(), ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (cause) {
+    throw new PreconditionError(
+      `this gate executes the corpus's own Python examples against a real interpreter and found none ` +
+        `(or COMPREHENDO_PYTHON points at nothing runnable): ${(cause as Error).message}`,
+    );
+  }
+}
+
+/**
+ * One `python`-language worked example, run as a real script rather than a
+ * line-by-line transcript: unlike ffmpeg's argv-shaped invocations, a Python
+ * failure is provoked by a whole snippet (construct an object, THEN call a
+ * method on it), the same multi-step shape `apply` cannot express either
+ * (corpora/openai-python's README). The snippet quoted in the doc is written
+ * to disk and run for real, in its own fresh workspace, no operand parsing
+ * needed because there are no operands: the block IS the program.
+ */
+export function invokeSource(code: string): Invocation {
+  const site = mkdtempSync(join(tmpdir(), 'comprehendo-37-src-'));
+  try {
+    const file = join(site, 'example.py');
+    writeFileSync(file, code, 'utf8');
+    const result = spawnSync(PYTHON_PATH(), [file], {
+      cwd: site,
+      encoding: 'utf8',
+      stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: TIMEOUT,
+    });
+    if (result.error !== undefined) {
+      return Object.freeze({ status: -1, stderr: '', unrunnable: result.error.message });
+    }
+    return Object.freeze({ status: result.status ?? -1, stderr: result.stderr });
+  } finally {
+    rmSync(site, { recursive: true, force: true });
+  }
+}
+
+/**
+ * The real interpreter every one of THESE scripts already runs under: no
+ * override needed, unlike `COMPREHENDO_PYTHON`, because this gate's own
+ * process is real proof `node` exists. Kept as a named precondition anyway,
+ * matching `requireProgram`/`requirePython`'s own never-a-skip contract, and
+ * paid only when a doc actually carries a `javascript` block.
+ */
+export function requireNode(): void {
+  try {
+    execFileSync('node', ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (cause) {
+    throw new PreconditionError(
+      `this gate executes the corpus's own JavaScript examples against a real node and found none: ${(cause as Error).message}`,
+    );
+  }
+}
+
+/**
+ * `packages/registry-tools`, where a `javascript`-language corpus's own
+ * induction devDependency (`corpora/mcp-oauth`'s `@modelcontextprotocol/sdk`,
+ * the first real one) is really installed. The generic, and so far only
+ * needed, answer for where a `javascript` block's own `import`s resolve
+ * from: Node's ESM loader walks up from the FILE's own path looking for
+ * `node_modules`, never from `cwd`, so the file has to be written inside
+ * this tree rather than the system tmpdir `invokeSource` uses for Python
+ * (a venv's own site-packages makes that resolution question not exist for
+ * Python; there is no equivalent for a bare ESM specifier).
+ */
+const JS_RESOLUTION_ROOT = join(import.meta.dirname, '..', 'packages', 'registry-tools');
+
+/**
+ * One `javascript`-language worked example, the same "the block IS the
+ * program" shape `invokeSource` already established for `python`, a second
+ * real target proving the shape generalizes (corpora/mcp-oauth's own
+ * `OAuthServerProvider` examples start a real server, make a real request,
+ * and close it, all inline in one script, exactly as a Python example
+ * constructs a client and calls a method on it in one script).
+ */
+export function invokeJavaScript(code: string): Invocation {
+  const site = mkdtempSync(join(JS_RESOLUTION_ROOT, '.docs-scratch-'));
+  try {
+    const file = join(site, 'example.mjs');
+    writeFileSync(file, code, 'utf8');
+    const result = spawnSync('node', [file], {
+      cwd: site,
+      encoding: 'utf8',
+      stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: TIMEOUT,
+    });
+    if (result.error !== undefined) {
+      return Object.freeze({ status: -1, stderr: '', unrunnable: result.error.message });
+    }
+    return Object.freeze({ status: result.status ?? -1, stderr: result.stderr });
+  } finally {
+    rmSync(site, { recursive: true, force: true });
+  }
+}

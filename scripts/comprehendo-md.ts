@@ -117,11 +117,13 @@ function primingParagraph(packed: PackedCorpus, marker: string): string {
 /**
  * The fence info-string every rendered example carries.
  *
- * The corpus's own topic files fence with no info-string at all, and this adds
- * one. It is a RENDERING convention, the same class as the table pipes and the
- * cell escaping above, and it makes no claim about the package: what it gives
- * is a real source for the `language` a reader (Docs As Tests [37]) has to
- * dispatch on, instead of an assumption about what an unlabelled fence means.
+ * The fallback for a topic's own fence carrying no info-string, an
+ * unlabelled fence reading as a shell transcript, the same meaning it has
+ * always had. A labelled fence (`python`, for a package Docs As Tests [37]
+ * runs as a real script rather than an argv transcript) is carried through
+ * as authored, never overwritten: `example.language` is a real source
+ * corpus-source.ts already reads off the topic file, this constant is only
+ * what an absent one defaults to.
  *
  * `sh` is the spelling, and the transcript is never handed to a shell: [37]
  * tokenizes it and spawns an argv array, so an operand can never become a
@@ -148,8 +150,8 @@ const EXAMPLES_PREAMBLE: readonly string[] = Object.freeze([
  * example's `code` byte for byte, because a quoted example that is not
  * verbatim is a second authoring of it.
  */
-function exampleBlock(topic: string, title: string, code: string): readonly string[] {
-  return ['', `### \`${topic}\`: ${title}`, '', `\`\`\`${EXAMPLE_LANGUAGE}`, code, '```'];
+function exampleBlock(topic: string, title: string, language: string, code: string): readonly string[] {
+  return ['', `### \`${topic}\`: ${title}`, '', `\`\`\`${language}`, code, '```'];
 }
 
 /**
@@ -165,7 +167,7 @@ function examplesSection(
 ): readonly string[] {
   const blocks = index.flatMap((name) =>
     (packed.docs.topics[name]?.examples ?? []).flatMap((example) =>
-      exampleBlock(name, example.title, example.code),
+      exampleBlock(name, example.title, example.language ?? EXAMPLE_LANGUAGE, example.code),
     ),
   );
   if (blocks.length === 0) return [];

@@ -1,7 +1,7 @@
 ---
-generated: 2026-08-23
-doc_count: 40
-connection_count: 64
+generated: 2026-08-24
+doc_count: 41
+connection_count: 66
 overlap_count: 5
 ---
 
@@ -51,6 +51,8 @@ overlap_count: 5
   └── `35-comprehendo-md-generator` - COMPREHENDO.md Generator (complete)
 **Distribution / Cold-Agent Benchmark**
   └── `38-cold-agent-benchmark` - Cold-Agent Benchmark (complete)
+**Distribution / Corpus Discovery CLI**
+  └── `41-corpus-discovery-cli` - Corpus Discovery CLI (complete)
 **Distribution / Docs As Tests**
   └── `37-docs-as-tests` - Docs As Tests (complete)
 **Distribution / Priming Snippet**
@@ -138,6 +140,7 @@ graph TD
   38_cold_agent_benchmark["38-cold-agent-benchmark"]:::done
   39_registry_reservations["39-registry-reservations"]:::done
   40_registry_website["40-registry-website"]:::done
+  41_corpus_discovery_cli["41-corpus-discovery-cli"]:::done
   03_shape_schemas --> 01_cc2_shape_identity
   04_conformance_fixtures --> 01_cc2_shape_identity
   04_conformance_fixtures --> 03_shape_schemas
@@ -202,6 +205,8 @@ graph TD
   40_registry_website --> 28_corpus_format
   40_registry_website --> 29_submission_gate
   40_registry_website --> 36_priming_snippet
+  41_corpus_discovery_cli --> 27_cc6_no_telemetry
+  41_corpus_discovery_cli --> 31_scoped_publisher
 ```
 
 ## Source File Overlap

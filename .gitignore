@@ -15,3 +15,5 @@ ruby/.bundle/
 .ai_temp/
 .worktrees/
 packages/*/dist/
+corpora/*/.venv/
+packages/registry-tools/.docs-scratch-*/

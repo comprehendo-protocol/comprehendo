@@ -15,9 +15,11 @@ test_files: [packages/registry-tools/test/docs-code-blocks.test.ts]
 known_issues:
   - "[deferred] The runner does not assert that each `#` annotation line really appears in the stderr the command produced. The corpus's annotations are two different things with no mechanical separator, quoted output (`# Unknown encoder 'libx266'`) and prose commentary (`# succeeds, output carries video only`), and any rule that guesses which is which fails a CORRECT corpus. The teeth live in the fingerprint routing instead, which is machine-readable and cannot pass vacuously. Separating the two is Corpus Format [28]'s call: an example format that marked its expected output would make the check exact."
   - "[deferred] The declared workspace (`docs-transcript-workspace.ts`) is a table this feature owns, not corpus data, because nothing in the authoring format carries \"here is the media this example needs\". `test/helpers/ffmpeg-witnesses.ts` already records the same format gap for the inducing invocations. Consequence: a new example reading new media fails naming the file, which is the loud behaviour, but the fix is a code edit rather than a corpus edit."
-  - "[gap] The gate has exactly one generated docs surface to execute, `corpora/*/COMPREHENDO.md`. It is written for any generated surface and iterates every corpus in the tree, but no second generator exists yet to prove that generality against."
+  - "[resolved by this feature, see Fixed Issues 2026-08-23] The gate had exactly one real corpus to execute against, ffmpeg, an argv-transcript CLI; whether the runner's per-corpus iteration and per-block dispatch actually generalized past that one shape was written but unproven. corpora/openai-python (a real, importable Python package, no spawnable CLI at all) is the second real corpus, and it needed a genuinely different worked-example shape (`python`, a real script, not an argv transcript) to be tellable apart at all. See docs-transcript-workspace.ts's `invokeSource`/`requirePython` and this doc's Fixed Issues."
   - "[deferred] `ffprobe` is allowed as a companion program although the corpus's `declared_schema.surface` names only `ffmpeg`. The corpus's `inputs` topic really does use it as the diagnostic next step. The allowlist entry is declared in code with that reason rather than inferred from the text, so a corpus cannot introduce a new program by writing one into an example."
   - "[gap] The Python port's suite could not be run in the build environment (python 3.10, the package needs 3.11+ for `tomllib` and `typing.NotRequired`). This feature touches no Python, so nothing here depends on it, but the run was not green because it was not runnable."
+  - "[resolved by this feature, see Fixed Issues 2026-08-23] Two worked-example shapes existed, argv transcript and Python source; a third real ecosystem shape (a JS/TS package imported and called, rather than spawned) was unproven. corpora/mcp-oauth (a real npm package with real server-side OAuth support, no CLI) is that third real corpus, and it needed a `javascript` source-block shape. Building it also surfaced a real, hard limit CC6 [27]'s corpus-content scan enforces on ANY source-block shape: a worked example may never open a socket, not even to itself, so `javascript` examples that demonstrate an HTTP-shaped failure construct and throw the real error class directly rather than making a real request. See docs-transcript-workspace.ts's `invokeJavaScript`/`requireNode` and this doc's Fixed Issues, and corpora/mcp-oauth/README.md for the full finding."
+  - "[gap] Three worked-example shapes exist now (argv transcript, Python source, JavaScript source); each was added exactly when a real corpus needed it, never speculatively, and each source-language shape is now confirmed to exclude any example that opens a socket (CC6 [27]), a real constraint future source-language corpora inherit."
 ---
 
 # Docs As Tests
@@ -169,6 +171,119 @@ data and never instructions is load-bearing here rather than decorative:
 
 ## Fixed Issues
 
+### A third real corpus needed a third worked-example shape, and building it found a real hole in what "no telemetry" covers (fixed 2026-08-23)
+
+Found building `corpora/mcp-oauth`, the third real corpus: `python`-language
+SOURCE blocks (the prior fix) assumed a real script can always demonstrate
+a real failure. `@modelcontextprotocol/sdk`'s OAuth authorization-server
+support (`mcpAuthRouter`, `OAuthServerProvider`) is a real npm package with
+no CLI at all, same as `python`'s own gap, but its real failures are HTTP
+responses from a real, running server, not something a script can provoke
+without opening a socket.
+
+- Added a `javascript`-language SOURCE block, the same "the block IS the
+  program" shape as `python`'s, run against real `node` (`invokeJavaScript`/
+  `requireNode`, `docs-transcript-workspace.ts`). `SOURCE_LANGUAGES` in
+  `run-docs-code-blocks.ts` changed from an array to a map of
+  `{interpreter, invoke}` per language, so a third (or fourth) shape names
+  its own interpreter and invoker rather than being force-fit onto
+  `python`'s.
+- Module resolution needed its own answer: Node's ESM loader resolves a
+  bare specifier (`import '@modelcontextprotocol/sdk/...'`) from the
+  IMPORTING FILE's own path, walking up for `node_modules`, never from
+  `cwd`. Python's `invokeSource` writes its temp script to the system
+  tmpdir because a real venv's site-packages makes that question not
+  exist; there is no JS equivalent, so `invokeJavaScript` writes its temp
+  script inside `packages/registry-tools` itself (where a JS-target
+  corpus's own induction devDependency is really installed,
+  `corpora/mcp-oauth`'s `@modelcontextprotocol/sdk` being the first),
+  gitignored (`packages/registry-tools/.docs-scratch-*/`).
+- **The real limit found while building the first real examples**: an
+  `## Examples` block that starts a real server and makes a real `fetch()`
+  against it, even to `127.0.0.1`, is still literally network code by CC6
+  [27]'s corpus-content scan (`gate-telemetry.ts`), which refuses ANY
+  socket-opening example on principle, no loopback exception, because a
+  corpus's own example text is something a downstream agent might read,
+  copy, or run directly. This is not a gap in the scanner to route around;
+  it is exactly what the rule says it does ("must never do is ship a
+  runnable example that opens a socket," `gate-telemetry.ts`'s own
+  comment). `corpora/mcp-oauth`'s worked examples were rewritten to
+  construct and `throw` the real `OAuthError` subclass directly (verified
+  against the real router's real source and this corpus's own real
+  induction test) rather than making a real request, zero network code,
+  same real error text. See `corpora/mcp-oauth/README.md`'s own writeup.
+- Mutation-verified: reverting `SOURCE_LANGUAGES` to omit `javascript`
+  reproduces the original "language javascript has no executor" failure
+  on all 4 real blocks, restored, 4/4 pass; `packages/registry-tools`
+  matches its pre-corpus baseline exactly (no regressions; two pre-existing,
+  environment-only failures unrelated to this change, `cold-agent-
+  benchmark.test.ts` and `openai-python-corpus.test.ts`, both needing a
+  Python venv this fresh checkout does not carry, confirmed identical on
+  the unmodified base commit), `packages/core` 548/548, both ffmpeg
+  (15/15) and mcp-oauth (4/4) execute for real via
+  `node scripts/run-docs-code-blocks.ts`.
+
+### The runner had exactly one worked-example shape, and the second real corpus needed a different one (fixed 2026-08-23)
+
+Found building `corpora/openai-python`, the launch corpus library's second
+real corpus: this gate's whole execution model assumed a worked example is
+an argv transcript against a spawnable CLI (`declared_schema.surface`
+resolvable as a program, `-version` answerable, operands resolved against
+a hardcoded fixture table). `openai` is a real, importable Python package
+with no meaningful CLI of its own, and its real failures are provoked by a
+multi-step snippet (construct a client, then call a method on it), not one
+command line, the same shape `apply` cannot express either (see
+corpora/openai-python's README). The corpus could not carry a single
+honest worked example under the old model.
+
+- Added a second execution shape rather than forcing the first to fit:
+  `python`-language fences under `## Examples` are SOURCE blocks
+  (`docs-transcript-workspace.ts#invokeSource`), the whole fence run as a
+  real script against a real interpreter (`COMPREHENDO_PYTHON`, default
+  `python3`), no operand parsing, matched through the exact same
+  fingerprint index and `judge()` verdict logic `sh`/`console` transcripts
+  already used (correctness is shared; only how the process gets spawned
+  differs).
+- Each shape now pays only its own precondition: `requireProgram(surface)`
+  fires only when the doc carries a transcript-language block,
+  `requirePython()` only when it carries a `python` block. Before this,
+  ANY block unconditionally required `declared_schema.surface` to exist on
+  PATH, which for openai-python meant requiring the real `openai` pip
+  console-script to answer `-version` the way ffmpeg does; it does not
+  (`openai -version` is a real argparse error, confirmed live), so the old
+  unconditional check would have refused this corpus's docs gate outright
+  with nothing in the doc actually needing that binary.
+- Corpus Format [28]'s example parser now carries the author's own fence
+  tag through (`CorpusExample.language`, OPTIONAL, present only when the
+  fence is neither unlabelled nor explicitly `sh`) instead of the
+  Generator always stamping `sh`; see 35-comprehendo-md-generator.md's own
+  Fixed Issues for the budget-neutrality half of that change (an earlier,
+  non-optional version of the field pushed `corpora/ffmpeg`'s own
+  `docs.topics.inputs` over its CC5 [02] budget, 607/600, purely from the
+  added JSON key; going optional restored it to its original measurement,
+  byte-identical rendered output either way).
+- `.github/workflows/docs-as-tests.yml` installs a real, pinned
+  `openai>=2.35,<4` (`actions/setup-python`) alongside the existing ffmpeg
+  install step, so CI actually runs this corpus's examples for real, the
+  same standard every other corpus gets.
+- Mutation-verified three ways: (1) reverting `SOURCE_LANGUAGES` to empty
+  reproduces the original failure exactly (`language python has no
+  executor in this gate, so it is not run and not skipped`, all 3
+  openai-python blocks), restored, 3/3 pass; (2) reverting the optional-
+  language field reproduces ffmpeg's 607/600 budget failure exactly,
+  restored, budget check passes again; (3) two pre-existing
+  `docs-code-blocks.test.ts` fixtures that used `python` and an unlabelled
+  fence to mean "unsupported language" and "any block requires the
+  program" respectively were updated to what those contracts now actually
+  are (`ruby` for a genuinely still-unsupported language; a `console`
+  transcript for "requires the declared program"), plus two new tests
+  proving the narrower, now-correct claims each fixture used to make too
+  broadly. `packages/registry-tools` 460/460, `packages/core` 548/548,
+  root `index.test.js` 11/11, both corpora's docs really execute
+  (`node scripts/run-docs-code-blocks.ts corpora/ffmpeg`: 15/15;
+  `corpora/openai-python`: 3/3, `COMPREHENDO_PYTHON` pointed at a real
+  venv with `openai==3.3.1` installed).
+
 ### The write target was never validated, letting a corpus write outside the sandbox (fixed 2026-08-23)
 
 Found by review: `docs-transcript-workspace.ts`'s `prepare()` validated
@@ -243,9 +358,26 @@ project's; see [32-ffmpeg-corpus](32-ffmpeg-corpus.md) Fixed Issues).
 - [deferred] The declared workspace is a table this feature owns, because
   the authoring format carries no "media this example needs" field, the
   same gap `ffmpeg-witnesses.ts` records.
-- [gap] Only one generated docs surface exists to execute against, so the
-  runner's generality over other surfaces is written but unproven.
+- [resolved 2026-08-23] The runner's generality past ffmpeg was written
+  but unproven; `corpora/openai-python`, a real Python package with no
+  spawnable CLI, is the second real corpus and proved it needed a
+  genuinely second worked-example shape (`python` source blocks, not argv
+  transcripts) to be expressible at all. See Fixed Issues.
 - [deferred] `ffprobe` is an allowlisted companion although only `ffmpeg`
   is the declared surface, declared in code with the reason.
 - [gap] The Python port's suite was not runnable in the build environment
   (python 3.10 against a 3.11+ package). Nothing here touches Python.
+- [resolved 2026-08-23] A third real ecosystem shape (import-and-call,
+  never spawned) was unproven; `corpora/mcp-oauth`, a real npm package
+  with server-side OAuth support and no CLI, is that third real corpus and
+  needed a `javascript` source-block shape. Building it also found a real
+  hard limit: an example that opens a socket, even to itself, fails CC6
+  [27]'s no-telemetry scan by design, no loopback exception, so a
+  source-block example demonstrating an HTTP-shaped failure constructs and
+  throws the real error class directly instead of making a real request.
+  See Fixed Issues and `corpora/mcp-oauth/README.md`.
+- [gap] Three worked-example shapes exist now (argv transcript, Python
+  source, JavaScript source), each added only when a real corpus needed
+  it; a fourth real shape remains unproven, and every future source-shape
+  corpus inherits the "an example never opens a socket" constraint just
+  confirmed.
