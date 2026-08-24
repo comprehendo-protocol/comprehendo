@@ -1,0 +1,35 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/mongodb",
+  "fixes": {
+    "id-type-mismatch-on-update": [
+      {
+        "title": "Runbook: strip _id from the update body before $set, identity belongs in the filter, never the write; re-hydrate any JSON-round-tripped id back to a real ObjectId first if you need it for the filter",
+        "docs": "immutable-id-field",
+        "confidence": "high"
+      }
+    ],
+    "invalid-objectid-format": [
+      {
+        "title": "Runbook: validate the incoming id (ObjectId.isValid(value)) before constructing one, and answer a real not-found rather than letting construction throw past your own error handling",
+        "docs": "objectid-identity",
+        "confidence": "high"
+      }
+    ],
+    "duplicate-key-on-unique-index": [
+      {
+        "title": "Runbook: catch the real E11000 (err.code === 11000) and answer it as a conflict, never re-check-then-retry the same race; the index is the source of truth, not the application check",
+        "docs": "unique-index-and-duplicates",
+        "confidence": "high"
+      }
+    ],
+    "negated-delete-filter": [
+      {
+        "title": "Runbook: name what to delete, never what to keep; run the filter as a count first and log the number before calling deleteMany, a match count that surprises you was about to be an incident",
+        "docs": "destructive-delete-filters",
+        "confidence": "high"
+      }
+    ]
+  }
+}
