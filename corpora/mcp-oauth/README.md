@@ -17,7 +17,7 @@ routes, through this corpus's own fingerprint index, to
 
 ```
 ok     corpora/mcp-oauth/COMPREHENDO.md block 0 (javascript)
-4 blocks, 4 passed, 0 failed
+5 blocks, 5 passed, 0 failed
 ```
 
 No guess, no assumption about what the SDK does: the exact JSON error
@@ -88,7 +88,7 @@ status) rather than duplicating it, but genuinely different where the
 shapes actually differ (async, no argv, no workspace/env isolation an HTTP
 client does not need).
 
-## A fourth real twin, and a fourth real induction shape: the browser itself
+## A fifth real twin, and a fourth real induction shape: the browser itself
 
 `MCP_OAUTH_CSP_BLOCKS_CONSENT_FORM` is not an SDK failure at all: a consent
 page's own `Content-Security-Policy: form-action 'self'` blocks the
@@ -126,15 +126,19 @@ corpora's own READMEs give.
 ## Every fix here is a runbook, and that is not a shortcut
 
 The `apply` grammar is literal call data against this corpus's own
-`declared_schema`. None of these four failures has a safe, single, flat
+`declared_schema`. None of these five failures has a safe, single, flat
 correction to apply: "register the real client first", "use the exact
 registered redirect_uri", "resend the correct code_verifier", "use
 authorization_code or refresh_token" are all corrections to what the
 CALLER sends, not a code change this corpus could make on the caller's
-behalf, and inventing an `apply` that pretended otherwise would either do
-nothing safe or guess at credentials this corpus does not have. Every fix
-here is an inert docs pointer, the same honest answer
-`corpora/openai-python`'s own multi-step fixes already established.
+behalf; `MCP_OAUTH_CSP_BLOCKS_CONSENT_FORM`'s own fix is a deployment
+decision instead (widen `form-action` to the real cross-origin target, or
+put the consent UI and the OAuth endpoints on one origin), never something
+safe to apply unattended either. Inventing an `apply` that pretended
+otherwise would either do nothing safe or guess at credentials or origins
+this corpus does not have. Every fix here is an inert docs pointer, the
+same honest answer `corpora/openai-python`'s own multi-step fixes already
+established.
 
 ## A second real worked-example shape for Docs As Tests [37], and a real limit it hit
 
