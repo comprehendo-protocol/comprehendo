@@ -1,0 +1,15 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/tailwindcss",
+  "target": {
+    "package": "tailwindcss",
+    "version": "4.3.3",
+    "versions": [">=4.1 <5"],
+    "source": "npm"
+  },
+  "declared_schema": {
+    "surface": "tailwindcss",
+    "operations": ["build"]
+  }
+}
