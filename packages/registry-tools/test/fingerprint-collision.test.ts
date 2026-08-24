@@ -9,11 +9,15 @@ import { describe, expect, test } from 'vitest';
 
 import {
   buildFingerprintIndex,
+  buildStaticPatternIndex,
   FingerprintCollisionError,
   FingerprintIndexError,
   type FingerprintEntry,
 } from '../src/fingerprint.js';
 import { CORPUS, UNKNOWN_ENCODER } from './helpers/corpus.js';
+
+/** CORPUS's own runtime-error count: every entry except ZOD_PARSE_UNGUARDED. */
+const RUNTIME_ERROR_COUNT = CORPUS.filter((entry) => (entry.kind ?? 'runtime-error') === 'runtime-error').length;
 
 /** The same fingerprint UNKNOWN_ENCODER declares, in another package's corpus. */
 const SQUATTER: FingerprintEntry = {
@@ -98,22 +102,33 @@ describe('what is not a collision stays buildable', () => {
       { ...SQUATTER, messagePattern: "Unknown decoder '*'" },
     ]);
 
-    expect(index.entries).toHaveLength(7);
+    expect(index.entries).toHaveLength(RUNTIME_ERROR_COUNT + 1);
   });
 
-  test('the same facets under different fingerprint kinds do not collide', () => {
-    const index = buildFingerprintIndex([
-      ...CORPUS,
-      { ...SQUATTER, kind: 'static-pattern' as const },
-    ]);
+  // Fixed: the same facets under different kinds used to coexist in ONE
+  // shared index (filtered at match time); now each kind gets its own
+  // index (`buildIndexOfKind`), so identical facets under different kinds
+  // are never even compared for collision, they simply never occupy the
+  // same index. Proven both directions: the runtime-error index excludes
+  // the static-pattern variant entirely, and the static-pattern index
+  // builds it cleanly on its own, colliding with nothing (CORPUS's one
+  // static-pattern entry, ZOD_PARSE_UNGUARDED, declares different facets).
+  test('the same facets under different fingerprint kinds never even share an index', () => {
+    const entries = [...CORPUS, { ...SQUATTER, kind: 'static-pattern' as const }];
 
-    expect(index.entries).toHaveLength(7);
+    const runtimeIndex = buildFingerprintIndex(entries);
+    expect(runtimeIndex.entries).toHaveLength(RUNTIME_ERROR_COUNT);
+    expect(runtimeIndex.entries.some((entry) => entry.package === SQUATTER.package)).toBe(false);
+
+    const patternIndex = buildStaticPatternIndex(entries);
+    expect(patternIndex.entries).toHaveLength(2);
+    expect(patternIndex.entries.some((entry) => entry.package === SQUATTER.package)).toBe(true);
   });
 
   test('the same package re-declaring the identical entry id and facets is idempotent, not a collision', () => {
     const index = buildFingerprintIndex([...CORPUS, { ...UNKNOWN_ENCODER }]);
 
-    expect(index.entries).toHaveLength(6);
+    expect(index.entries).toHaveLength(RUNTIME_ERROR_COUNT);
   });
 });
 

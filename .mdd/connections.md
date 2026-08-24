@@ -1,8 +1,8 @@
 ---
 generated: 2026-08-24
-doc_count: 41
-connection_count: 66
-overlap_count: 5
+doc_count: 42
+connection_count: 68
+overlap_count: 8
 ---
 
 # MDD Connections
@@ -61,6 +61,8 @@ overlap_count: 5
   └── `39-registry-reservations` - Package Name & Registry Reservations (complete)
 **Distribution / Registry Website**
   └── `40-registry-website` - Registry Website (complete)
+**Fingerprinting / Static Pattern Matching**
+  └── `42-static-pattern-matching` - Static Pattern Matching (complete)
 **Python / Python Core**
   └── `18-python-core` - Python Core (complete)
 **Registry / Corpus Format**
@@ -141,6 +143,7 @@ graph TD
   39_registry_reservations["39-registry-reservations"]:::done
   40_registry_website["40-registry-website"]:::done
   41_corpus_discovery_cli["41-corpus-discovery-cli"]:::done
+  42_static_pattern_matching["42-static-pattern-matching"]:::done
   03_shape_schemas --> 01_cc2_shape_identity
   04_conformance_fixtures --> 01_cc2_shape_identity
   04_conformance_fixtures --> 03_shape_schemas
@@ -207,6 +210,8 @@ graph TD
   40_registry_website --> 36_priming_snippet
   41_corpus_discovery_cli --> 27_cc6_no_telemetry
   41_corpus_discovery_cli --> 31_scoped_publisher
+  42_static_pattern_matching --> 21_fingerprint_index_matcher
+  42_static_pattern_matching --> 37_docs_as_tests
 ```
 
 ## Source File Overlap
@@ -218,6 +223,9 @@ Files referenced by 2+ docs:
 - `packages/core/src/router-discovery.ts` - 22-router-precedence, 23-config-loader
 - `packages/core/src/router-precedence.ts` - 22-router-precedence, 23-config-loader
 - `packages/core/src/router.ts` - 22-router-precedence, 23-config-loader
+- `packages/registry-tools/src/fingerprint.ts` - 21-fingerprint-index-matcher, 42-static-pattern-matching
+- `packages/registry-tools/src/gate-fingerprint.ts` - 29-submission-gate, 42-static-pattern-matching
+- `scripts/run-docs-code-blocks.ts` - 37-docs-as-tests, 42-static-pattern-matching
 
 ## Warnings
 

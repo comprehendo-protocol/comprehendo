@@ -153,6 +153,14 @@ gate as community submissions.
   Order section commits Wave 6 solely to the ffmpeg flagship. openai
   -python and zod remain corpus-format and fingerprint-design seed
   material only; see the Scope decision on `32-ffmpeg-corpus`.
+  UPDATE, landed after the formal wave build (same after-the-fact
+  registration `39-registry-reservations`/`41-corpus-discovery-cli`
+  precedent): both openai-python and zod (plus mcp-oauth, not one of the
+  spec's three named samples) were built into real, published-shaped
+  registry corpora, launching a broader corpus library beyond Wave 6's
+  ffmpeg-only commitment. zod's build is also what resolved the
+  `static-pattern` fingerprint kind's own open Wave 1 design question,
+  registered as `42-static-pattern-matching`.
 - `comprehendo.dev`'s registry-browsing website (spec lines 423-427) is
   tracked as its own doc, `40-registry-website`, in Wave 7.
 - Wave 1's Negative Fixtures [05] ships all six must-fail fixtures as

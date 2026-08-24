@@ -24,3 +24,4 @@ Estimate: 3-4 days.
 | 39 | Package Name & Registry Reservations | task | (none) |
 | 40 | Registry Website | COMPONENT | 28, 29, 36 |
 | 41 | Corpus Discovery CLI | COMPONENT | 31, 27 |
+| 42 | Static Pattern Matching | COMPONENT | 21, 37 |

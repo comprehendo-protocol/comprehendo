@@ -7,10 +7,11 @@
 
 import { describe, expect, test } from 'vitest';
 
-import { buildFingerprintIndex, matchesPattern } from '../src/fingerprint.js';
-import { CORPUS, caught } from './helpers/corpus.js';
+import { buildFingerprintIndex, buildStaticPatternIndex, matchesPattern } from '../src/fingerprint.js';
+import { CORPUS, ZOD_PARSE_UNGUARDED, caught } from './helpers/corpus.js';
 
 const index = buildFingerprintIndex(CORPUS);
+const patterns = buildStaticPatternIndex(CORPUS);
 
 /** The ENOENT both @comprehendo/ffmpeg and @comprehendo/sharp fully match. */
 const ambiguous = (): Error =>
@@ -146,12 +147,49 @@ describe('a miss is honest about what was considered', () => {
   });
 });
 
-describe('the static-pattern kind is indexed but not run against runtime errors', () => {
-  test('a static-pattern entry never matches a caught error, and never makes one ambiguous', () => {
+describe('the static-pattern kind has its own separate index, never this one', () => {
+  // Fixed: `buildFingerprintIndex` (the runtime-error index) used to carry
+  // EVERY entry regardless of kind and filter at match time; a static-pattern
+  // entry now never enters this index's `.entries` at all (`fingerprint.ts`'s
+  // `buildIndexOfKind`), a stronger guarantee than "filtered at match time",
+  // and the one `buildStaticPatternIndex` (below) actually indexes it into.
+  test('a static-pattern entry declared in the same corpus never enters this index', () => {
+    expect(index.entries.some((entry) => entry.kind === 'static-pattern')).toBe(false);
+  });
+
+  test('a caught runtime error never matches a static-pattern entry, and never makes one ambiguous', () => {
     const result = index.match(caught('ZodError', 'expected string, received number: invalid_type'));
 
-    expect(index.entries.some((entry) => entry.kind === 'static-pattern')).toBe(true);
     expect(result.outcome).toBe('miss');
     expect(result.candidates).toEqual([]);
+  });
+});
+
+describe('buildStaticPatternIndex: the genuinely separate index static-pattern entries live in', () => {
+  test('carries the static-pattern entry and none of the runtime-error ones', () => {
+    expect(patterns.entries).toHaveLength(1);
+    expect(patterns.entries[0]?.corpusEntryId).toBe(ZOD_PARSE_UNGUARDED.corpusEntryId);
+  });
+
+  // The raw text handed to `.match()` here is a SOURCE-CODE snippet, not a
+  // caught error's message: `observe()`/`judge()` are pure text-facet
+  // checks either way (errorClass against a name-like field, messagePattern
+  // against the raw text), so the same shape works for both, and this is
+  // the one call site where that generality is actually exercised for a
+  // second, genuinely different kind of "raw".
+  test('matches a source snippet naming the pattern, the same errorClass+messagePattern facets a runtime index checks', () => {
+    const result = patterns.match(
+      caught('ZodError', 'schema.parse(input) // invalid_type: no try/catch around this call'),
+    );
+
+    expect(result.outcome).toBe('matched');
+    if (result.outcome !== 'matched') return;
+    expect(result.entry.corpusEntryId).toBe('PARSE_UNGUARDED');
+  });
+
+  test('a near-miss snippet, structurally similar but not the cataloged pattern, does not match', () => {
+    const result = patterns.match(caught('ZodError', 'schema.safeParse(input) // handled explicitly'));
+
+    expect(result.outcome).toBe('miss');
   });
 });

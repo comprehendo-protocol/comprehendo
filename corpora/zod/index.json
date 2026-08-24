@@ -1,0 +1,31 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/zod",
+  "topics": [
+    {
+      "topic": "optional-vs-nullable",
+      "file": "topics/optional-vs-nullable.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "removed-v3-methods",
+      "file": "topics/removed-v3-methods.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "error-customization-migration",
+      "file": "topics/error-customization-migration.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "record-arity-change",
+      "file": "topics/record-arity-change.md",
+      "status": "ready",
+      "orphaned": false
+    }
+  ]
+}

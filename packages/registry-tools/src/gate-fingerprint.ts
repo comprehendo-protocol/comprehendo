@@ -23,6 +23,7 @@ import {
   FingerprintCollisionError,
   FingerprintIndexError,
   buildFingerprintIndex,
+  buildStaticPatternIndex,
 } from './fingerprint.js';
 import type { FingerprintIndex } from './fingerprint.js';
 import type { FingerprintEntry } from './fingerprint-facets.js';
@@ -57,28 +58,50 @@ const ownersOf = (
 };
 
 /**
- * The one index the whole registry compiles to, or every reason it does not.
- * `published` carries the corpora already on main, so a PR colliding with a
- * corpus it never touched is caught in the PR rather than at publish time.
+ * The two indices the whole registry compiles to (one per `FingerprintKind`,
+ * `fingerprint.ts`'s own `buildIndexOfKind` split), or every reason either
+ * does not build. `published` carries the corpora already on main, so a PR
+ * colliding with a corpus it never touched is caught in the PR rather than
+ * at publish time. A `runtime-error` fingerprint and a `static-pattern`
+ * fingerprint sharing literal text is never itself a finding here, they are
+ * checked in separate indices by construction (see `buildIndexOfKind`'s own
+ * doc); this lint's job is catching a collision WITHIN one kind, across
+ * corpora.
  */
 export function fingerprintFindings(
   corpora: readonly SubmissionCorpus[],
   published: readonly SubmissionCorpus[] = [],
 ): readonly GateFinding[] {
+  const found: GateFinding[] = [];
   try {
     buildIndex(corpora, published);
-    return Object.freeze([]);
   } catch (error) {
-    return Object.freeze(explain(error, corpora));
+    found.push(...explain(error, corpora));
   }
+  try {
+    buildStaticPatternIndexAcross(corpora, published);
+  } catch (error) {
+    found.push(...explain(error, corpora));
+  }
+  return Object.freeze(found);
 }
 
-/** The compiled index itself, for a submission that passed the lint. */
+/** The compiled runtime-error index, for a submission that passed the lint. */
 export function buildIndex(
   corpora: readonly SubmissionCorpus[],
   published: readonly SubmissionCorpus[] = [],
 ): FingerprintIndex {
   return buildFingerprintIndex(
+    [...corpora, ...published].flatMap((submission) => [...fingerprintsOf(submission.source)]),
+  );
+}
+
+/** The compiled static-pattern index, for a submission that passed the lint. */
+export function buildStaticPatternIndexAcross(
+  corpora: readonly SubmissionCorpus[],
+  published: readonly SubmissionCorpus[] = [],
+): FingerprintIndex {
+  return buildStaticPatternIndex(
     [...corpora, ...published].flatMap((submission) => [...fingerprintsOf(submission.source)]),
   );
 }
