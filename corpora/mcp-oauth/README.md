@@ -88,6 +88,31 @@ status) rather than duplicating it, but genuinely different where the
 shapes actually differ (async, no argv, no workspace/env isolation an HTTP
 client does not need).
 
+## A fourth real twin, and a fourth real induction shape: the browser itself
+
+`MCP_OAUTH_CSP_BLOCKS_CONSENT_FORM` is not an SDK failure at all: a consent
+page's own `Content-Security-Policy: form-action 'self'` blocks the
+cross-origin POST to the real OAuth authorize endpoint before it is ever
+sent, so there is no HTTP response, no thrown exception, nothing the other
+four twins' shape (`http-induction.ts`) can provoke or read. The only real
+evidence is a real browser's own `console` event, so it gets its own real
+target and its own real witness (`test/helpers/csp-form-action-server.ts`,
+two real Express origins; `test/helpers/csp-form-action-witness.ts`, a real
+headless Chromium via this package's own real `playwright` devDependency),
+induced and merged into the one `UpstreamVerification` the gate reads
+(`gate.ts#runSubmissionGate` takes the first entry per directory, never a
+union, so `test/mcp-oauth-corpus.test.ts` builds one merged record rather
+than two). `test/mcp-oauth-corpus.test.ts` also proves the runbook fix live:
+widening `form-action` to the real cross-origin target is asserted to really
+stop the block, not just assumed to.
+
+This twin's own worked example does NOT reproduce that live, on purpose:
+the browser-blocked shape has no pure, socket-free analog the way throwing
+an imported SDK error class does, so, matching "a real limit it hit" below,
+the example prints the exact real text the induction test really captured
+and points at that test for the live proof, rather than opening a socket in
+corpus content to re-derive it.
+
 ## Fingerprints are the real JSON error body, not error classes
 
 Like the other two corpora, an agent reading this corpus's kind of failure

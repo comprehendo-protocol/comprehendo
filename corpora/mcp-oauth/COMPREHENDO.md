@@ -5,7 +5,7 @@
 
 `@modelcontextprotocol/sdk` speaks Comprehendo 0.1. Everything below is
 generated from `@comprehendo/mcp-oauth`, a corpus authored against
-@modelcontextprotocol/sdk 1.30.0, which documents 6 topics, 5 fixes and 4
+@modelcontextprotocol/sdk 1.30.0, which documents 7 topics, 7 fixes and 5
 cataloged failures over the `@modelcontextprotocol/sdk` call surface (2
 declared operations).
 
@@ -24,7 +24,7 @@ in. Nothing is transmitted anywhere.
 
 ## Topics
 
-`docs()` with no argument returns exactly these 6 names, in this order. Ask
+`docs()` with no argument returns exactly these 7 names, in this order. Ask
 for one by name, or in any vocabulary it serves; a question no topic answers
 comes back UNDOCUMENTED, never as a guess.
 
@@ -35,6 +35,7 @@ comes back UNDOCUMENTED, never as a guess.
 | `redirect-uri-mismatch` | `client_id` resolved to a real, registered client, but this request's `redirect_uri` is not one that client actually registered (loopback URIs get RFC 8252 SS7.3's port relaxation; every other host needs an exact match, never `startsWith`). | `unregistered-client`, `claude-connector-oauth` |
 | `pkce-mismatch` | `/token` recomputes `SHA256(code_verifier)` and compares it against the `code_challenge` recorded when the code was issued; a mismatch means the caller sent a different `code_verifier` than the one whose challenge went to `/authorize`, usually a fresh PKCE pair generated for a retry instead of reusing the original. | `unsupported-grant-type`, `claude-connector-oauth` |
 | `unsupported-grant-type` | Only two grant types exist on the server side of this SDK: `authorization_code` for the initial exchange, `refresh_token` for renewal. | `pkce-mismatch`, `claude-connector-oauth` |
+| `csp-blocks-consent-form` | A consent page's own security header, not the OAuth flow, breaks this. | `claude-connector-oauth` |
 | `discovery-and-deployment` | RFC 9728 SS3.1 lets a client append the protected resource's own path to the well-known suffix: `/.well-known/oauth-protected-resource/mcp` for a resource that lives at `/mcp`, not only the bare `/.well-known/oauth-protected-resource`. | `claude-connector-oauth` |
 
 ## Examples
@@ -108,4 +109,20 @@ try {
 } catch (error) {
   console.error(JSON.stringify(error.toResponseObject()));
 }
+```
+
+### `csp-blocks-consent-form`: MCP_OAUTH_CSP_BLOCKS_CONSENT_FORM, the real text a real browser really wrote
+
+```javascript
+// The exact browser console text this corpus's own induction test really
+// captured (a real headless Chromium, a real cross-origin form submit,
+// blocked by a real, unwidened form-action; packages/registry-tools/test/
+// mcp-oauth-corpus.test.ts). Printed directly, no socket opened here: the
+// live two-origin round trip is test code, not corpus content (see this
+// corpus's README, "a real limit it hit"). The origin is the one
+// deployment-specific part; everything else is the browser's own wording.
+console.error(
+  "Sending form data to 'https://your-mcp-origin/oauth/authorize' violates the following Content Security Policy directive: \"form-action 'self'\". The request has been blocked.",
+);
+process.exit(1);
 ```
