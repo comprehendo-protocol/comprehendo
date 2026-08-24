@@ -1,0 +1,46 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/tailwindcss",
+  "twins": [
+    {
+      "id": "postcss-plugin-moved",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "TAILWIND_POSTCSS_PLUGIN_MOVED",
+      "reason": "v3's PostCSS plugin was the tailwindcss package itself, require('tailwindcss') handed straight to postcss([...]). v4 split the PostCSS integration into a separate package, @tailwindcss/postcss; the tailwindcss package's own default export is no longer a valid PostCSS plugin at all. Every v3-era postcss.config.js (the plugins: { tailwindcss: {}, autoprefixer: {} } shape postcss-load-config resolves the same way) throws the instant the build runs, before a single line of CSS is processed: this is a real, loud failure, not a silent one, and the package's own error message names the fix. Confirmed live and identical across the checked range (tailwindcss 4.1.0 and 4.3.3).",
+      "docs": "postcss-plugin-migration",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*directly as a PostCSS plugin*@tailwindcss/postcss*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "v3-directives-silent-noop",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "TAILWIND_V3_DIRECTIVES_SILENT_NOOP",
+      "reason": "v3's CSS entry point was three @tailwind directives (base, components, utilities), each expanded into the real generated rules at build time. v4 replaced them with one CSS-native @import \"tailwindcss\"; statement. Unlike the PostCSS plugin change, this one is NOT loud: v4's real, installed CLI accepts the old three-directive file with no error, no warning, and exit 0, and produces output containing only the license comment, effectively empty, every real utility class an agent's markup uses is silently absent from the generated CSS. Confirmed live: a real build with real markup using bg-red-500 against the old directives produces a 1-line output file with zero occurrences of that class; the identical build with @import \"tailwindcss\"; instead produces a real, populated stylesheet with the class present. Confirmed identical across the checked range (4.1.0 and 4.3.3); NOT checked at 4.0.0, where the CLI's scanner had a different, unrelated bug of its own (a real thrown 'Missing field negated on ScannerOptions.sources' error), so target.versions starts at 4.1, not 4.0.",
+      "docs": "v3-directives-removed",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*@tailwind base;*@tailwind components;*@tailwind utilities;*",
+        "kind": "static-pattern"
+      }
+    },
+    {
+      "id": "js-config-not-autoloaded",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "TAILWIND_CONFIG_JS_NOT_AUTO_LOADED",
+      "reason": "v3 always read tailwind.config.js automatically, no reference needed anywhere. v4's configuration model is CSS-native (@theme blocks in the CSS entry point); a JS config file is still supported for the parts that have no CSS-native equivalent yet, but ONLY when explicitly loaded with an @config \"./tailwind.config.js\"; directive in the CSS. A leftover v3-style config file with no @config directive referencing it is not an error, not a warning, simply never read: every custom theme value it declares (colors, spacing, fonts) is silently absent from the build, the same silent-success shape as the removed directives. Confirmed live: a config declaring a custom brand color produces zero occurrences of that color in the real generated output with no @config directive present, and the identical config produces the real color value once @config \"./tailwind.config.js\"; is added. Confirmed identical across the checked range (4.1.0, 4.3.3).",
+      "docs": "js-config-not-autoloaded",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*module.exports*content:*theme:*extend:*",
+        "kind": "static-pattern"
+      }
+    }
+  ]
+}

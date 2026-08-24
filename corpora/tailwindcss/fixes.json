@@ -1,0 +1,28 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/tailwindcss",
+  "fixes": {
+    "postcss-plugin-moved": [
+      {
+        "title": "Runbook: install @tailwindcss/postcss and point postcss.config.js at it instead of tailwindcss directly, a package swap plus a config edit, not a callable fix",
+        "docs": "postcss-plugin-migration",
+        "confidence": "high"
+      }
+    ],
+    "v3-directives-silent-noop": [
+      {
+        "title": "Runbook: replace the three @tailwind directives with @import \"tailwindcss\"; a source edit, not a callable fix",
+        "docs": "v3-directives-removed",
+        "confidence": "high"
+      }
+    ],
+    "js-config-not-autoloaded": [
+      {
+        "title": "Runbook: add @config \"./tailwind.config.js\"; to the CSS entry point to keep the JS config, or migrate its theme values into a CSS-native @theme block instead, which one is right depends on how much of the config is left to migrate",
+        "docs": "js-config-not-autoloaded",
+        "confidence": "high"
+      }
+    ]
+  }
+}

@@ -1,0 +1,25 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/tailwindcss",
+  "topics": [
+    {
+      "topic": "postcss-plugin-migration",
+      "file": "topics/postcss-plugin-migration.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "v3-directives-removed",
+      "file": "topics/v3-directives-removed.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "js-config-not-autoloaded",
+      "file": "topics/js-config-not-autoloaded.md",
+      "status": "ready",
+      "orphaned": false
+    }
+  ]
+}
