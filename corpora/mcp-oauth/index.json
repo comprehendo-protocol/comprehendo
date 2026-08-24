@@ -8,6 +8,7 @@
     { "topic": "redirect-uri-mismatch", "file": "topics/redirect-uri-mismatch.md", "status": "ready", "orphaned": false },
     { "topic": "pkce-mismatch", "file": "topics/pkce-mismatch.md", "status": "ready", "orphaned": false },
     { "topic": "unsupported-grant-type", "file": "topics/unsupported-grant-type.md", "status": "ready", "orphaned": false },
+    { "topic": "csp-blocks-consent-form", "file": "topics/csp-blocks-consent-form.md", "status": "ready", "orphaned": false },
     { "topic": "discovery-and-deployment", "file": "topics/discovery-and-deployment.md", "status": "ready", "orphaned": false }
   ]
 }

@@ -35,6 +35,18 @@
         "docs": "unsupported-grant-type",
         "confidence": "high"
       }
+    ],
+    "csp-blocks-consent-form": [
+      {
+        "title": "Runbook: widen form-action to name every real origin the consent form actually posts to (form-action 'self' https://your-mcp-origin), never form-action 'self' alone when the OAuth endpoints live on a different origin or port; the exact value is deployment-specific, so name your own real origin, do not copy one from elsewhere",
+        "docs": "csp-blocks-consent-form",
+        "confidence": "high"
+      },
+      {
+        "title": "Runbook: same-origin the consent UI and the OAuth endpoints (serve both from the one origin behind the same reverse proxy) and form-action 'self' alone is correct and needs no widening",
+        "docs": "csp-blocks-consent-form",
+        "confidence": "medium"
+      }
     ]
   }
 }

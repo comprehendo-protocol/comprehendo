@@ -17,7 +17,7 @@ routes, through this corpus's own fingerprint index, to
 
 ```
 ok     corpora/mcp-oauth/COMPREHENDO.md block 0 (javascript)
-4 blocks, 4 passed, 0 failed
+5 blocks, 5 passed, 0 failed
 ```
 
 No guess, no assumption about what the SDK does: the exact JSON error
@@ -88,6 +88,31 @@ status) rather than duplicating it, but genuinely different where the
 shapes actually differ (async, no argv, no workspace/env isolation an HTTP
 client does not need).
 
+## A fifth real twin, and a fourth real induction shape: the browser itself
+
+`MCP_OAUTH_CSP_BLOCKS_CONSENT_FORM` is not an SDK failure at all: a consent
+page's own `Content-Security-Policy: form-action 'self'` blocks the
+cross-origin POST to the real OAuth authorize endpoint before it is ever
+sent, so there is no HTTP response, no thrown exception, nothing the other
+four twins' shape (`http-induction.ts`) can provoke or read. The only real
+evidence is a real browser's own `console` event, so it gets its own real
+target and its own real witness (`test/helpers/csp-form-action-server.ts`,
+two real Express origins; `test/helpers/csp-form-action-witness.ts`, a real
+headless Chromium via this package's own real `playwright` devDependency),
+induced and merged into the one `UpstreamVerification` the gate reads
+(`gate.ts#runSubmissionGate` takes the first entry per directory, never a
+union, so `test/mcp-oauth-corpus.test.ts` builds one merged record rather
+than two). `test/mcp-oauth-corpus.test.ts` also proves the runbook fix live:
+widening `form-action` to the real cross-origin target is asserted to really
+stop the block, not just assumed to.
+
+This twin's own worked example does NOT reproduce that live, on purpose:
+the browser-blocked shape has no pure, socket-free analog the way throwing
+an imported SDK error class does, so, matching "a real limit it hit" below,
+the example prints the exact real text the induction test really captured
+and points at that test for the live proof, rather than opening a socket in
+corpus content to re-derive it.
+
 ## Fingerprints are the real JSON error body, not error classes
 
 Like the other two corpora, an agent reading this corpus's kind of failure
@@ -101,15 +126,19 @@ corpora's own READMEs give.
 ## Every fix here is a runbook, and that is not a shortcut
 
 The `apply` grammar is literal call data against this corpus's own
-`declared_schema`. None of these four failures has a safe, single, flat
+`declared_schema`. None of these five failures has a safe, single, flat
 correction to apply: "register the real client first", "use the exact
 registered redirect_uri", "resend the correct code_verifier", "use
 authorization_code or refresh_token" are all corrections to what the
 CALLER sends, not a code change this corpus could make on the caller's
-behalf, and inventing an `apply` that pretended otherwise would either do
-nothing safe or guess at credentials this corpus does not have. Every fix
-here is an inert docs pointer, the same honest answer
-`corpora/openai-python`'s own multi-step fixes already established.
+behalf; `MCP_OAUTH_CSP_BLOCKS_CONSENT_FORM`'s own fix is a deployment
+decision instead (widen `form-action` to the real cross-origin target, or
+put the consent UI and the OAuth endpoints on one origin), never something
+safe to apply unattended either. Inventing an `apply` that pretended
+otherwise would either do nothing safe or guess at credentials or origins
+this corpus does not have. Every fix here is an inert docs pointer, the
+same honest answer `corpora/openai-python`'s own multi-step fixes already
+established.
 
 ## A second real worked-example shape for Docs As Tests [37], and a real limit it hit
 

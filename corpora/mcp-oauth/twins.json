@@ -58,6 +58,20 @@
         "message_pattern": "*\"error\":\"unsupported_grant_type\",\"error_description\":\"The grant type is not supported by this authorization server.\"*",
         "kind": "runtime-error"
       }
+    },
+    {
+      "id": "csp-blocks-consent-form",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MCP_OAUTH_CSP_BLOCKS_CONSENT_FORM",
+      "reason": "The consent page's own Content-Security-Policy sets form-action 'self' (the common helmet()/hand-written default, chosen to stop a form on this page from being hijacked to submit somewhere attacker-controlled), and the OAuth authorize endpoint the consent form must POST to lives on a different origin from the page itself, exactly the split a real deployment usually has (the consent UI at one host, the MCP/OAuth server's own token endpoints at another, or a different port behind a reverse proxy). The browser enforces the directive as written, unconditionally: the submit is blocked before any request leaves the page, the consent click does nothing visible, and nothing in the SDK, the server logs, or a network tab shows a request that was ever sent, because none was. This is not an SDK defect and no amount of getting the OAuth flow itself right prevents it; it is a static, page-level security header that was never told the one cross-origin destination this specific page's own form is required to reach.",
+      "docs": "csp-blocks-consent-form",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Sending form data to *violates the following Content Security Policy directive: \"form-action*\". The request has been blocked.*",
+        "kind": "runtime-error"
+      }
     }
   ]
 }
