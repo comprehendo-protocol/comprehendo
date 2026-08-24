@@ -1,0 +1,55 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/node",
+  "fixes": {
+    "require-async-module": [
+      {
+        "title": "Runbook: use dynamic import() instead of require(), from an async caller (a top-level module, or inside an async function)",
+        "docs": "require-of-esm",
+        "confidence": "high"
+      },
+      {
+        "title": "Runbook: if the requiring file itself can become an ES module, convert it (rename to .mjs, or add \"type\": \"module\") and use a real import declaration",
+        "docs": "require-of-esm",
+        "confidence": "likely"
+      }
+    ],
+    "dirname-undefined-in-esm": [
+      {
+        "title": "Runbook: use import.meta.dirname (Node 20.11+/21.2+; this corpus verified it live on 24.7.0 and 24.8.0)",
+        "docs": "cjs-globals-in-esm",
+        "confidence": "high"
+      },
+      {
+        "title": "Runbook: on an older supported Node, derive it instead: path.dirname(fileURLToPath(import.meta.url))",
+        "docs": "cjs-globals-in-esm",
+        "confidence": "high"
+      }
+    ],
+    "require-undefined-in-esm": [
+      {
+        "title": "Runbook: use a real import declaration (or dynamic import()) instead of require",
+        "docs": "cjs-globals-in-esm",
+        "confidence": "high"
+      },
+      {
+        "title": "Runbook: if a CJS-only dependency genuinely has no ESM-compatible way to load it, build a real require function for this one module: const require = createRequire(import.meta.url), from node:module",
+        "docs": "cjs-globals-in-esm",
+        "confidence": "high"
+      }
+    ],
+    "top-level-await-in-cjs": [
+      {
+        "title": "Runbook: wrap the awaiting code in an async IIFE, (async () => { ... })(), and let that promise's rejection be handled explicitly rather than awaited at the top level",
+        "docs": "top-level-await",
+        "confidence": "high"
+      },
+      {
+        "title": "Runbook: if the file can become an ES module (rename to .mjs, or add \"type\": \"module\"), top-level await works there directly with no wrapper",
+        "docs": "top-level-await",
+        "confidence": "likely"
+      }
+    ]
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/node",
+  "twins": [
+    {
+      "id": "require-async-module",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "NODE_REQUIRE_ASYNC_MODULE",
+      "reason": "Current Node can require() a real ES module synchronously (require(esm) is no longer a hard wall the way it was for years, and training data written before that landed still teaches 'require() of ESM always throws ERR_REQUIRE_ESM'). But the module graph being required has to resolve synchronously to satisfy require()'s own contract of returning a value immediately, and a module that awaits something at its top level cannot: there is no synchronous point at which its exports exist yet. Node refuses this specific case rather than silently returning a partial or stale value, naming the real reason (top-level await), not a generic ESM refusal.",
+      "docs": "require-of-esm",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*ERR_REQUIRE_ASYNC_MODULE*require() cannot be used on an ESM graph with top-level await*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "dirname-undefined-in-esm",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "NODE_DIRNAME_UNDEFINED_IN_ESM",
+      "reason": "__dirname and __filename are CommonJS module-wrapper variables, injected per-file by the CJS loader; an ES module has no such wrapper, so the names simply do not exist there, not even as undefined values, a bare reference throws before any of the surrounding code runs. This fires the instant a `.mjs` file (or a `.js` file under `\"type\": \"module\"`) reads either name, most often in code copied from an older CJS example that built a path relative to the current file.",
+      "docs": "cjs-globals-in-esm",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*ReferenceError: __dirname is not defined in ES module scope*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "require-undefined-in-esm",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "NODE_REQUIRE_UNDEFINED_IN_ESM",
+      "reason": "require is a CommonJS-loader-injected function, the same category as __dirname: an ES module's scope never has it, by design, an ES module resolves its dependencies through static import declarations instead. This is the single most common ESM migration trap, because `require` reads as ordinary, always-available JavaScript to anyone who has not internalized that it is CJS-specific machinery rather than a language feature.",
+      "docs": "cjs-globals-in-esm",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*ReferenceError: require is not defined in ES module scope*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "top-level-await-in-cjs",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "NODE_TOP_LEVEL_AWAIT_IN_CJS",
+      "reason": "Top-level await is an ES module feature (it works by suspending that module's own evaluation, which only ES modules' loading model supports); a CommonJS file's top level is an ordinary, synchronous function body, the CJS wrapper Node injects around every `.cjs` file (or `.js` file with no `\"type\": \"module\"`), and `await` outside an async function is a parse error there, not a runtime one, it never gets as far as running.",
+      "docs": "top-level-await",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*SyntaxError: await is only valid in async functions and the top level bodies of modules*",
+        "kind": "runtime-error"
+      }
+    }
+  ]
+}

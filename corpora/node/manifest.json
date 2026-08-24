@@ -1,0 +1,21 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/node",
+  "target": {
+    "package": "node",
+    "version": "24.8.0",
+    "versions": [">=24.7 <25"],
+    "source": "cli"
+  },
+  "manifest_hint": {
+    "comprehendo": {
+      "version": "0.1",
+      "level": 1
+    }
+  },
+  "declared_schema": {
+    "surface": "node",
+    "operations": ["require", "import", "await"]
+  }
+}

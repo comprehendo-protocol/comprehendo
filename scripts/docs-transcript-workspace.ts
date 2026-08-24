@@ -361,9 +361,29 @@ const JS_RESOLUTION_ROOT = join(import.meta.dirname, '..', 'packages', 'registry
  * constructs a client and calls a method on it in one script).
  */
 export function invokeJavaScript(code: string): Invocation {
+  return runNodeSource(code, 'example.mjs');
+}
+
+/**
+ * The CommonJS sibling of `invokeJavaScript`, needed the instant a real
+ * corpus's subject IS the difference between the two module systems
+ * (`corpora/node`): an `.mjs` file cannot demonstrate `NODE_
+ * TOP_LEVEL_AWAIT_IN_CJS` (top-level await is valid there, that is the whole
+ * twin), and an `.mjs`-written CJS-globals example would prove the wrong
+ * thing. Same shape, same evidence standard, the file extension is the only
+ * difference, because in Node the extension (or the nearest `package.json`'s
+ * `"type"`) is literally what selects the module system, so a `cjs`-language
+ * worked example choosing `.cjs` is not a convention this gate invented, it
+ * is the same rule the runtime itself uses.
+ */
+export function invokeCommonJS(code: string): Invocation {
+  return runNodeSource(code, 'example.cjs');
+}
+
+function runNodeSource(code: string, filename: string): Invocation {
   const site = mkdtempSync(join(JS_RESOLUTION_ROOT, '.docs-scratch-'));
   try {
-    const file = join(site, 'example.mjs');
+    const file = join(site, filename);
     writeFileSync(file, code, 'utf8');
     const result = spawnSync('node', [file], {
       cwd: site,

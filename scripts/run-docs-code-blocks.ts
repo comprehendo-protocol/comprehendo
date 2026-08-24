@@ -82,6 +82,7 @@ import type { BlockRecord, DocsCodeBlock, TranscriptStep } from './docs-code-blo
 import {
   fixtureCache,
   invoke,
+  invokeCommonJS,
   invokeJavaScript,
   invokeSource,
   programsFor,
@@ -94,17 +95,24 @@ import type { Program } from './docs-transcript-workspace.ts';
 /**
  * A worked example written as source rather than a shell transcript: the
  * block IS the program (`docs-transcript-workspace.ts#invokeSource`/
- * `#invokeJavaScript`), no argv, no operand-fixture resolution.
- * `sh`/`shell`/`bash`/`console` stay argv-transcripts (ffmpeg Corpus [32], a
- * real CLI); `python` was the first of this second shape (openai-python
- * Corpus, a real importable package); `javascript` is the second (mcp-oauth
- * Corpus, a real npm package with no CLI of its own, real failures provoked
- * by a multi-step round trip: start a real server, make a real request).
- * Each entry here names its own interpreter and invoker, never assumed.
+ * `#invokeJavaScript`/`#invokeCommonJS`), no argv, no operand-fixture
+ * resolution. `sh`/`shell`/`bash`/`console` stay argv-transcripts (ffmpeg
+ * Corpus [32], a real CLI); `python` was the first of this second shape
+ * (openai-python Corpus, a real importable package); `javascript` is the
+ * second (mcp-oauth Corpus, a real npm package with no CLI of its own, real
+ * failures provoked by a multi-step round trip: start a real server, make a
+ * real request); `cjs` is the third, and the only one where the LANGUAGE TAG
+ * ITSELF is load-bearing rather than a convenience: `corpora/node`'s subject
+ * is the difference between Node's two module systems, so an example
+ * demonstrating a CommonJS-only failure (top-level await outside an async
+ * module) has to actually run as `.cjs`, not `.mjs`, or it would not
+ * reproduce the failure at all. Each entry here names its own interpreter
+ * and invoker, never assumed.
  */
 const SOURCE_LANGUAGES: Readonly<Record<string, { readonly interpreter: string; readonly invoke: (code: string) => import('./docs-transcript-workspace.ts').Invocation }>> = Object.freeze({
   python: { interpreter: 'python', invoke: invokeSource },
   javascript: { interpreter: 'node', invoke: invokeJavaScript },
+  cjs: { interpreter: 'node', invoke: invokeCommonJS },
 });
 
 /**
@@ -391,7 +399,7 @@ export async function runDocSurface(
   if (blocks.length === 0) return Object.freeze([]);
   const languagesUsed = new Set(blocks.map((block) => block.language));
   const needsPython = languagesUsed.has('python');
-  const needsNode = languagesUsed.has('javascript');
+  const needsNode = languagesUsed.has('javascript') || languagesUsed.has('cjs');
   const needsTranscriptProgram = blocks.some((block) => isTranscriptLanguage(block.language));
   const surface = corpus.declaredSchema?.surface ?? '';
   if (needsTranscriptProgram && surface === '') {
