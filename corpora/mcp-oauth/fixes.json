@@ -1,0 +1,40 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/mcp-oauth",
+  "fixes": {
+    "unregistered-client": [
+      {
+        "title": "Runbook: register the client for real first (POST /register), then use the client_id it returns, never a hand-typed or remembered one",
+        "docs": "unregistered-client",
+        "confidence": "high"
+      },
+      {
+        "title": "Runbook: if you are NOT mounting mcpAuthRouter, this validation does not exist yet; add it yourself before this server is safe to expose",
+        "docs": "unregistered-client",
+        "confidence": "high"
+      }
+    ],
+    "redirect-uri-mismatch": [
+      {
+        "title": "Runbook: the redirect_uri on this request must be byte-identical to one returned by this client's own /register call (loopback port is the one relaxation, RFC 8252 SS7.3); register the real one rather than editing the request to match",
+        "docs": "redirect-uri-mismatch",
+        "confidence": "high"
+      }
+    ],
+    "pkce-mismatch": [
+      {
+        "title": "Runbook: send the code_verifier from the SAME PKCE pair whose challenge was sent to /authorize for this code, not a freshly generated one",
+        "docs": "pkce-mismatch",
+        "confidence": "high"
+      }
+    ],
+    "unsupported-grant-type": [
+      {
+        "title": "Runbook: use grant_type=authorization_code (the initial exchange) or grant_type=refresh_token (renewal); this server has no other grant to reach for",
+        "docs": "unsupported-grant-type",
+        "confidence": "high"
+      }
+    ]
+  }
+}
