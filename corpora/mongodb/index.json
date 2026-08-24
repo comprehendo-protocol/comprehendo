@@ -9,6 +9,7 @@
     { "topic": "destructive-delete-filters", "file": "topics/destructive-delete-filters.md", "status": "ready", "orphaned": false },
     { "topic": "null-missing-and-query-shape", "file": "topics/null-missing-and-query-shape.md", "status": "ready", "orphaned": false },
     { "topic": "bulk-writes-and-idempotency", "file": "topics/bulk-writes-and-idempotency.md", "status": "ready", "orphaned": false },
-    { "topic": "indexing-and-scan-performance", "file": "topics/indexing-and-scan-performance.md", "status": "ready", "orphaned": false }
+    { "topic": "indexing-and-scan-performance", "file": "topics/indexing-and-scan-performance.md", "status": "ready", "orphaned": false },
+    { "topic": "cursor-vs-toarray", "file": "topics/cursor-vs-toarray.md", "status": "ready", "orphaned": false }
   ]
 }
