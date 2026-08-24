@@ -16,3 +16,4 @@ ruby/.bundle/
 .worktrees/
 packages/*/dist/
 corpora/*/.venv/
+packages/registry-tools/.docs-scratch-*/

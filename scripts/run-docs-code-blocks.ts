@@ -72,8 +72,10 @@ import type { BlockRecord, DocsCodeBlock, TranscriptStep } from './docs-code-blo
 import {
   fixtureCache,
   invoke,
+  invokeJavaScript,
   invokeSource,
   programsFor,
+  requireNode,
   requireProgram,
   requirePython,
 } from './docs-transcript-workspace.ts';
@@ -81,12 +83,19 @@ import type { Program } from './docs-transcript-workspace.ts';
 
 /**
  * A worked example written as source rather than a shell transcript: the
- * block IS the program (`docs-transcript-workspace.ts#invokeSource`), no
- * argv, no operand-fixture resolution. `sh`/`shell`/`bash`/`console` stay
- * argv-transcripts (ffmpeg Corpus [32], a real CLI); `python` is the first
- * of this second shape (openai-python Corpus, a real importable package).
+ * block IS the program (`docs-transcript-workspace.ts#invokeSource`/
+ * `#invokeJavaScript`), no argv, no operand-fixture resolution.
+ * `sh`/`shell`/`bash`/`console` stay argv-transcripts (ffmpeg Corpus [32], a
+ * real CLI); `python` was the first of this second shape (openai-python
+ * Corpus, a real importable package); `javascript` is the second (mcp-oauth
+ * Corpus, a real npm package with no CLI of its own, real failures provoked
+ * by a multi-step round trip: start a real server, make a real request).
+ * Each entry here names its own interpreter and invoker, never assumed.
  */
-const SOURCE_LANGUAGES: readonly string[] = Object.freeze(['python']);
+const SOURCE_LANGUAGES: Readonly<Record<string, { readonly interpreter: string; readonly invoke: (code: string) => import('./docs-transcript-workspace.ts').Invocation }>> = Object.freeze({
+  python: { interpreter: 'python', invoke: invokeSource },
+  javascript: { interpreter: 'node', invoke: invokeJavaScript },
+});
 
 import type { CorpusSource } from '../packages/registry-tools/dist/corpus-format.js';
 import type { FingerprintEntry } from '../packages/registry-tools/dist/fingerprint-facets.js';
@@ -260,11 +269,12 @@ function executeBlock(block: DocsCodeBlock, context: Context): BlockRecord {
       pass,
       output,
     });
-  if (SOURCE_LANGUAGES.includes(block.language)) {
+  const source = SOURCE_LANGUAGES[block.language];
+  if (source !== undefined) {
     const said = (text: string): string => `${block.title}\n  ${text}`;
     const licensed = licensedCode(block.title, context.codes);
     try {
-      const run = invokeSource(block.code);
+      const run = source.invoke(block.code);
       if (run.unrunnable !== undefined) {
         return record(false, said(`could not run the interpreter: ${run.unrunnable}`));
       }
@@ -338,7 +348,9 @@ export async function runDocSurface(
   // A corpus that DOES carry examples still gets the full requirement,
   // unchanged.
   if (blocks.length === 0) return Object.freeze([]);
-  const needsInterpreter = blocks.some((block) => SOURCE_LANGUAGES.includes(block.language));
+  const languagesUsed = new Set(blocks.map((block) => block.language));
+  const needsPython = languagesUsed.has('python');
+  const needsNode = languagesUsed.has('javascript');
   const needsTranscriptProgram = blocks.some((block) => isTranscriptLanguage(block.language));
   const surface = corpus.declaredSchema?.surface ?? '';
   if (needsTranscriptProgram && surface === '') {
@@ -347,12 +359,14 @@ export async function runDocSurface(
     );
   }
   // Each precondition pays only for the shape of block this doc actually
-  // carries: a corpus whose examples are all `python`-language scripts never
-  // requires the `declared_schema.surface` CLI (openai-python has none of
-  // its own, see corpora/openai-python/README.md), and a corpus whose
-  // examples are all shell transcripts never requires an interpreter.
+  // carries: a corpus whose examples are all `python`/`javascript`-language
+  // scripts never requires the `declared_schema.surface` CLI (openai-python
+  // and mcp-oauth have none of their own, see their own READMEs), and a
+  // corpus whose examples are all shell transcripts never requires either
+  // interpreter.
   if (needsTranscriptProgram) requireProgram(surface);
-  if (needsInterpreter) requirePython();
+  if (needsPython) requirePython();
+  if (needsNode) requireNode();
   const cache = fixtureCache();
   const context: Context = {
     index: finger.buildFingerprintIndex(gate.fingerprintsOf(corpus)),

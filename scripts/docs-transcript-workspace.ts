@@ -321,3 +321,61 @@ export function invokeSource(code: string): Invocation {
     rmSync(site, { recursive: true, force: true });
   }
 }
+
+/**
+ * The real interpreter every one of THESE scripts already runs under: no
+ * override needed, unlike `COMPREHENDO_PYTHON`, because this gate's own
+ * process is real proof `node` exists. Kept as a named precondition anyway,
+ * matching `requireProgram`/`requirePython`'s own never-a-skip contract, and
+ * paid only when a doc actually carries a `javascript` block.
+ */
+export function requireNode(): void {
+  try {
+    execFileSync('node', ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (cause) {
+    throw new PreconditionError(
+      `this gate executes the corpus's own JavaScript examples against a real node and found none: ${(cause as Error).message}`,
+    );
+  }
+}
+
+/**
+ * `packages/registry-tools`, where a `javascript`-language corpus's own
+ * induction devDependency (`corpora/mcp-oauth`'s `@modelcontextprotocol/sdk`,
+ * the first real one) is really installed. The generic, and so far only
+ * needed, answer for where a `javascript` block's own `import`s resolve
+ * from: Node's ESM loader walks up from the FILE's own path looking for
+ * `node_modules`, never from `cwd`, so the file has to be written inside
+ * this tree rather than the system tmpdir `invokeSource` uses for Python
+ * (a venv's own site-packages makes that resolution question not exist for
+ * Python; there is no equivalent for a bare ESM specifier).
+ */
+const JS_RESOLUTION_ROOT = join(import.meta.dirname, '..', 'packages', 'registry-tools');
+
+/**
+ * One `javascript`-language worked example, the same "the block IS the
+ * program" shape `invokeSource` already established for `python`, a second
+ * real target proving the shape generalizes (corpora/mcp-oauth's own
+ * `OAuthServerProvider` examples start a real server, make a real request,
+ * and close it, all inline in one script, exactly as a Python example
+ * constructs a client and calls a method on it in one script).
+ */
+export function invokeJavaScript(code: string): Invocation {
+  const site = mkdtempSync(join(JS_RESOLUTION_ROOT, '.docs-scratch-'));
+  try {
+    const file = join(site, 'example.mjs');
+    writeFileSync(file, code, 'utf8');
+    const result = spawnSync('node', [file], {
+      cwd: site,
+      encoding: 'utf8',
+      stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: TIMEOUT,
+    });
+    if (result.error !== undefined) {
+      return Object.freeze({ status: -1, stderr: '', unrunnable: result.error.message });
+    }
+    return Object.freeze({ status: result.status ?? -1, stderr: result.stderr });
+  } finally {
+    rmSync(site, { recursive: true, force: true });
+  }
+}
