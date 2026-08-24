@@ -5,7 +5,7 @@
 
 `mongodb` speaks Comprehendo 0.1. Everything below is generated from
 `@comprehendo/mongodb`, a corpus authored against mongodb 7.5.0, which
-documents 7 topics, 4 fixes and 4 cataloged failures over the `mongodb` call
+documents 8 topics, 4 fixes and 4 cataloged failures over the `mongodb` call
 surface (6 declared operations).
 
 If it is not documented here it does not exist; do not read the source,
@@ -23,7 +23,7 @@ transmitted anywhere.
 
 ## Topics
 
-`docs()` with no argument returns exactly these 7 names, in this order. Ask
+`docs()` with no argument returns exactly these 8 names, in this order. Ask
 for one by name, or in any vocabulary it serves; a question no topic answers
 comes back UNDOCUMENTED, never as a guess.
 
@@ -36,6 +36,7 @@ comes back UNDOCUMENTED, never as a guess.
 | `null-missing-and-query-shape` | `null` is not "missing". | `objectid-identity` |
 | `bulk-writes-and-idempotency` | Multi-document writes belong in one `bulkWrite`, ops built up in a loop, one real database call executed after the loop, never a database call made INSIDE the loop itself. | `unique-index-and-duplicates` |
 | `indexing-and-scan-performance` | A compound index only serves a left-to-right PREFIX of its own field order. | `destructive-delete-filters` |
+| `cursor-vs-toarray` | `find()` returns a cursor immediately; the server streams matching documents back in batches as the cursor is iterated. | `indexing-and-scan-performance` |
 
 ## Examples
 
