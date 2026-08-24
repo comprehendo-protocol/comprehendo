@@ -132,6 +132,20 @@ gate as community submissions.
   tracked as a task doc (`39-registry-reservations`) outside the wave 1-7
   build chain, reflecting that this work already landed ad hoc (see git
   history) ahead of the formal wave build.
+- Corpus discovery for a package a consumer has not already installed a
+  corpus for was a genuine, previously undesigned gap: every corpus
+  already ships as `@comprehendo/<pkg>` and is picked up once installed
+  (`discoverInstalledCorpora`), but nothing let a consumer or an agent
+  find out one exists before manually running `npm install` themselves.
+  Registered retroactively into Wave 7 as `41-corpus-discovery-cli`
+  (`comprehendo add <pkg>`, a new `packages/cli` package), the same
+  after-the-fact registration `39-registry-reservations` already
+  precedents. It could not live inside `packages/core`, `packages/python`
+  or `packages/registry-tools`: CC6 No Telemetry [27] is an absolute,
+  tested, whole-package "zero network code" boundary over exactly those
+  three, and this verb's whole job is one real, explicit registry
+  request. `packages/cli` exists specifically outside that boundary
+  rather than carving an exception into it.
 - Of the three worked corpus samples the spec names as seeds for "the
   corpus file format and the registry's first entries" (openai-python,
   zod, ffmpeg), only ffmpeg is built into a published registry corpus by
