@@ -31,12 +31,16 @@ vocabularies_served:
 
 `claude.ai`'s personal "Add custom connector" dialog exposes exactly four
 fields: Name, Remote MCP server URL, OAuth Client ID (optional), OAuth
-Client Secret (optional). There is no field for a static bearer header. A
-server with only a static-token check (`Authorization: Bearer <token>`
-compared by hand) cannot be reached from this dialog at all; it needs to
-become its own OAuth 2.0 authorization server, RFC 7591 Dynamic Client
-Registration plus the RFC 6749/7636 PKCE authorization-code flow, public
-client, no client secret.
+Client Secret (optional). Read those two "(optional)" fields precisely:
+they mean a caller MAY pre-supply a client id/secret instead of letting
+Dynamic Client Registration self-register one, never that authorization
+itself is optional. Adding a connector always routes through a real
+authorization page; there is no path that skips it. A server with only a
+static-token check (`Authorization: Bearer <token>` compared by hand), or
+with no auth at all, cannot be reached from this dialog, full stop; it
+needs to become its own OAuth 2.0 authorization server, RFC 7591 Dynamic
+Client Registration plus the RFC 6749/7636 PKCE authorization-code flow,
+public client, no client secret.
 
 `@modelcontextprotocol/sdk` ships this as real, importable server-side
 support, not something to hand-roll from the RFCs: `mcpAuthRouter` (from
