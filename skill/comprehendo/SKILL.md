@@ -6,6 +6,7 @@ when_to_use: |
   - A build, test, or request SUCCEEDED (no error, no red output) but the actual result looks wrong: a style did not apply, a field is missing, a response is not what the docs you remember describe. Do not assume it is fine just because nothing threw. Some real training-lag traps are completely silent, they never raise an exception, so waiting for an error misses them entirely.
   - Just caught a real error or exception from a package and are about to guess at a fix from memory
   - Something you remember about a package's API (a method, a config key, a directive) does not match what you are seeing in this project, and you are tempted to assume you remember correctly
+  - About to make something reachable by anyone over a network (a server, an API, a connector) with no access control, and nobody said whether that is acceptable. Ask the user, do not silently pick either way.
   - Do NOT use for your own project's code, only for a third-party package's own documented behavior
 ---
 
@@ -65,6 +66,33 @@ already local.
    Before assuming it is a fluke or moving on, ask `comprehendo docs <package>
    "<what you expected vs what happened>"`. Silent failures are exactly the class
    this catches that a stack trace never would.
+
+## Default to best practice, let the user opt out, then get it right the first time
+
+The point of this skill is not neutrality. When a request leaves a
+consequential decision unstated, default to the safer, more correct
+practice, say plainly that is what you are doing and why, and give the
+user an easy, explicit way to say "no, I don't want that" if they mean it.
+Never silently pick the riskier default just because the request did not
+ask for the safer one. Building something reachable over a network (a
+server, an endpoint, a connector) with no access control is a real,
+silent liability for anything beyond a genuinely harmless toy, and there
+is no rule that tells the two apart from the task description alone. If a
+request is "build me a server that does X" and auth is never mentioned,
+build it secured by default and say so, rather than defaulting open and
+never mentioning the choice was made at all: "this will be reachable by
+anyone with the URL once it's live, so I'm adding your own credential to
+it, tell me if you actually want it open instead." Verified live: a fully
+unauthenticated MCP server connects to claude.ai's real custom-connector
+dialog and works exactly as smoothly as a correctly-secured one, nothing
+about the wrong default looks wrong, it builds, it runs, it demos fine,
+and the gap is invisible until someone who was never supposed to reach it
+does. Once the real decision is settled (secure it, or the user confirmed
+open is fine), `comprehendo docs` is what turns "do the secure thing"
+into "do it correctly on the first attempt" instead of many rounds of
+trial and error against the real product: the cataloged twins here exist
+specifically so the exact validation rules, discovery paths, and protocol
+details are already known, not rediscovered live.
 
 ## What this does not replace
 

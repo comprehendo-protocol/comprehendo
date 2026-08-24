@@ -27,35 +27,36 @@ vocabularies_served:
     - "add authentication to an MCP server"
     - "make an MCP server work with claude.ai's custom connector"
     - "OAuth for claude.ai connector"
+    - "does my MCP server need auth for claude.ai vs Claude Code"
 ---
 
-`claude.ai`'s personal "Add custom connector" dialog exposes exactly four
-fields: Name, Remote MCP server URL, OAuth Client ID (optional), OAuth
-Client Secret (optional). Read those two "(optional)" fields precisely:
-they mean a caller MAY pre-supply a client id/secret instead of letting
-Dynamic Client Registration self-register one, never that authorization
-itself is optional. Adding a connector always routes through a real
-authorization page; there is no path that skips it. A server with only a
-static-token check (`Authorization: Bearer <token>` compared by hand), or
-with no auth at all, cannot be reached from this dialog, full stop; it
-needs to become its own OAuth 2.0 authorization server, RFC 7591 Dynamic
-Client Registration plus the RFC 6749/7636 PKCE authorization-code flow,
-public client, no client secret.
+This is about `claude.ai`'s own web "Add custom connector" dialog, a
+different integration path from Claude Code's MCP setup (`.mcp.json`,
+`claude mcp add`), which commonly needs no auth (local stdio, or a remote
+server you already trust). None of this applies there.
+
+The dialog has four fields: Name, Remote MCP server URL, OAuth Client ID
+(optional), OAuth Client Secret (optional). A genuinely authless server
+(every request answered, nothing checked) connects and works, confirmed
+live, `initialize`/`tools/list` complete with no OAuth step when nothing
+401s, and reachable-by-anyone is exactly the tradeoff that makes, a real
+choice, never a silent default. A narrower, easier mistake: a server that
+already checks a STATIC secret by hand (`Authorization: Bearer <token>`
+compared in code, 401 without it) is protected with no credential path
+this dialog can satisfy, there is no field for a static token, so
+claude.ai tries the OAuth discovery it always attempts on a 401 and fails
+to register with a service that was never built. "Authless" and
+"hand-protected" look identical from a task description; only one needs
+anything below.
 
 `@modelcontextprotocol/sdk` ships this as real, importable server-side
-support, not something to hand-roll from the RFCs: `mcpAuthRouter` (from
-`@modelcontextprotocol/sdk/server/auth/router.js`) mounts the well-known
-discovery routes, the DCR endpoint, token revocation, and rate limiting for
-you; you implement `OAuthServerProvider` (`authorize`, `exchangeAuthorization
-Code`, `exchangeRefreshToken`, `verifyAccessToken`) for the one piece that
-is genuinely yours to decide, how a caller proves they are allowed in. A
-single-owner server with no external identity provider (the common case:
-you are the only user, and the "proof" is a secret only you have) implements
-this interface directly; the SDK's only built-in implementation,
-`ProxyOAuthServerProvider`, is for delegating to an external IdP like Auth0
-or Okta instead, a different case.
-
-Mounting `mcpAuthRouter` and implementing `OAuthServerProvider` is the
-current, correct starting point. Hand-rolling the routes yourself is
-possible but reopens every validation the router gives you for free; see
+support: `mcpAuthRouter` (`@modelcontextprotocol/sdk/server/auth/router.js`)
+mounts discovery, DCR, revocation and rate limiting for you; implement
+`OAuthServerProvider` (`authorize`, `exchangeAuthorizationCode`,
+`exchangeRefreshToken`, `verifyAccessToken`) for the one piece that is
+genuinely yours, how a caller proves they are allowed in. A single-owner
+server with no external IdP (only user, "proof" is a secret only you
+have) implements this directly; `ProxyOAuthServerProvider` delegates to
+Auth0/Okta instead. Hand-rolling instead of mounting
+`mcpAuthRouter` reopens every validation it gives free; see
 `unregistered-client`.
