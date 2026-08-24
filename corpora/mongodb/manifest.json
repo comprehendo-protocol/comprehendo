@@ -1,0 +1,15 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/mongodb",
+  "target": {
+    "package": "mongodb",
+    "version": "7.5.0",
+    "versions": [">=6 <8"],
+    "source": "npm"
+  },
+  "declared_schema": {
+    "surface": "mongodb",
+    "operations": ["findOne", "find", "updateOne", "deleteMany", "insertOne", "createIndex"]
+  }
+}

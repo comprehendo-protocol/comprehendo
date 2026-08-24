@@ -1,0 +1,14 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/mongodb",
+  "topics": [
+    { "topic": "objectid-identity", "file": "topics/objectid-identity.md", "status": "ready", "orphaned": false },
+    { "topic": "immutable-id-field", "file": "topics/immutable-id-field.md", "status": "ready", "orphaned": false },
+    { "topic": "unique-index-and-duplicates", "file": "topics/unique-index-and-duplicates.md", "status": "ready", "orphaned": false },
+    { "topic": "destructive-delete-filters", "file": "topics/destructive-delete-filters.md", "status": "ready", "orphaned": false },
+    { "topic": "null-missing-and-query-shape", "file": "topics/null-missing-and-query-shape.md", "status": "ready", "orphaned": false },
+    { "topic": "bulk-writes-and-idempotency", "file": "topics/bulk-writes-and-idempotency.md", "status": "ready", "orphaned": false },
+    { "topic": "indexing-and-scan-performance", "file": "topics/indexing-and-scan-performance.md", "status": "ready", "orphaned": false }
+  ]
+}

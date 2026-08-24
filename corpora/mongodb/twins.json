@@ -1,0 +1,59 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/mongodb",
+  "twins": [
+    {
+      "id": "id-type-mismatch-on-update",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MONGODB_ID_TYPE_MISMATCH_ON_UPDATE",
+      "reason": "Restating `_id` inside an update's `$set` throws whenever the value's BSON type differs from what is actually stored, even when the two values LOOK like the same id to a human. The realistic trigger is a JSON round-trip: `JSON.parse(JSON.stringify(doc))` turns a real `ObjectId` into a plain string, and passing that whole object (identity included) back into `$set` sends a string where an ObjectId is stored. MongoDB compares by BSON type AND value, so the string is treated as a real attempt to CHANGE the field, not restate it, and refuses. Confirmed live: restating the identical ObjectId INSTANCE is a silent no-op (not this twin); restating it as a string (or any other real ObjectId) throws every time.",
+      "docs": "immutable-id-field",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*Performing an update on the path '_id' would modify the immutable field '_id'*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "invalid-objectid-format",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MONGODB_INVALID_OBJECTID_FORMAT",
+      "reason": "`new ObjectId(value)` throws the instant `value` is not a 24-character hex string, a 12-byte buffer, or an integer. The realistic trigger is a route parameter or a user-supplied query string handed straight to `ObjectId` with no validation: a UUID, a slug, a name, or simply a typo'd id all take this exact path, at construction time, before any database call is made. Confirmed live, same real BSONError, same message, across driver 6.21.0 and 7.5.0.",
+      "docs": "objectid-identity",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*input must be a 24 character hex string, 12 byte Uint8Array, or an integer*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "duplicate-key-on-unique-index",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MONGODB_DUPLICATE_KEY",
+      "reason": "Inserting a document whose value for a uniquely-indexed field already exists throws a real, server-enforced E11000 error, the same one a check-then-insert pattern is trying (and failing) to prevent in application code. The check-then-insert race is real: two requests can both pass the check before either inserts, and the unique index is what actually stops the duplicate, the application-level check never does. Confirmed live: the index enforces this even when the applying code never checked first.",
+      "docs": "unique-index-and-duplicates",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*E11000 duplicate key error collection*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "negated-delete-filter",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "MONGODB_NEGATED_DELETE_FILTER",
+      "reason": "A `deleteMany` filter built on a negation (`$ne`, `$nin`, `$not`) against a version or status field deletes everything EXCEPT the named value, the opposite of what a filter shaped like a normal query usually means to a reader. Confirmed live, real and disposable: five documents, four `status: \"archived\"` and one `status: \"active\"`; a filter meant to read as \"find the active one\" (`{status: {$ne: \"active\"}}`) instead matches and deletes the four archived ones, a 4-out-of-5 wipe from what looks like a narrow, safe-sounding filter. One wrong constant here destroys a store while reading as routine cleanup.",
+      "docs": "destructive-delete-filters",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*$ne*deleteMany*",
+        "kind": "static-pattern"
+      }
+    }
+  ]
+}
