@@ -1,0 +1,10 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/node",
+  "topics": [
+    { "topic": "require-of-esm", "file": "topics/require-of-esm.md", "status": "ready", "orphaned": false },
+    { "topic": "cjs-globals-in-esm", "file": "topics/cjs-globals-in-esm.md", "status": "ready", "orphaned": false },
+    { "topic": "top-level-await", "file": "topics/top-level-await.md", "status": "ready", "orphaned": false }
+  ]
+}
