@@ -28,6 +28,7 @@ import { pathToFileURL } from 'node:url';
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import { parse } from '../src/corpus-format.js';
+import { authoredTree, completeCorpus } from './helpers/authored-corpus.js';
 import { requireFfmpeg } from './helpers/ffmpeg-cli.js';
 
 /** The repository root, from this test file. */
@@ -327,16 +328,19 @@ describe('AC2: a deliberately broken example fails, naming the file and the bloc
     }
   }, 900_000);
 
+  // `python` is a real, second executor now (Docs As Tests [37]'s source-
+  // language shape, proven against corpora/openai-python); `ruby` stands in
+  // as a language this gate genuinely has neither executor for.
   it('fails a block in a language it has no executor for, never skips it', async () => {
     const { runDocSurface } = await runner();
-    const copy = docCopy((markdown) => `${markdown}\n## Extra\n\n\`\`\`python\nprint(1)\n\`\`\`\n`);
+    const copy = docCopy((markdown) => `${markdown}\n## Extra\n\n\`\`\`ruby\nputs 1\n\`\`\`\n`);
     try {
       const broken = await runDocSurface(CORPUS, copy.file);
       const failed = broken.filter((record) => !record.pass);
 
       expect(failed).toHaveLength(1);
-      expect(failed[0]?.language).toBe('python');
-      expect(failed[0]?.output).toContain('python');
+      expect(failed[0]?.language).toBe('ruby');
+      expect(failed[0]?.output).toContain('ruby');
     } finally {
       copy.cleanup();
     }
@@ -448,5 +452,79 @@ describe('the gate, run the way CI runs it: a real process, a real exit code', (
 
     expect(run.status).toBe(2);
     expect(run.stderr).toContain(USAGE[0] ?? 'usage');
+  });
+});
+
+describe('a corpus with zero fenced examples requires no program at all', () => {
+  // COMPREHENDO.md Generator [35] deliberately renders no fenced blocks for a
+  // target this gate's own program/fixture resolution does not generalize to
+  // yet (docs-transcript-workspace.ts is still ffmpeg-shaped). Requiring a
+  // program to exist for a doc this gate would never actually spawn anything
+  // against is a precondition with no test behind it. Found by review, while
+  // building a non-ffmpeg corpus: `declared_schema.surface` names the
+  // apply-grammar namespace (CC7 [09]), which is not always a spawnable
+  // program (a Python package's module name, for instance), and the OLD
+  // behavior refused every such corpus's docs gate outright, even with
+  // nothing in the doc to execute.
+  it('passes with zero blocks and zero programs required, even when the declared surface is not on PATH', async () => {
+    const { runDocSurface } = await runner();
+    const tree = await authoredTree();
+    await completeCorpus(tree);
+    const emptyDoc = join(tree.corpus, 'COMPREHENDO-empty.md');
+    writeFileSync(emptyDoc, '# toy-encoder\n\nNo worked examples in this corpus.\n', 'utf8');
+
+    try {
+      const records = await runDocSurface(tree.corpus, emptyDoc);
+
+      expect(records).toEqual([]);
+    } finally {
+      tree.cleanup();
+    }
+  });
+
+  it('still requires the declared program when the doc DOES carry a transcript block', async () => {
+    const { runDocSurface } = await runner();
+    const tree = await authoredTree();
+    await completeCorpus(tree);
+    const docWithBlock = join(tree.corpus, 'COMPREHENDO-with-block.md');
+    writeFileSync(
+      docWithBlock,
+      '# toy-encoder\n\n## Examples\n\n### A worked example\n\n```console\ntoy-encoder --encode x\n```\n',
+      'utf8',
+    );
+
+    try {
+      await expect(runDocSurface(tree.corpus, docWithBlock)).rejects.toThrow(/toy-encoder/);
+    } finally {
+      tree.cleanup();
+    }
+  });
+
+  // A block this gate has NO executor for at all (neither a shell transcript
+  // nor a `python` source block) pays neither precondition: nothing here
+  // would ever spawn `toy-encoder` OR an interpreter, so requiring either is
+  // the same "precondition with no test behind it" the zero-blocks case
+  // above already refuses. The block itself still fails, naming why, same
+  // as "fails a block in a language it has no executor for" above.
+  it('requires no program at all when every block is a language this gate cannot run', async () => {
+    const { runDocSurface } = await runner();
+    const tree = await authoredTree();
+    await completeCorpus(tree);
+    const docUnlabelled = join(tree.corpus, 'COMPREHENDO-unlabelled.md');
+    writeFileSync(
+      docUnlabelled,
+      '# toy-encoder\n\n## Examples\n\n### A worked example\n\n```\ntoy-encoder --encode x\n```\n',
+      'utf8',
+    );
+
+    try {
+      const records = await runDocSurface(tree.corpus, docUnlabelled);
+
+      expect(records).toHaveLength(1);
+      expect(records[0]?.pass).toBe(false);
+      expect(records[0]?.output).toContain('an unlabelled fence has no executor');
+    } finally {
+      tree.cleanup();
+    }
   });
 });

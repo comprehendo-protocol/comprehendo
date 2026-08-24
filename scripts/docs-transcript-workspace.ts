@@ -30,6 +30,14 @@ import { PreconditionError, WorkspaceError } from './docs-code-blocks.ts';
 /** The executable under test. Overridable so CI can point at a pinned build. */
 const SURFACE_PATH = process.env['COMPREHENDO_FFMPEG'] ?? '';
 
+/**
+ * The interpreter a `python`-language worked example runs against. Same
+ * override name `test/helpers/openai-python-witnesses.ts` uses for the
+ * corpus's own induction, so one env var pins both against the same real
+ * install.
+ */
+const PYTHON_PATH = (): string => process.env['COMPREHENDO_PYTHON'] ?? 'python3';
+
 /** How long one documented invocation may take before it is a failure. */
 const TIMEOUT = 120_000;
 
@@ -266,3 +274,50 @@ export const fixtureCache = (): { readonly path: string; readonly cleanup: () =>
   const path = mkdtempSync(join(tmpdir(), 'comprehendo-37-cache-'));
   return { path, cleanup: (): void => rmSync(path, { recursive: true, force: true }) };
 };
+
+/**
+ * The real interpreter, or the sentence CI owes. Same never-a-skip contract
+ * as `requireProgram`, kept separate because a `python`-language block needs
+ * no `declared_schema.surface` CLI at all: the interpreter IS the program,
+ * and a corpus whose examples are all shell transcripts never pays this
+ * precondition.
+ */
+export function requirePython(): void {
+  try {
+    execFileSync(PYTHON_PATH(), ['--version'], { encoding: 'utf8', stdio: 'pipe' });
+  } catch (cause) {
+    throw new PreconditionError(
+      `this gate executes the corpus's own Python examples against a real interpreter and found none ` +
+        `(or COMPREHENDO_PYTHON points at nothing runnable): ${(cause as Error).message}`,
+    );
+  }
+}
+
+/**
+ * One `python`-language worked example, run as a real script rather than a
+ * line-by-line transcript: unlike ffmpeg's argv-shaped invocations, a Python
+ * failure is provoked by a whole snippet (construct an object, THEN call a
+ * method on it), the same multi-step shape `apply` cannot express either
+ * (corpora/openai-python's README). The snippet quoted in the doc is written
+ * to disk and run for real, in its own fresh workspace, no operand parsing
+ * needed because there are no operands: the block IS the program.
+ */
+export function invokeSource(code: string): Invocation {
+  const site = mkdtempSync(join(tmpdir(), 'comprehendo-37-src-'));
+  try {
+    const file = join(site, 'example.py');
+    writeFileSync(file, code, 'utf8');
+    const result = spawnSync(PYTHON_PATH(), [file], {
+      cwd: site,
+      encoding: 'utf8',
+      stdio: ['ignore', 'ignore', 'pipe'],
+      timeout: TIMEOUT,
+    });
+    if (result.error !== undefined) {
+      return Object.freeze({ status: -1, stderr: '', unrunnable: result.error.message });
+    }
+    return Object.freeze({ status: result.status ?? -1, stderr: result.stderr });
+  } finally {
+    rmSync(site, { recursive: true, force: true });
+  }
+}

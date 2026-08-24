@@ -73,6 +73,20 @@ jobs:
           sudo apt-get install -y ffmpeg
           ffmpeg -version | head -1
 
+      # corpora/openai-python's `python`-language examples (Docs As Tests
+      # [37]'s second worked-example shape, a real script rather than an argv
+      # transcript) run against a real interpreter with the real package
+      # installed, same as the ffmpeg step above: never a double, never
+      # remembered text. Pinned to the corpus's own declared range
+      # (`>=2.35 <4`, corpora/openai-python/manifest.json).
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install the Python package a corpus documents
+        run: python3 -m pip install "openai>=2.35,<4"
+
       - name: Install
         run: |
           npm ci --prefix packages/core

@@ -28,7 +28,22 @@
 // allowlist, a shell metacharacter, media the declared workspace does not
 // carry: each one FAILS naming the block. A gate that skips what it cannot run
 // reports green having verified nothing, which is the failure this feature
-// exists to prevent (the CC4 [26] call, made again here).
+// exists to prevent (the CC4 [26] call, made again here). A corpus that
+// carries no fenced examples at all is the one honest exception: there is
+// nothing here for this gate to execute wrongly, so it passes vacuously
+// rather than failing a precondition (`declared_schema.surface`, an
+// interpreter) nothing would ever spawn.
+//
+// TWO WORKED-EXAMPLE SHAPES. `sh`/`shell`/`bash`/`console` are argv
+// transcripts, one real command line per step, matched against a CLI's own
+// operand grammar (ffmpeg Corpus [32]). `python` is a SOURCE block: the whole
+// fence is one real script, run as-is, no operand parsing, because a Python
+// failure is provoked by a multi-step shape (construct, then call) `apply`
+// and an argv transcript can't express either (corpora/openai-python's
+// README explains why every one of its fixes is a runbook for the same
+// reason). Each shape pays its own precondition: a doc with no `console`
+// block never requires the declared CLI, a doc with no `python` block never
+// requires an interpreter.
 //
 // EXIT CODES ARE THE CONTRACT, the same vocabulary Corpus Generator [17] and
 // COMPREHENDO.md Generator [35] already use:
@@ -54,8 +69,24 @@ import {
   reportLines,
 } from './docs-code-blocks.ts';
 import type { BlockRecord, DocsCodeBlock, TranscriptStep } from './docs-code-blocks.ts';
-import { fixtureCache, invoke, programsFor, requireProgram } from './docs-transcript-workspace.ts';
+import {
+  fixtureCache,
+  invoke,
+  invokeSource,
+  programsFor,
+  requireProgram,
+  requirePython,
+} from './docs-transcript-workspace.ts';
 import type { Program } from './docs-transcript-workspace.ts';
+
+/**
+ * A worked example written as source rather than a shell transcript: the
+ * block IS the program (`docs-transcript-workspace.ts#invokeSource`), no
+ * argv, no operand-fixture resolution. `sh`/`shell`/`bash`/`console` stay
+ * argv-transcripts (ffmpeg Corpus [32], a real CLI); `python` is the first
+ * of this second shape (openai-python Corpus, a real importable package).
+ */
+const SOURCE_LANGUAGES: readonly string[] = Object.freeze(['python']);
 
 import type { CorpusSource } from '../packages/registry-tools/dist/corpus-format.js';
 import type { FingerprintEntry } from '../packages/registry-tools/dist/fingerprint-facets.js';
@@ -229,6 +260,21 @@ function executeBlock(block: DocsCodeBlock, context: Context): BlockRecord {
       pass,
       output,
     });
+  if (SOURCE_LANGUAGES.includes(block.language)) {
+    const said = (text: string): string => `${block.title}\n  ${text}`;
+    const licensed = licensedCode(block.title, context.codes);
+    try {
+      const run = invokeSource(block.code);
+      if (run.unrunnable !== undefined) {
+        return record(false, said(`could not run the interpreter: ${run.unrunnable}`));
+      }
+      const verdict = judge(run, licensed, context, said);
+      return record(verdict.ok, verdict.note);
+    } catch (error) {
+      if (error instanceof TranscriptError) return record(false, said(error.message));
+      throw error;
+    }
+  }
   if (!isTranscriptLanguage(block.language)) {
     const named = block.language === '' ? 'an unlabelled fence' : `language ${block.language}`;
     const why = `${named} has no executor in this gate, so it is not run and not skipped`;
@@ -281,13 +327,32 @@ export async function runDocSurface(
     buildFingerprintIndex: (source: Iterable<unknown>) => FingerprintIndex;
   }>('registry-tools', 'fingerprint');
   const corpus = format.parse(corpusDir);
+  const blocks = extractBlocks(docFile, readFileSync(docFile, 'utf8'));
+  // A corpus with zero fenced examples has nothing this gate could execute
+  // wrongly: this project's own COMPREHENDO.md Generator [35] deliberately
+  // renders no fenced blocks for a target this gate's own program/fixture
+  // resolution does not yet generalize to (docs-transcript-workspace.ts's
+  // program resolution and fixture table are still ffmpeg-shaped; see this
+  // feature's Known Issues). Requiring a program that nothing here would
+  // ever spawn is a precondition with no test behind it, never checked.
+  // A corpus that DOES carry examples still gets the full requirement,
+  // unchanged.
+  if (blocks.length === 0) return Object.freeze([]);
+  const needsInterpreter = blocks.some((block) => SOURCE_LANGUAGES.includes(block.language));
+  const needsTranscriptProgram = blocks.some((block) => isTranscriptLanguage(block.language));
   const surface = corpus.declaredSchema?.surface ?? '';
-  if (surface === '') {
+  if (needsTranscriptProgram && surface === '') {
     throw new PreconditionError(
       `${corpusDir} declares no call surface, so nothing says what its examples invoke`,
     );
   }
-  requireProgram(surface);
+  // Each precondition pays only for the shape of block this doc actually
+  // carries: a corpus whose examples are all `python`-language scripts never
+  // requires the `declared_schema.surface` CLI (openai-python has none of
+  // its own, see corpora/openai-python/README.md), and a corpus whose
+  // examples are all shell transcripts never requires an interpreter.
+  if (needsTranscriptProgram) requireProgram(surface);
+  if (needsInterpreter) requirePython();
   const cache = fixtureCache();
   const context: Context = {
     index: finger.buildFingerprintIndex(gate.fingerprintsOf(corpus)),
@@ -298,7 +363,7 @@ export async function runDocSurface(
   };
   try {
     return Object.freeze(
-      extractBlocks(docFile, readFileSync(docFile, 'utf8')).map((block) =>
+      blocks.map((block) =>
         executeBlock(block, context),
       ),
     );

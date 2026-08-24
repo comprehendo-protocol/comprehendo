@@ -6,7 +6,7 @@ path: Distribution / COMPREHENDO.md Generator
 source_files: [scripts/generate-comprehendo-md.ts, scripts/comprehendo-md.ts]
 status: complete
 phase: all
-last_synced: 2026-08-22
+last_synced: 2026-08-23
 initiative: comprehendo
 wave: comprehendo-wave-7
 depends_on: [13-docs-engine, 28-corpus-format]
@@ -70,16 +70,22 @@ in this tool.
 
 `COMPREHENDO.md` content: package identity, the completeness contract
 statement, the priming pointer, a generated summary of the corpus's topic
-index, and the corpus's own worked examples quoted verbatim in `sh`-fenced
+index, and the corpus's own worked examples quoted verbatim in fenced
 blocks, sourced entirely from the packed corpus and Docs Engine [13]
 metadata, no separately-authored prose.
 
 The examples section was added by Docs As Tests [37], which this feature
 deferred the decision to: it executes every one of those blocks against the
 real program in CI, so a worked example that stopped working is a build
-failure. The fence info-string is a rendering convention (like the table
-escaping), not authored content; it is what gives [37] a real source for the
-block's language instead of an assumption.
+failure. The fence info-string was originally a pure rendering convention
+(every topic source fence was unlabelled, and this feature always stamped
+`sh`); it is now the AUTHOR'S OWN fence tag, carried through unchanged
+(`example.language`, Corpus Format [28]), because [37] gained a second real
+execution shape (`python`, a source block run as a script rather than a
+shell transcript, proven against `corpora/openai-python`) that needs to be
+told apart from a transcript at render time, not guessed. `sh` stays the
+default: an unlabelled source fence (every example authored before this
+existed) renders identically to before, byte for byte.
 
 ## API/Interface
 
@@ -139,6 +145,40 @@ lines only one side carries. Module exports for the gate:
   abbreviation. None does; the result stays deterministic either way.
 
 ## Fixed Issues
+
+### The example fence's language was always overwritten to `sh`, which stopped being true generally the moment a second corpus needed it (fixed 2026-08-23)
+
+Found building `corpora/openai-python` (Docs As Tests [37]'s second real
+worked-example shape): `EXAMPLE_LANGUAGE = 'sh'` was stamped onto every
+rendered example fence unconditionally, and Corpus Format [28]'s own
+example parser (`corpus-source.ts`) never captured the source topic
+fence's own info-string at all, so there was no way for an author to say
+"this one is a real script, not a shell transcript." A corpus whose
+worked examples are Python source (openai-python) had no honest way to
+render one at all.
+
+- Fixed by carrying the author's own fence tag through: `corpus-
+  source.ts`'s example regex now captures the language group,
+  `CorpusExample.language` is an OPTIONAL field, and this generator
+  renders `example.language ?? EXAMPLE_LANGUAGE` instead of the
+  hardcoded constant.
+- The field is deliberately OMITTED, never the literal `sh`, when the
+  source fence was unlabelled or explicitly `sh`: CC5 [02]'s topic
+  budget is measured on this exact packed JSON (`gate-budget.ts`), and
+  spelling out what an unlabelled fence already meant would charge
+  every example ever authored a real token cost for saying nothing new.
+  Verified live: `corpora/ffmpeg`'s own generated `COMPREHENDO.md` is
+  byte-identical before and after (`--check` passes), and its budget
+  check, which genuinely regressed to 607/600 on `docs.topics.inputs`
+  with an EARLIER, non-optional version of this fix, is back to its
+  original measurement once the field went optional.
+- Mutation-verified: reverting the optional-field change reproduces the
+  607/600 budget failure exactly; restored, `packages/registry-tools`
+  458/458, `packages/core` 548/548, both corpora's `COMPREHENDO.md`
+  regenerate with zero diff from committed, and
+  `scripts/run-docs-code-blocks.ts` passes both corpora for real
+  (ffmpeg 15/15, openai-python 3/3, the first real proof this
+  generator's fence-language field carries meaning beyond ffmpeg).
 
 ### The "invents nothing" test's mutation was incomplete, and its claim overclaimed what it proved (fixed 2026-08-22)
 

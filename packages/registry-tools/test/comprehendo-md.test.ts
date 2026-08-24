@@ -267,6 +267,43 @@ describe('the rendered file is derived from the real corpus, never authored besi
       copy.cleanup();
     }
   });
+
+  // Fixed 2026-08-23 (this feature's own Fixed Issues): the fence's own
+  // info-string is now the author's, not always the hardcoded `sh`.
+  it('renders a worked example under its own authored fence language, not the sh default', async () => {
+    const { renderFromCorpus } = await generator();
+    const copy = corpusCopy();
+    try {
+      const topic = join(copy.dir, 'topics', 'inputs.md');
+      const body = readFileSync(topic, 'utf8');
+      const marker = '### A synthetic input, so a reproduction needs no media file\n\n```\n';
+      expect(body).toContain(marker);
+      writeFileSync(topic, body.replace(marker, marker.replace('```\n', '```console\n')));
+      const other = await renderFromCorpus(copy.dir);
+
+      expect(other).toContain('### `inputs`: A synthetic input, so a reproduction needs no media file\n\n```console\n');
+    } finally {
+      copy.cleanup();
+    }
+  });
+
+  it('renders an unlabelled example fence as sh, unchanged, at zero extra CC5 budget cost', async () => {
+    // The regression this guards: an earlier version of the language field
+    // was NOT optional (always present, defaulting to the literal 'sh'),
+    // which added a real `"language":"sh"` to every example's packed JSON
+    // and pushed corpora/ffmpeg's own docs.topics.inputs over its CC5 [02]
+    // budget (607/600, found running the full suite). The field must render
+    // 'sh' for an unlabelled fence while costing nothing in the packed form
+    // the budget gate actually measures.
+    const { parse, pack } = await import('../src/corpus-format.js');
+    const packed = pack(parse(CORPUS));
+    const inputsExamples = packed.docs.topics['inputs']?.examples ?? [];
+    expect(inputsExamples.length).toBeGreaterThan(0);
+    for (const example of inputsExamples) {
+      expect('language' in example).toBe(false);
+    }
+    expect(rendered).toContain('### `inputs`: FFMPEG_INPUT_NOT_FOUND, the path is resolved before anything is decoded\n\n```sh\n');
+  });
 });
 
 describe('the committed COMPREHENDO.md', () => {

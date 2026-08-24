@@ -59,6 +59,17 @@ export interface CorpusVocabularies {
 
 export interface CorpusExample {
   readonly title: string;
+  /**
+   * The fence's own info-string, e.g. `python`. Omitted, never the literal
+   * `sh`, when the source fence was unlabelled or explicitly `sh`: an
+   * ordinary shell-transcript example (every example every corpus authored
+   * before this field existed) means exactly what it always meant, and
+   * should not pay a real CC5 [02] budget cost, measured on this exact
+   * packed JSON (`gate-budget.ts`), for saying so explicitly. A corpus
+   * whose examples are a different real shape (`python`, so far) pays that
+   * cost, because the field is doing real work there.
+   */
+  readonly language?: string;
   readonly code: string;
 }
 
@@ -183,7 +194,7 @@ function readVocabularies(value: unknown): CorpusVocabularies {
   });
 }
 
-const EXAMPLE = /^### (.+?)\r?\n+```[a-z]*\r?\n([\s\S]*?)```/gm;
+const EXAMPLE = /^### (.+?)\r?\n+```([a-z]*)\r?\n([\s\S]*?)```/gm;
 
 /** The prose is the summary; anything under `## Examples` is worked examples. */
 function readBody(body: string): { summary: string; examples: CorpusExample[] } {
@@ -193,12 +204,25 @@ function readBody(body: string): { summary: string; examples: CorpusExample[] } 
     // 17 writes an unfilled summary as an HTML comment carrying the sentinel;
     // both spellings mean the same unwritten field.
     summary: summary === '<!-- status: stub -->' || summary === '' ? STUB : summary,
-    examples: [...rest.matchAll(EXAMPLE)].map((match) =>
-      Object.freeze({
+    examples: [...rest.matchAll(EXAMPLE)].map((match) => {
+      // An author's own fence tag, carried through rather than assumed:
+      // Docs As Tests [37] executes a `python` fence as a real script and a
+      // `sh`/unlabelled one as a real argv transcript, two genuinely
+      // different shapes (corpora/openai-python's README explains why an
+      // object-oriented package needs the first). An unlabelled fence keeps
+      // meaning the same thing it always has, a shell transcript, so it (and
+      // an explicit `sh`) is dropped rather than spelled out: the field is
+      // omitted, never carrying the literal `sh`, so every example authored
+      // before this field existed costs not one extra token of CorpusExample's
+      // own CC5 [02] budget (measured on this exact packed JSON).
+      const declared = match[2] ?? '';
+      const language = declared === '' || declared === 'sh' ? undefined : declared;
+      return Object.freeze({
         title: (match[1] ?? '').trim(),
-        code: (match[2] ?? '').replace(/\s+$/, ''),
-      }),
-    ),
+        ...(language === undefined ? {} : { language }),
+        code: (match[3] ?? '').replace(/\s+$/, ''),
+      });
+    }),
   };
 }
 

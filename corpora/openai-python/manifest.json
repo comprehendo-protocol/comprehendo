@@ -1,0 +1,15 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/openai-python",
+  "target": {
+    "package": "openai",
+    "version": "3.3.1",
+    "versions": [">=2.35 <4"],
+    "source": "pypi"
+  },
+  "declared_schema": {
+    "surface": "openai",
+    "operations": ["OpenAI", "ChatCompletion", "Completion", "Embedding", "Moderation"]
+  }
+}
