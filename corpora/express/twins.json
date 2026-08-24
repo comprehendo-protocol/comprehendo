@@ -1,0 +1,77 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/express",
+  "twins": [
+    {
+      "id": "app-del-removed",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "EXPRESS_APP_DEL_REMOVED",
+      "reason": "app.del() was a deprecated alias for app.delete(), kept around in Express 4 because `delete` is a reserved word in some very old JavaScript engines. Express 5's own migration guide lists it under \"Removed\", not \"Deprecated\": the alias is gone entirely, and calling it throws before the route is ever registered, before any request could reach it. Code following an Express 4-era tutorial or copied from older training data that still writes app.del(...) fails at startup, not at request time, which is at least an honest, loud failure rather than a route that silently never matches.",
+      "docs": "removed-methods",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*app.del is not a function*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "req-param-removed",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "EXPRESS_REQ_PARAM_REMOVED",
+      "reason": "req.param(name) (singular, a method that checked route params, then the body, then the query string, in that order) was deprecated for years and is fully removed in Express 5's own migration guide, distinct from req.params (plural, an object, still real and unchanged). Calling the removed method throws inside the handler, at request time: the route matches, the request reaches real application code, and only then does the call fail, which is a later and more confusing failure point than a startup-time error.",
+      "docs": "removed-methods",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*req.param is not a function*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "bare-wildcard-removed",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "EXPRESS_BARE_WILDCARD_REMOVED",
+      "reason": "Express 5 bumped its path-matching dependency from path-to-regexp v6 to v8, a real, documented breaking change to route pattern syntax, not an Express-authored change. A bare `*` wildcard, valid and common in every Express 4-era route table (`app.get('*', ...)` as a catch-all), is no longer a complete pattern on its own in v8's grammar: a wildcard segment now needs a name, the same way a named parameter always has. The failure happens at route REGISTRATION time (when app.get/app.use is called), before the server ever starts serving requests, so it surfaces immediately rather than on the first request that happens to hit the route.",
+      "docs": "route-pattern-syntax",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Missing parameter name at index 1:*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "optional-param-syntax-removed",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "EXPRESS_OPTIONAL_PARAM_SYNTAX_REMOVED",
+      "reason": "The same path-to-regexp v8 bump removes the `:name?` shorthand for an optional route parameter, also valid and common in Express 4 route tables. path-to-regexp v8 does not read a trailing `?` as \"optional\" at all; it is simply not valid syntax at that position, and registering the route throws immediately, at registration time, the same way the bare-wildcard change does.",
+      "docs": "route-pattern-syntax",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*Unexpected ? at index*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "res-send-number-status-drift",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "EXPRESS_RES_SEND_NUMBER_NO_LONGER_SETS_STATUS",
+      "reason": "In Express 4, res.send(404) (a bare number) was a deprecated ALIAS for res.sendStatus(404): it really set the response status code to 404 and printed a real deprecation warning naming the replacement. In Express 5 the alias is gone, with no warning and no error of any kind: the number is sent as the literal response BODY text instead (a real HTTP response with status 200 and body \"404\"), silently, which is a real, wrong result an agent or a test could easily read as success. Because nothing throws, there is no exception for a runtime-error twin to catch; the only way to catch this before it produces a wrong response is recognizing the source pattern itself.",
+      "docs": "res-send-status-codes",
+      "orphaned": false,
+      "fingerprint": {
+        "exception": "",
+        "message_pattern": "*res.send(404)*",
+        "kind": "static-pattern"
+      }
+    }
+  ]
+}

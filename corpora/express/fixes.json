@@ -1,0 +1,42 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/express",
+  "fixes": {
+    "app-del-removed": [
+      {
+        "title": "Runbook: use app.delete(...) directly, the real method app.del() only ever aliased",
+        "docs": "removed-methods",
+        "confidence": "high"
+      }
+    ],
+    "req-param-removed": [
+      {
+        "title": "Runbook: read the value directly off req.params (plural), req.body, or req.query, whichever one the removed method used to check for this call site, a source edit that also makes explicit which source the value actually came from",
+        "docs": "removed-methods",
+        "confidence": "high"
+      }
+    ],
+    "bare-wildcard-removed": [
+      {
+        "title": "Runbook: name the wildcard segment (*splat, or any other name), path-to-regexp v8's real required syntax, a source edit to the route string",
+        "docs": "route-pattern-syntax",
+        "confidence": "high"
+      }
+    ],
+    "optional-param-syntax-removed": [
+      {
+        "title": "Runbook: register two routes (with and without the segment) or use an explicit optional-segment group path-to-regexp v8 actually supports, a source edit to the route string, never a mechanical drop-in for the old shorthand",
+        "docs": "route-pattern-syntax",
+        "confidence": "high"
+      }
+    ],
+    "res-send-number-status-drift": [
+      {
+        "title": "Runbook: use res.sendStatus(code) for a bare status code, res.send(...) for a real response body, a source edit that also makes the call's actual intent explicit",
+        "docs": "res-send-status-codes",
+        "confidence": "high"
+      }
+    ]
+  }
+}

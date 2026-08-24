@@ -1,0 +1,15 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/express",
+  "target": {
+    "package": "express",
+    "version": "5.2.1",
+    "versions": [">=5 <6"],
+    "source": "npm"
+  },
+  "declared_schema": {
+    "surface": "express",
+    "operations": ["get", "post", "put", "delete", "use", "listen", "param", "send", "sendStatus"]
+  }
+}

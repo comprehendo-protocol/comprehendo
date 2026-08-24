@@ -1,0 +1,31 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/express",
+  "topics": [
+    {
+      "topic": "removed-methods",
+      "file": "topics/removed-methods.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "route-pattern-syntax",
+      "file": "topics/route-pattern-syntax.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "res-send-status-codes",
+      "file": "topics/res-send-status-codes.md",
+      "status": "ready",
+      "orphaned": false
+    },
+    {
+      "topic": "async-error-handling",
+      "file": "topics/async-error-handling.md",
+      "status": "ready",
+      "orphaned": false
+    }
+  ]
+}
