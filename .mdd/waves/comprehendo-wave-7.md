@@ -23,3 +23,4 @@ Estimate: 3-4 days.
 | 38 | Cold-Agent Benchmark | COMPONENT | 36, 22, 32, 10 |
 | 39 | Package Name & Registry Reservations | task | (none) |
 | 40 | Registry Website | COMPONENT | 28, 29, 36 |
+| 41 | Corpus Discovery CLI | COMPONENT | 31, 27 |
