@@ -31,6 +31,7 @@ import {
   signatureOf,
   type FingerprintCandidate,
   type FingerprintEntry,
+  type FingerprintKind,
   type IndexDefect,
 } from './fingerprint-facets.js';
 
@@ -209,12 +210,18 @@ function identityDefects(entries: readonly FingerprintEntry[]): readonly IndexDe
 }
 
 /**
- * Compile the static index. Refuses on a defective entry
- * (`FingerprintIndexError`) and on any fingerprint claimed by two different
- * corpus entries (`FingerprintCollisionError`), naming the packages. An
- * identical entry declared twice is one entry, not a collision.
+ * Compile one static index, entries of exactly one `kind` only, so a
+ * `static-pattern` fingerprint and a `runtime-error` fingerprint can never
+ * collide with or match against each other even if their text happens to
+ * coincide: two separate indices, never one shared one. Refuses on a
+ * defective entry (`FingerprintIndexError`) and on any fingerprint (within
+ * that one kind) claimed by two different corpus entries
+ * (`FingerprintCollisionError`), naming the packages. An identical entry
+ * declared twice is one entry, not a collision. Entries of the OTHER kind
+ * are silently excluded from THIS index (they belong to their own), not a
+ * defect: a corpus mixing both kinds is normal, see `corpora/zod`.
  */
-export function buildFingerprintIndex(source: Iterable<unknown>): FingerprintIndex {
+function buildIndexOfKind(source: Iterable<unknown>, kind: FingerprintKind): FingerprintIndex {
   const defects: IndexDefect[] = [];
   const entries: FingerprintEntry[] = [];
   let at = 0;
@@ -222,7 +229,16 @@ export function buildFingerprintIndex(source: Iterable<unknown>): FingerprintInd
     const normalized = normalizeEntry(value, `entry[${at}]`);
     at += 1;
     if (Array.isArray(normalized)) defects.push(...(normalized as IndexDefect[]));
-    else entries.push(normalized as FingerprintEntry);
+    // A kind-less entry defaults to 'runtime-error' (the meaning it always
+    // had, `fingerprint-facets.ts`'s own default), read here rather than
+    // stamped onto the entry: the compiled entry's own shape stays exactly
+    // what `normalizeEntry` produced, kind field present only when the
+    // corpus actually declared one, so `buildFingerprintIndex`'s output is
+    // byte-identical to before this function existed for every corpus that
+    // predates `static-pattern`.
+    else if (((normalized as FingerprintEntry).kind ?? 'runtime-error') === kind) {
+      entries.push(normalized as FingerprintEntry);
+    }
   }
   defects.push(...identityDefects(entries));
   if (defects.length > 0) throw new FingerprintIndexError(defects);
@@ -239,6 +255,32 @@ export function buildFingerprintIndex(source: Iterable<unknown>): FingerprintInd
   });
 }
 
+/**
+ * Compile the static RUNTIME-ERROR index: what `comprehend(raw)` matches a
+ * caught error or stderr text against. Unchanged in every observable way
+ * from before `static-pattern` had a real index of its own: a `kind`-less
+ * entry (every fingerprint ever authored before this field existed) still
+ * defaults to `runtime-error` (`fingerprint-facets.ts`'s own default), so
+ * this function's signature, behavior and every existing caller are
+ * untouched.
+ */
+export function buildFingerprintIndex(source: Iterable<unknown>): FingerprintIndex {
+  return buildIndexOfKind(source, 'runtime-error');
+}
+
+/**
+ * Compile the static STATIC-PATTERN index: source-code shapes a corpus
+ * catalogs as a known bad pattern, never a caught runtime error. Genuinely
+ * separate from `buildFingerprintIndex`'s index (see `buildIndexOfKind`'s
+ * own doc for why), so a caller must ask this specific question on purpose;
+ * there is no shared "match anything" call. See `checkPattern` in
+ * `packages/core` for the agent-facing surface this index serves, and
+ * `.mdd/docs/42-static-pattern-matching.md` for the design this resolves.
+ */
+export function buildStaticPatternIndex(source: Iterable<unknown>): FingerprintIndex {
+  return buildIndexOfKind(source, 'static-pattern');
+}
+
 // --- the matcher ------------------------------------------------------------
 
 /**
@@ -246,6 +288,12 @@ export function buildFingerprintIndex(source: Iterable<unknown>): FingerprintInd
  * matches; one survivor is the answer, two or more is an ambiguity and degrades
  * to UNSTRUCTURED with both named (CC10 [20]), and none degrades to
  * UNSTRUCTURED naming whatever was close enough to be considered.
+ *
+ * No kind filter here: `entries` already carries exactly one kind's worth,
+ * decided once at build time by `buildIndexOfKind`. Filtering again here
+ * would be redundant for a runtime-error index and actively WRONG for a
+ * static-pattern one (every entry would be skipped, the index would never
+ * match anything) — this function trusts its caller's own compiled set.
  */
 function match(entries: readonly FingerprintEntry[], raw: unknown): MatchResult {
   const seen = observe(raw);
@@ -253,7 +301,6 @@ function match(entries: readonly FingerprintEntry[], raw: unknown): MatchResult 
   const fullCandidates: FingerprintCandidate[] = [];
   const near: FingerprintCandidate[] = [];
   for (const entry of entries) {
-    if ((entry.kind ?? 'runtime-error') !== 'runtime-error') continue;
     const candidate = judge(entry, seen);
     if (candidate.rejectedOn.length === 0) {
       full.push(entry);

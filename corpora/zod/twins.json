@@ -1,0 +1,59 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/zod",
+  "twins": [
+    {
+      "id": "optional-rejects-null",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "ZOD_OPTIONAL_REJECTS_NULL",
+      "reason": ".optional() widens a schema to also accept `undefined`; it does not widen it to accept `null`. Data that is often `null` rather than absent (a JSON field an API always includes but sometimes sets to null, a database column with no NOT NULL constraint) fails validation the instant it reaches a field marked .optional(), and the failure looks exactly like a normal type mismatch, nothing hints that `undefined` specifically was what this field actually promised to allow. The schema that actually accepts both is .nullish() (undefined OR null); .nullable() alone accepts null but then requires the key to be PRESENT, which is its own, different trap.",
+      "docs": "optional-vs-nullable",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*\"code\": \"invalid_type\"*received null*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "deep-partial-removed",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "ZOD_DEEP_PARTIAL_REMOVED",
+      "reason": ".deepPartial() does not exist in zod v4 at all; it was removed, not renamed or deprecated (zod's own v3-to-v4 migration guide lists it under \"Removed\", not under any deprecated-but-working section, unlike .merge()/.strict()/.passthrough(), which do still work). Code written against zod 3 (the version most training data was written against) that recursively marks a nested schema's fields optional crashes the instant it runs, before any input is even validated: this is a construction-time failure, not a validation-time one. There is no direct replacement; the real fix is restructuring the schema so every field that should be optional is marked so explicitly, one level at a time, or reaching for a schema library extension that reimplements the recursive behavior deliberately.",
+      "docs": "removed-v3-methods",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*.deepPartial is not a function*",
+        "kind": "runtime-error"
+      }
+    },
+    {
+      "id": "required-error-silently-ignored",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "ZOD_REQUIRED_ERROR_PARAM_IGNORED",
+      "reason": "zod v3's error-customization params (required_error, invalid_type_error) are not merely deprecated in v4, they are silently dropped: passing { required_error: \"...\" } to a schema constructor throws nothing, the schema builds without complaint, and the custom message never appears anywhere, not even as a fallback. A field validated against undefined still raises zod's own generic default message (\"Invalid input: expected string, received undefined\"), never the caller's own text. This is the quietest possible failure mode, code that reads as correct, runs without a single warning, and produces a validator that silently does not do the one thing it was written to do. Confirmed live, unchanged across every zod 4.x release checked (4.0.0 through 4.4.3): the params are accepted syntactically (TypeScript's own types still declare them) and ignored functionally. v4's real replacement is the single `error` param (a string, or a function returning one).",
+      "docs": "error-customization-migration",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*required_error:*",
+        "kind": "static-pattern"
+      }
+    },
+    {
+      "id": "record-single-arg-rejected",
+      "status": "ready",
+      "stub_fields": [],
+      "code": "ZOD_RECORD_SINGLE_ARG_REJECTED",
+      "reason": "zod v3's z.record(valueSchema) took one argument (an implicit z.string() key). zod v4's real, current type signature requires two: z.record(keyType, valueType, params?) (confirmed live against the package's own real .d.ts). The one-argument v3 call shape is a real TypeScript compile error against v4's real types (`error TS2554: Expected 2-3 arguments, but got 1`, confirmed live with a real tsc run), not a runtime exception: a build using this shape never reaches the point where anything could be caught and fingerprinted the normal way, which is exactly why this is cataloged as a static, source-shape pattern rather than an induced runtime twin. Code that only ever runs under plain, unchecked JavaScript (no build step, no tsc) does not hit this at all; the schema still works there, which is its own, separate trap the SOURCE PATTERN is written for, not a compiler.",
+      "docs": "record-arity-change",
+      "orphaned": false,
+      "fingerprint": {
+        "message_pattern": "*z.record(z.string())*",
+        "kind": "static-pattern"
+      }
+    }
+  ]
+}

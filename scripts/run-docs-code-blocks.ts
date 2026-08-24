@@ -34,16 +34,26 @@
 // rather than failing a precondition (`declared_schema.surface`, an
 // interpreter) nothing would ever spawn.
 //
-// TWO WORKED-EXAMPLE SHAPES. `sh`/`shell`/`bash`/`console` are argv
-// transcripts, one real command line per step, matched against a CLI's own
-// operand grammar (ffmpeg Corpus [32]). `python` is a SOURCE block: the whole
-// fence is one real script, run as-is, no operand parsing, because a Python
-// failure is provoked by a multi-step shape (construct, then call) `apply`
-// and an argv transcript can't express either (corpora/openai-python's
-// README explains why every one of its fixes is a runbook for the same
-// reason). Each shape pays its own precondition: a doc with no `console`
-// block never requires the declared CLI, a doc with no `python` block never
-// requires an interpreter.
+// THREE RUN-AND-WATCH-IT-FAIL SHAPES, plus one that runs nothing.
+// `sh`/`shell`/`bash`/`console` are argv transcripts, one real command line
+// per step, matched against a CLI's own operand grammar (ffmpeg Corpus
+// [32]). `python`/`javascript` are SOURCE blocks: the whole fence is one
+// real script, run as-is, no operand parsing, because a real failure is
+// provoked by a multi-step shape (construct, then call) `apply` and an
+// argv transcript can't express either (corpora/openai-python's and
+// corpora/mcp-oauth's own READMEs explain why every one of their fixes is
+// a runbook for the same reason). Each of these three pays its own
+// precondition: a doc with no `console` block never requires the declared
+// CLI, a doc with no `python`/`javascript` block never requires that
+// interpreter.
+//
+// `pattern` is the fourth shape and it is not "run and watch it fail" at
+// all: a `static-pattern` fingerprint (zod Corpus, `.mdd/docs/42-static-
+// pattern-matching.md`) matches literal SOURCE TEXT, never a caught error,
+// so there is nothing to spawn and nothing that could "fail" at runtime.
+// A `pattern` block's own code is matched, in-process, against the
+// corpus's real, compiled static-pattern index instead, and it requires no
+// precondition at all, nothing here is ever spawned for it.
 //
 // EXIT CODES ARE THE CONTRACT, the same vocabulary Corpus Generator [17] and
 // COMPREHENDO.md Generator [35] already use:
@@ -97,6 +107,20 @@ const SOURCE_LANGUAGES: Readonly<Record<string, { readonly interpreter: string; 
   javascript: { interpreter: 'node', invoke: invokeJavaScript },
 });
 
+/**
+ * A fourth, genuinely different shape: a `static-pattern` fingerprint (zod
+ * Corpus, the first corpus to carry the kind, `.mdd/docs/42-static-pattern-
+ * matching.md`) matches literal SOURCE TEXT, never a caught error's stderr,
+ * so nothing about `SOURCE_LANGUAGES`' "spawn it and read what it wrote"
+ * contract applies: there is no process whose output could demonstrate a
+ * source-code SHAPE. A `pattern`-language block spawns nothing at all; its
+ * own literal code text is matched against the corpus's real, compiled
+ * static-pattern index (`buildStaticPatternIndex`, the same real artifact
+ * Submission Gate [29] checks for collisions), the way the corpus's own
+ * fingerprint claims it under CC10 [20]'s honest-miss standard, not run.
+ */
+const PATTERN_LANGUAGE = 'pattern';
+
 import type { CorpusSource } from '../packages/registry-tools/dist/corpus-format.js';
 import type { FingerprintEntry } from '../packages/registry-tools/dist/fingerprint-facets.js';
 
@@ -142,6 +166,8 @@ async function built<T>(name: string, module: string): Promise<T> {
 
 interface Context {
   readonly index: FingerprintIndex;
+  /** `static-pattern` fingerprints only, Fingerprint Index & Matcher [21]'s own separate index (see `fingerprint.ts`'s `buildStaticPatternIndex`). */
+  readonly patterns: FingerprintIndex;
   readonly codes: readonly string[];
   readonly programs: readonly Program[];
   readonly surface: string;
@@ -269,6 +295,20 @@ function executeBlock(block: DocsCodeBlock, context: Context): BlockRecord {
       pass,
       output,
     });
+  if (block.language === PATTERN_LANGUAGE) {
+    const said = (text: string): string => `${block.title}\n  ${text}`;
+    const licensed = licensedCode(block.title, context.codes);
+    if (licensed === undefined) {
+      return record(false, said('a pattern block must be titled for the one static-pattern entry it demonstrates'));
+    }
+    const match = context.patterns.match({ message: block.code });
+    const produced = match.outcome === 'matched' ? match.entry.corpusEntryId : undefined;
+    if (produced !== licensed) {
+      const why = `this block's own text routed as ${match.outcome}${produced === undefined ? '' : ` (${produced})`}, not ${licensed}`;
+      return record(false, said(why));
+    }
+    return record(true, said(`matches the corpus's own static-pattern entry for ${licensed}`));
+  }
   const source = SOURCE_LANGUAGES[block.language];
   if (source !== undefined) {
     const said = (text: string): string => `${block.title}\n  ${text}`;
@@ -335,6 +375,7 @@ export async function runDocSurface(
   );
   const finger = await built<{
     buildFingerprintIndex: (source: Iterable<unknown>) => FingerprintIndex;
+    buildStaticPatternIndex: (source: Iterable<unknown>) => FingerprintIndex;
   }>('registry-tools', 'fingerprint');
   const corpus = format.parse(corpusDir);
   const blocks = extractBlocks(docFile, readFileSync(docFile, 'utf8'));
@@ -361,15 +402,19 @@ export async function runDocSurface(
   // Each precondition pays only for the shape of block this doc actually
   // carries: a corpus whose examples are all `python`/`javascript`-language
   // scripts never requires the `declared_schema.surface` CLI (openai-python
-  // and mcp-oauth have none of their own, see their own READMEs), and a
-  // corpus whose examples are all shell transcripts never requires either
-  // interpreter.
+  // and mcp-oauth have none of their own, see their own READMEs), a corpus
+  // whose examples are all shell transcripts never requires either
+  // interpreter, and a `pattern`-language block (zod Corpus) requires
+  // NOTHING at all: nothing is spawned, its own literal text is matched
+  // against the corpus's own real, already-in-process static-pattern index.
   if (needsTranscriptProgram) requireProgram(surface);
   if (needsPython) requirePython();
   if (needsNode) requireNode();
   const cache = fixtureCache();
+  const entries = gate.fingerprintsOf(corpus);
   const context: Context = {
-    index: finger.buildFingerprintIndex(gate.fingerprintsOf(corpus)),
+    index: finger.buildFingerprintIndex(entries),
+    patterns: finger.buildStaticPatternIndex(entries),
     codes: corpus.twins.map((twin) => twin.code),
     programs: programsFor(surface),
     surface,

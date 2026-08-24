@@ -1,0 +1,15 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/zod",
+  "target": {
+    "package": "zod",
+    "version": "4.4.3",
+    "versions": [">=4 <5"],
+    "source": "npm"
+  },
+  "declared_schema": {
+    "surface": "zod",
+    "operations": ["object", "string", "record", "intersection"]
+  }
+}

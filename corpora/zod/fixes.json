@@ -1,0 +1,35 @@
+{
+  "comprehendo": "0.1",
+  "corpus_authoring": 1,
+  "provider": "@comprehendo/zod",
+  "fixes": {
+    "optional-rejects-null": [
+      {
+        "title": "Runbook: use .nullish() to accept both null and undefined, or .nullable() if the key must always be present, which one is correct is a decision about the real data shape",
+        "docs": "optional-vs-nullable",
+        "confidence": "high"
+      }
+    ],
+    "deep-partial-removed": [
+      {
+        "title": "Runbook: mark each field optional explicitly, one level at a time, there is no direct drop-in replacement for the recursive v3 behavior",
+        "docs": "removed-v3-methods",
+        "confidence": "high"
+      }
+    ],
+    "required-error-silently-ignored": [
+      {
+        "title": "Runbook: replace required_error (and invalid_type_error) with the single error param zod v4 actually reads, a source edit, not a callable fix",
+        "docs": "error-customization-migration",
+        "confidence": "high"
+      }
+    ],
+    "record-single-arg-rejected": [
+      {
+        "title": "Runbook: add the explicit key schema as z.record's first argument (z.record(z.string(), valueSchema)), a source edit, not a callable fix",
+        "docs": "record-arity-change",
+        "confidence": "high"
+      }
+    ]
+  }
+}

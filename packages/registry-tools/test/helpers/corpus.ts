@@ -45,7 +45,11 @@ export const NO_DECODE_DELEGATE: FingerprintEntry = {
   corpusEntryId: 'NO_DECODE_DELEGATE',
 };
 
-/** Indexed, never run against a caught error: kind is an open question [21]. */
+/**
+ * `static-pattern` kind: its own separate index (`buildStaticPatternIndex`),
+ * never `buildFingerprintIndex`'s. Resolved [21]; see `corpora/zod`, the
+ * first real corpus this kind ships in.
+ */
 export const ZOD_PARSE_UNGUARDED: FingerprintEntry = {
   package: '@comprehendo/zod',
   errorClass: 'ZodError',

@@ -15,6 +15,9 @@ import {
 } from '../src/fingerprint.js';
 import { CORPUS, caught } from './helpers/corpus.js';
 
+/** CORPUS's own runtime-error count: every entry except ZOD_PARSE_UNGUARDED. */
+const RUNTIME_ERROR_COUNT = CORPUS.filter((entry) => (entry.kind ?? 'runtime-error') === 'runtime-error').length;
+
 describe('the index builds deterministically from declared fingerprints', () => {
   test('the same entries in a different input order produce an identical artifact', () => {
     const forward = serializeIndex(buildFingerprintIndex(CORPUS));
@@ -58,7 +61,7 @@ describe('the index is static: compiled once, never learned', () => {
     }
 
     expect(serializeIndex(index)).toBe(before);
-    expect(index.entries).toHaveLength(6);
+    expect(index.entries).toHaveLength(RUNTIME_ERROR_COUNT);
   });
 });
 
