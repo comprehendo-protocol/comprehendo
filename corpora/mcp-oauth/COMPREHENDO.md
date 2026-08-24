@@ -30,7 +30,7 @@ comes back UNDOCUMENTED, never as a guess.
 
 | Topic | Answers | See also |
 |---|---|---|
-| `claude-connector-oauth` | `claude.ai`'s personal "Add custom connector" dialog exposes exactly four fields: Name, Remote MCP server URL, OAuth Client ID (optional), OAuth Client Secret (optional). | `unregistered-client`, `discovery-and-deployment` |
+| `claude-connector-oauth` | This is about `claude.ai`'s own web "Add custom connector" dialog, a different integration path from Claude Code's MCP setup (`.mcp.json`, `claude mcp add`), which commonly needs no auth (local stdio, or a remote server you already trust). | `unregistered-client`, `discovery-and-deployment` |
 | `unregistered-client` | The SDK's own `/authorize` handler looks up `client_id` in `provider.clientsStore` and rejects before your own `provider.authorize()` ever runs, if it resolves to nothing. | `claude-connector-oauth`, `redirect-uri-mismatch` |
 | `redirect-uri-mismatch` | `client_id` resolved to a real, registered client, but this request's `redirect_uri` is not one that client actually registered (loopback URIs get RFC 8252 SS7.3's port relaxation; every other host needs an exact match, never `startsWith`). | `unregistered-client`, `claude-connector-oauth` |
 | `pkce-mismatch` | `/token` recomputes `SHA256(code_verifier)` and compares it against the `code_challenge` recorded when the code was issued; a mismatch means the caller sent a different `code_verifier` than the one whose challenge went to `/authorize`, usually a fresh PKCE pair generated for a retry instead of reusing the original. | `unsupported-grant-type`, `claude-connector-oauth` |

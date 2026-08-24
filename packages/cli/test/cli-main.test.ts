@@ -68,6 +68,34 @@ describe('argv dispatch', () => {
     expect(lines[0]).toContain('no comprehendo corpus published for totally-not-a-real-package-xyz-123');
   });
 
+  it('routes docs to this package too, real local discovery, no network', async () => {
+    const lines: string[] = [];
+    const code = await run(['docs', 'totally-not-an-installed-package-xyz-123'], (line) => lines.push(line));
+
+    // No corpus installed for this package in the real cwd this test runs
+    // from: an honest empty index, exit 0, the same "nothing here, no
+    // throw" answer runDocs's own tests assert directly.
+    expect(code).toBe(0);
+    expect(lines[0]).toContain('totally-not-an-installed-package-xyz-123: 0 topic(s)');
+  });
+
+  it('docs with a query and nothing installed exits 1, mirroring add\'s not-found convention', async () => {
+    const lines: string[] = [];
+    const code = await run(['docs', 'totally-not-an-installed-package-xyz-123', 'anything'], (line) =>
+      lines.push(line),
+    );
+
+    expect(code).toBe(1);
+    expect(lines[0]).toContain('no installed comprehendo corpus answers this');
+  });
+
+  it('rejects an unknown docs flag and a missing target, both exit 2, neither a stack', async () => {
+    const lines: string[] = [];
+
+    expect(await run(['docs'], (line) => lines.push(line))).toBe(2);
+    expect(await run(['docs', 'pkg', 'query', 'extra'], (line) => lines.push(line))).toBe(2);
+  });
+
   it('delegates every other verb to @comprehendo/core unchanged', async () => {
     const lines: string[] = [];
     const code = await run(['scan'], (line) => lines.push(line));
@@ -84,10 +112,11 @@ describe('argv dispatch', () => {
 
     expect(code).toBe(2);
     const output = lines.join('\n');
-    for (const verb of ['init', 'scan', 'diff', 'pack', 'add']) {
+    for (const verb of ['init', 'scan', 'diff', 'pack', 'add', 'docs']) {
       expect(output).toContain(`  ${verb}`);
     }
     expect(USAGE.join('\n')).toContain('comprehendo add <target-package>');
+    expect(USAGE.join('\n')).toContain('comprehendo docs <target-package>');
   });
 
   it('reports the combined usage on no verb at all, exit 2', async () => {
